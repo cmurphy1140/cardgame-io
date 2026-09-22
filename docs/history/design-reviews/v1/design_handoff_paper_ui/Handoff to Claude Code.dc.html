@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#EFE3C1;font-family:'Barlow',system-ui,sans-serif;color:#1C1A17}a{color:#1C1A17}a:hover{color:#B8322A}</style>
+</helmet>
+<div style="max-width:900px;margin:0 auto;padding:40px 28px 80px;display:flex;flex-direction:column;gap:28px;">
+
+<div style="display:flex;flex-direction:column;gap:6px;">
+  <div style="font:700 12px 'Barlow Condensed';letter-spacing:.2em;color:#6E6450;">CATCH 5 · DESIGN → CODE</div>
+  <h1 style="margin:0;font:800 44px/1 'Barlow Condensed';letter-spacing:.02em;">Handing the zip to Claude Code</h1>
+  <p style="margin:0;font:400 16px/1.5 'Barlow';max-width:640px;">The zip has the designs and a plain-text <b>HANDOFF.md</b> that Claude Code reads first. This page is the same material for you: the steps, the prompts to paste, what comes back, and how to keep the two sides from drifting.</p>
+</div>
+
+<!-- flowchart -->
+<div style="background:#FBF5E4;border:2px solid #1C1A17;padding:22px 24px;display:flex;flex-direction:column;gap:16px;">
+  <div style="font:800 20px 'Barlow Condensed';letter-spacing:.08em;border-bottom:3px solid #1C1A17;padding-bottom:4px;">THE LOOP · ONE SCREEN AT A TIME</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:stretch;">
+    <div style="background:#1C1A17;color:#EFE3C1;padding:12px;display:flex;flex-direction:column;gap:4px;"><span style="font:800 13px 'Barlow Condensed';letter-spacing:.14em;opacity:.7;">1</span><span style="font:700 16px 'Barlow Condensed';letter-spacing:.04em;">Answer question 1</span><span style="font:400 12px/1.35 'Barlow';">Box or paper as the frame (Explorations 1j). Blocks RootView.</span></div>
+    <div style="background:#FBF5E4;border:2px solid #1C1A17;padding:12px;display:flex;flex-direction:column;gap:4px;"><span style="font:800 13px 'Barlow Condensed';letter-spacing:.14em;color:#6E6450;">2</span><span style="font:700 16px 'Barlow Condensed';letter-spacing:.04em;">Paste the kickoff prompt</span><span style="font:400 12px/1.35 'Barlow';">Claude Code reads HANDOFF.md and the two DCs, returns tokens, a modifier map, three questions. Writes no UI.</span></div>
+    <div style="background:#FBF5E4;border:2px solid #1C1A17;padding:12px;display:flex;flex-direction:column;gap:4px;"><span style="font:800 13px 'Barlow Condensed';letter-spacing:.14em;color:#6E6450;">3</span><span style="font:700 16px 'Barlow Condensed';letter-spacing:.04em;">Theme.Paper + PaperKit</span><span style="font:400 12px/1.35 'Barlow';">Tokens and the nine shared views. Contrast script extended. Nothing screen-specific yet.</span></div>
+    <div style="background:#B8322A;color:#EFE3C1;padding:12px;display:flex;flex-direction:column;gap:4px;"><span style="font:800 13px 'Barlow Condensed';letter-spacing:.14em;opacity:.8;">4</span><span style="font:700 16px 'Barlow Condensed';letter-spacing:.04em;">One screen end to end</span><span style="font:400 12px/1.35 'Barlow';">Main menu with the licence reading real data. Large, XXXL, AX2 screenshots into docs/design-sync/.</span></div>
+    <div style="background:#FBF5E4;border:2px solid #1C1A17;padding:12px;display:flex;flex-direction:column;gap:4px;"><span style="font:800 13px 'Barlow Condensed';letter-spacing:.14em;color:#6E6450;">5</span><span style="font:700 16px 'Barlow Condensed';letter-spacing:.04em;">design-sync.md back to me</span><span style="font:400 12px/1.35 'Barlow';">Screenshots, deviations, token changes, questions. I compare against the DC and answer in one turn.</span></div>
+    <div style="background:#295742;color:#EFE3C1;padding:12px;display:flex;flex-direction:column;gap:4px;"><span style="font:800 13px 'Barlow Condensed';letter-spacing:.14em;opacity:.8;">6</span><span style="font:700 16px 'Barlow Condensed';letter-spacing:.04em;">Play it on the phone</span><span style="font:400 12px/1.35 'Barlow';">scripts/install-phone.sh. You notice, describe from the phone, back to 4 for the next screen.</span></div>
+  </div>
+  <div style="font:italic 400 13px 'Barlow';color:#5C5546;">Steps 4 → 5 → 6 repeat per screen in the order Explorations 1j gives. The first screen is slow on purpose: it proves the kit.</div>
+</div>
+
+<!-- prompts -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+  <div style="background:#FBF5E4;border:2px solid #1C1A17;display:flex;flex-direction:column;">
+    <div style="background:#1C1A17;color:#EFE3C1;padding:8px 14px;font:700 15px 'Barlow Condensed';letter-spacing:.1em;border-bottom:5px solid #A69F8E;">PROMPT · KICKOFF</div>
+    <pre style="margin:0;padding:14px;white-space:pre-wrap;font:400 13px/1.45 'Barlow';">Read HANDOFF.md, then open Catch 5 Paper.dc.html and Catch 5 Paper Explorations.dc.html in the zip. Do not write UI yet. Give me: (1) the Theme.Paper enum from the token block, (2) a list of every inline style pattern in Paper 1a with the SwiftUI modifier you will use for it, (3) the three questions you cannot answer from the files. Then stop.</pre>
+  </div>
+  <div style="background:#FBF5E4;border:2px solid #1C1A17;display:flex;flex-direction:column;">
+    <div style="background:#B8322A;color:#EFE3C1;padding:8px 14px;font:700 15px 'Barlow Condensed';letter-spacing:.1em;border-bottom:5px solid #7A1F1C;">PROMPT · ONE SCREEN</div>
+    <pre style="margin:0;padding:14px;white-space:pre-wrap;font:400 13px/1.45 'Barlow';">Build MainMenuView from Catch 5 Paper #1a. Inline styles are the spec; copy is verbatim. Use PaperKit components only; no gold token anywhere in the file. Run the simulator at Large, XXXL and AX2, export screenshots to docs/design-sync/, and write design-sync.md in the format from HANDOFF.md. If a value cannot be matched, keep the DC's intent and list it under deviations.</pre>
+  </div>
+  <div style="background:#FBF5E4;border:2px solid #1C1A17;display:flex;flex-direction:column;">
+    <div style="background:#295742;color:#EFE3C1;padding:8px 14px;font:700 15px 'Barlow Condensed';letter-spacing:.1em;border-bottom:5px solid #17302A;">PROMPT · ASK DESIGN</div>
+    <pre style="margin:0;padding:14px;white-space:pre-wrap;font:400 13px/1.45 'Barlow';">Write a message to the design side. State the screen, the exact problem, what you tried, and the two options you would accept. Attach the screenshot. Under 120 words.</pre>
+  </div>
+  <div style="background:#FBF5E4;border:2px solid #1C1A17;display:flex;flex-direction:column;">
+    <div style="background:#1C1A17;color:#EFE3C1;padding:8px 14px;font:700 15px 'Barlow Condensed';letter-spacing:.1em;border-bottom:5px solid #A69F8E;">PROMPT · GIVE DESIGN IDEAS</div>
+    <pre style="margin:0;padding:14px;white-space:pre-wrap;font:400 13px/1.45 'Barlow';">You have run the app and read the engine. List five things the design side cannot see from the outside: data we already record but never show, states the design has no screen for, moments the engine knows about before the UI does. One line each, with the type or function that proves it. No implementation.</pre>
+  </div>
+</div>
+
+<!-- what comes back -->
+<div style="background:#FBF5E4;border:2px solid #1C1A17;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+  <div style="font:800 20px 'Barlow Condensed';letter-spacing:.08em;border-bottom:3px solid #1C1A17;padding-bottom:4px;">WHAT COMES BACK · design-sync.md</div>
+  <p style="margin:0;font:400 14px/1.5 'Barlow';">One file at the repo root, appended per screen, pasted into the design chat. Screenshots are the currency: I can read a PNG in one turn and answer with a targeted edit. Prose about what a screen looks like costs ten turns.</p>
+  <pre style="margin:0;padding:14px;background:#EFE3C1;border:1.5px solid #C9BC98;white-space:pre-wrap;font:400 13px/1.5 ui-monospace,Menlo,monospace;">## Main menu · 2026-09-16
+built from: Catch 5 Paper #1a (commit abc123)
+screenshots: Large / XXXL / AX2 (docs/design-sync/menu-*.png)
+deviations:
+  - licence grid stacks at XXL, not AX1: Barlow Condensed measures wider than the DC
+  - deckle is 12 points not 16: 16 aliased at 1x
+tokens changed: muted #8A7F6A → #6E6450 (contrast 2a)
+questions:
+  1. Resume strip when the saved match is finished but unviewed?
+next: SettingsView from #1b unless told otherwise</pre>
+</div>
+
+<!-- two-way ideas -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+  <div style="background:#FBF5E4;border:2px solid #1C1A17;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+    <div style="font:800 18px 'Barlow Condensed';letter-spacing:.08em;color:#B8322A;">WHAT CODE CAN GIVE DESIGN</div>
+    <ul style="margin:0;padding-left:18px;font:400 14px/1.5 'Barlow';display:flex;flex-direction:column;gap:6px;">
+      <li><b>tokens.json on every build</b>, exported from Theme.Paper. I import it, so a value changed in Swift shows up in the next DC without anyone remembering.</li>
+      <li><b>Snapshot tests as fixtures.</b> Three text sizes per screen. A failing snapshot is a design question with the screenshot already attached.</li>
+      <li><b>The unseen data list.</b> The engine records plays agreed, bids made, discards; the design side only knows what the docs say. The fourth prompt above pulls that out.</li>
+      <li><b>design-needs: issues.</b> When a design idea needs engine work (HARD strength, per-seat records, a joined date), one issue with that prefix tells me the cost before I draw more of it.</li>
+      <li><b>screen-flow.md kept current.</b> It is the only map of what exists that I trust more than my own files.</li>
+      <li><b>A board.json exporter</b> from roadmap.md + ideas.md, so the in-app board (Paper 1h) and the docs are one thing.</li>
+    </ul>
+  </div>
+  <div style="background:#FBF5E4;border:2px solid #1C1A17;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+    <div style="font:800 18px 'Barlow Condensed';letter-spacing:.08em;color:#295742;">WHAT DESIGN CAN GIVE CODE</div>
+    <ul style="margin:0;padding-left:18px;font:400 14px/1.5 'Barlow';display:flex;flex-direction:column;gap:6px;">
+      <li><b>Inline styles as the spec.</b> Every DC value is literal and in one place. No stylesheet to trace, no token file to cross-reference.</li>
+      <li><b>Names that match.</b> <code style="font:600 12px ui-monospace;background:rgba(0,0,0,.06);padding:0 4px;">{{ wins }}</code> in the DC is <code style="font:600 12px ui-monospace;background:rgba(0,0,0,.06);padding:0 4px;">statistics.wins</code> in Swift; <code style="font:600 12px ui-monospace;background:rgba(0,0,0,.06);padding:0 4px;">data-screen-label</code> is the view name. Rename on either side and say so.</li>
+      <li><b>Props are previews.</b> flowMode, newPlayer, savedMatch in the DC are the <code style="font:600 12px ui-monospace;background:rgba(0,0,0,.06);padding:0 4px;">#Preview</code> variants to build.</li>
+      <li><b>Procedures, not bitmaps.</b> textures.js is the same LCG as GrainRandom; port it and the stipple matches to the pixel.</li>
+      <li><b>Measured claims.</b> Contrast is computed, motion is in Theme.Motion terms, hours-to-unlock are arithmetic. Push back on any number that is not.</li>
+      <li><b>One question per turn.</b> Numbered questions, one decision each, get answered in a single round.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- CSS to SwiftUI -->
+<div style="background:#FBF5E4;border:2px solid #1C1A17;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+  <div style="font:800 20px 'Barlow Condensed';letter-spacing:.08em;border-bottom:3px solid #1C1A17;padding-bottom:4px;">DC → SWIFTUI · THE RECURRING CASES</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;font:400 13px/1.45 'Barlow';">
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span><code style="font:600 12px ui-monospace;">clip-path: var(--tear)</code></span><span><code style="font:600 12px ui-monospace;">.clipShape(DeckleEdge())</code></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span>inset ring <code style="font:600 12px ui-monospace;">box-shadow</code></span><span><code style="font:600 12px ui-monospace;">.overlay(shape.inset(by:3).stroke(cream,1.5))</code></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span>hard offset shadow</span><span>shape filled ink .28, <code style="font:600 12px ui-monospace;">.offset(3,3)</code> behind</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span><code style="font:600 12px ui-monospace;">text-shadow 0 4px</code></span><span>second Text, dark, offset y 4</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span>band + 6 px strip</span><span><code style="font:600 12px ui-monospace;">VStack(spacing:0)</code>, strip height 6</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;"><span>stamp <code style="font:600 12px ui-monospace;">rotate(-3deg)</code></span><span><code style="font:600 12px ui-monospace;">.rotationEffect(.degrees(-3))</code></span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span>paper <code style="font:600 12px ui-monospace;">background-image</code></span><span><code style="font:600 12px ui-monospace;">PaperSurface</code> Canvas, seeded, never a PNG</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span><code style="font:600 12px ui-monospace;">grid 1fr 1fr</code></span><span><code style="font:600 12px ui-monospace;">Grid</code> or LazyVGrid, two flexible</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span><code style="font:600 12px ui-monospace;">sc-if / sc-for</code></span><span><code style="font:600 12px ui-monospace;">if / ForEach</code></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span>Barlow Condensed</span><span>bundle (OFL) or SF <code style="font:600 12px ui-monospace;">.fontWidth(.condensed)</code></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #C9BC98;"><span>9 px labels in the mock</span><span>11 pt minimum, scaled; stack at ≥ XXL</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px 0;"><span>flip digits</span><span><code style="font:600 12px ui-monospace;">.contentTransition(.numericText())</code> first; fold later</span></div>
+    </div>
+  </div>
+</div>
+
+<div style="font:italic 400 13px 'Barlow';color:#5C5546;text-align:center;">Ideas are free; the loop above is what makes them cheap to test. Run it once on the menu before believing any of it.</div>
+</div>
+</x-dc>
+</body>
+</html>

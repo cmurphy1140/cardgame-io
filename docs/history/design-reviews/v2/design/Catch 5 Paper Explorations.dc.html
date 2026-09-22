@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,800;1,600&family=Barlow:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E6DDC4;font-family:'Barlow',system-ui,sans-serif;color:#1C1A17}
+a{color:#1C1A17}a:hover{color:#B8322A}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:800 12px 'Barlow Condensed';padding:4px 8px;background:#1C1A17;color:#EFE3C1;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 14px/1.3 'Barlow Condensed';color:#1C1A17;letter-spacing:.02em}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px;padding-right:160px}
+.dv-oid{font:700 11px 'Barlow Condensed';letter-spacing:.08em;padding:3px 7px;background:rgba(0,0,0,.1);color:#1C1A17;border-radius:4px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 'Barlow';color:rgba(0,0,0,.6);max-width:380px}
+.dv-opt:target .dv-oid{background:#B8322A;color:#EFE3C1}
+.dv-next{margin:22px 0 0;font:13px/1.5 'Barlow';color:rgba(0,0,0,.55)}
+.wf{width:360px;min-height:760px;background:#F4ECD6;border:2px solid #1C1A17;border-radius:32px;padding:44px 16px 20px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;position:relative}
+.wf-hd{display:flex;align-items:center;gap:8px;border-top:3px solid #1C1A17;border-bottom:3px solid #1C1A17;padding:8px 4px;font:700 17px 'Barlow Condensed';letter-spacing:.08em}
+.wf-hd span{flex:1;text-align:center}
+.wf-card{background:#fff;border:1.5px solid #1C1A17;display:flex;flex-direction:column}
+.wf-band{background:#1C1A17;color:#EFE3C1;font:700 13px 'Barlow Condensed';letter-spacing:.1em;padding:6px 10px;border-bottom:4px solid #A69F8E;display:flex;justify-content:space-between;align-items:center}
+.wf-band.red{background:#B8322A;border-color:#7A1F1C}.wf-band.grn{background:#295742;border-color:#17302A}
+.wf-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px dashed #B9AE8E;font:700 14px 'Barlow Condensed';letter-spacing:.05em}
+.wf-row:last-child{border-bottom:0}
+.wf-sub{font:400 11px 'Barlow';color:#5C5546;letter-spacing:0}
+.wf-btn{border:2px solid #1C1A17;background:#1C1A17;color:#EFE3C1;font:700 16px 'Barlow Condensed';letter-spacing:.08em;padding:12px;text-align:center;box-shadow:inset 0 0 0 2px #1C1A17,inset 0 0 0 3.5px #EFE3C1}
+.wf-btn.red{background:#B8322A;border-color:#B8322A;box-shadow:inset 0 0 0 2px #B8322A,inset 0 0 0 3.5px #EFE3C1}
+.wf-btn.ghost{background:transparent;color:#1C1A17;box-shadow:none}
+.wf-seg{display:flex;border:1.5px solid #1C1A17;border-radius:3px;overflow:hidden;font:700 11px 'Barlow Condensed';letter-spacing:.06em}
+.wf-seg span{padding:4px 8px;border-right:1.5px solid #1C1A17}.wf-seg span:last-child{border-right:0}.wf-seg .on{background:#1C1A17;color:#EFE3C1}
+.wf-dice{width:22px;height:22px;border:1.5px solid #1C1A17;border-radius:4px;display:grid;place-items:center;font:700 10px 'Barlow Condensed';flex:none}
+.wf-disc{width:34px;height:34px;border-radius:50%;background:#C9BC98;border:1.5px solid #1C1A17;flex:none}
+.wf-stamp{display:inline-block;transform:rotate(-4deg);border:2.5px solid #B8322A;color:#B8322A;font:800 12px 'Barlow Condensed';letter-spacing:.14em;padding:1px 7px;border-radius:3px}
+.wf-div{display:flex;align-items:center;gap:8px;font:700 12px 'Barlow Condensed';letter-spacing:.12em}.wf-div:before,.wf-div:after{content:"";flex:1;border-top:2px solid #1C1A17;border-bottom:2px solid #1C1A17;height:3px}
+.wf-note{position:absolute;right:-150px;width:130px;font:italic 400 11px/1.35 'Barlow';color:#5C5546;border-left:2px solid #B8322A;padding-left:8px}
+.wf-flip{display:flex;gap:3px}.wf-flip span{width:26px;height:38px;background:#1C1A17;color:#EFE3C1;display:grid;place-items:center;font:800 24px 'Barlow Condensed';border-radius:3px}
+.doc{width:920px;background:#FBF5E4;border:2px solid #1C1A17;padding:28px 32px;display:flex;flex-direction:column;gap:18px;font:400 14px/1.5 'Barlow'}
+.doc h2{margin:0;font:800 22px 'Barlow Condensed';letter-spacing:.08em;border-bottom:3px solid #1C1A17;padding-bottom:4px}
+.doc h3{margin:14px 0 4px;font:700 15px 'Barlow Condensed';letter-spacing:.1em;color:#B8322A}
+.doc ol,.doc ul{margin:0;padding-left:20px}.doc li{margin:3px 0}
+.doc table{border-collapse:collapse;width:100%;font-size:13px}.doc td,.doc th{border-bottom:1px solid #C9BC98;padding:5px 8px;vertical-align:top;text-align:left}.doc th{font:700 12px 'Barlow Condensed';letter-spacing:.1em}
+.doc code{font:600 12px ui-monospace,Menlo,monospace;background:rgba(0,0,0,.06);padding:0 4px;border-radius:3px;white-space:normal;word-break:break-word}
+.doc table{table-layout:fixed}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid rgba(0,0,0,.2)}
+</style></helmet>
+
+<section class="dv-turn" id="t5">
+<div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Decision 1, drawn. Claude Code is blocked on it: the amended north star (E.8) says the menu is the closed deck box; Paper 1a has no box in it. Three ways to resolve it, side by side. Pick one by id.</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="5a"><div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a><b>A · The box stays.</b> Menu is the closed box; paper pieces lie in the burgundy well.</div>
+<div class="wf" data-screen-label="5a Box stays" style="background:#5C1F2A;border-color:#3D111A;box-shadow:inset 0 0 0 10px #7A2E3A,inset 0 0 0 12px #3D111A;padding:54px 26px 30px;gap:14px">
+  <div style="text-align:center;font:800 44px/.8 'Barlow Condensed';color:#D9C7C0;letter-spacing:.04em;text-shadow:0 2px 0 #3D111A,0 -1px 0 #8A3A48;margin-top:6px">CATCH<br>FIVE</div>
+  <div style="text-align:center;font:700 10px 'Barlow Condensed';letter-spacing:.24em;color:#D9C7C0;opacity:.7">LETTERPRESS · NO GOLD ON THE BOX</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><div class="wf-btn red" style="font-size:13px">PLAY WITH BOTS</div><div class="wf-btn ghost" style="font-size:13px;color:#D9C7C0;border-color:#D9C7C0">PASS AND PLAY</div></div>
+  <div class="wf-card" style="border-radius:8px;transform:rotate(-1deg);box-shadow:0 6px 0 #33101A"><div class="wf-band red" style="font-size:12px">PLAYER LICENSE<span>0</span></div><div style="display:flex;gap:10px;padding:10px"><div class="wf-disc" style="width:56px;height:56px"></div><div style="font:800 20px 'Barlow Condensed'">CONNOR<div class="wf-sub">New player · 0 wins</div></div></div></div>
+  <div class="wf-btn ghost" style="color:#D9C7C0;border-color:#D9C7C0">HOW TO PLAY</div>
+  <div style="flex:1"></div>
+  <div style="display:flex;justify-content:flex-end;gap:20px;font:700 14px 'Barlow Condensed';letter-spacing:.08em;color:#D9C7C0;text-decoration:underline">WALLET SETTINGS</div>
+  <div class="wf-note" style="top:40px;color:#EFE3C1;border-color:#EFE3C1;right:-160px">Keeps E.8 word for word. Cream on #5C1F2A is 9.8:1, so paper cards read fine in the well. Box 2b's bevelled lip and the lid motion stay in scope.</div>
+  <div class="wf-note" style="top:330px;color:#EFE3C1;border-color:#EFE3C1;right:-160px">Cost: every paper sheet gets a burgundy surround; two surfaces to maintain; the menu's suit watermarks and the advice slip move onto cloth, where they read less.</div>
+</div>
+<div class="wf-sub" style="max-width:360px;font-size:13px;line-height:1.4"><b>Pick A if</b> the box is the identity and paper is what lives inside it. Claude Code builds <code>BoxSurface</code> first, then paper. I redraw Paper 1a into this.</div>
+</div>
+
+<div class="dv-opt" id="5b"><div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a><b>B · Paper is the frame.</b> Menu as drawn in Paper 1a; the box survives only as the table's header band.</div>
+<div class="wf" data-screen-label="5b Paper frame" style="padding:54px 22px 30px;gap:14px">
+  <div style="text-align:center;font:800 44px/.8 'Barlow Condensed';letter-spacing:-.01em;margin-top:6px"><span style="color:#B8322A;text-shadow:0 3px 0 #7A1F1C">CATCH</span><br><span style="color:#295742;text-shadow:0 3px 0 #17302A">FIVE</span></div>
+  <div class="wf-div">PLAY MATCH</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="wf-btn red" style="font-size:13px">PLAY WITH BOTS</div><div class="wf-btn" style="font-size:13px">PASS AND PLAY</div></div>
+  <div class="wf-card" style="border-radius:8px;border-width:2px"><div class="wf-band red" style="font-size:12px">PLAYER LICENSE<span>0</span></div><div style="display:flex;gap:10px;padding:10px"><div class="wf-disc" style="width:56px;height:56px"></div><div style="font:800 20px 'Barlow Condensed'">CONNOR<div class="wf-sub">New player · 0 wins</div></div></div></div>
+  <div class="wf-btn">HOW TO PLAY</div>
+  <div style="flex:1"></div>
+  <div style="margin:0 -22px -30px;background:#5C1F2A;color:#D9C7C0;padding:10px 22px 14px;display:flex;justify-content:space-between;font:700 13px 'Barlow Condensed';letter-spacing:.04em;border-radius:0 0 30px 30px"><span>US 9 · THEM 6</span><span>RUBY 4 ♠</span><span style="font-size:10px;opacity:.7;align-self:center">← the only box left: the table's band</span></div>
+  <div class="wf-note" style="top:40px;right:-160px">What is already built: Paper 1a–1h ship as is. One surface, one kit. The closed-box menu and the lid motion are retired; Box 2b becomes history.</div>
+  <div class="wf-note" style="top:330px;right:-160px">Cost: E.8 is amended with a numbered decision, and the burgundy band on a cream app is the one place the two materials meet. It can read as the table's edge, which is what it is.</div>
+</div>
+<div class="wf-sub" style="max-width:360px;font-size:13px;line-height:1.4"><b>Pick B if</b> paper is the identity now. Claude Code builds MainMenuView from Paper 1a as sent and records the amendment. Nothing to redraw.</div>
+</div>
+
+<div class="dv-opt" id="5c"><div class="dv-olabel"><a class="dv-oid" href="#5c">5c</a><b>C · Paper everywhere off the felt.</b> Like B, and the table's header band goes paper too. The felt itself is untouched.</div>
+<div class="wf" data-screen-label="5c Paper band" style="padding:54px 22px 30px;gap:14px">
+  <div style="text-align:center;font:800 44px/.8 'Barlow Condensed';letter-spacing:-.01em;margin-top:6px"><span style="color:#B8322A;text-shadow:0 3px 0 #7A1F1C">CATCH</span><br><span style="color:#295742;text-shadow:0 3px 0 #17302A">FIVE</span></div>
+  <div class="wf-div">PLAY MATCH</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="wf-btn red" style="font-size:13px">PLAY WITH BOTS</div><div class="wf-btn" style="font-size:13px">PASS AND PLAY</div></div>
+  <div class="wf-card" style="border-radius:8px;border-width:2px"><div class="wf-band red" style="font-size:12px">PLAYER LICENSE<span>0</span></div><div style="display:flex;gap:10px;padding:10px"><div class="wf-disc" style="width:56px;height:56px"></div><div style="font:800 20px 'Barlow Condensed'">CONNOR<div class="wf-sub">New player · 0 wins</div></div></div></div>
+  <div style="flex:1"></div>
+  <div style="margin:0 -22px -30px;background:#295742;padding:0 0 26px;border-radius:0 0 30px 30px;display:flex;flex-direction:column">
+    <div style="background:#EFE3C1;padding:10px 22px 12px;display:flex;justify-content:space-between;font:700 13px 'Barlow Condensed';letter-spacing:.04em;clip-path:polygon(0 0,100% 0,100% 88%,90% 100%,80% 90%,70% 100%,60% 92%,50% 100%,40% 90%,30% 100%,20% 92%,10% 100%,0 90%)"><span>US 9 · THEM 6</span><span style="border:1.5px solid #1C1A17;padding:0 8px;border-radius:10px">RUBY 4 ♠</span><span class="wf-flip" style="gap:2px"><span style="width:16px;height:22px;font-size:14px">1</span><span style="width:16px;height:22px;font-size:14px">2</span></span></div>
+    <div style="color:#EFE3C1;text-align:center;font:italic 400 11px 'Barlow';opacity:.8;padding-top:6px">a paper scorepad strip torn along the felt's edge</div>
+  </div>
+  <div class="wf-note" style="top:40px;right:-160px">The scorepad is literally a scorepad: the band that shows the score is the paper the score is kept on. Timer digits sit on it as in 1d.</div>
+  <div class="wf-note" style="top:330px;right:-160px">Cost: touches TableView's header (ScoreBarView, WoodGrainView call at TableView:93), which is the one part of the table screen not covered by "the felt is untouchable". Contrast is fine: ink on cream 13.6:1. Burgundy disappears from the app entirely.</div>
+</div>
+<div class="wf-sub" style="max-width:360px;font-size:13px;line-height:1.4"><b>Pick C if</b> you want one material and the score kept on paper. Claude Code builds Paper 1a, then swaps the band; the wood/box header becomes history. I draw the band hi-fi.</div>
+</div>
+
+</div>
+<p class="dv-next">Answer in chat with the id: "<a class="dv-oid" href="#5a">5a</a>", "<a class="dv-oid" href="#5b">5b</a>" or "<a class="dv-oid" href="#5c">5c</a>", plus anything Claude Code should hear with it.</p>
+</section>
+
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Fourth pass, from the addendum you pasted. Read as source material: what it adds to our decisions, what it contradicts, and the one idea worth promoting to a major feature (the scorebook with drill-down). Rules, engine and felt untouched.</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Scorebook, restructured. Statistics becomes four tabs on a scorepad: Overview · Bidding · Scoring · History. Every number shows its denominator.</div>
+<div class="wf" data-screen-label="4a Scorebook">
+  <div class="wf-hd">«<span>SCOREBOOK</span><div class="wf-disc" style="width:30px;height:30px"></div></div>
+  <div style="display:flex;gap:4px;font:700 11px 'Barlow Condensed';letter-spacing:.06em"><span style="flex:1;border:1.5px solid #1C1A17;padding:6px;text-align:center;background:#1C1A17;color:#EFE3C1">OVERVIEW</span><span style="flex:1;border:1.5px solid #1C1A17;padding:6px;text-align:center">BIDDING</span><span style="flex:1;border:1.5px solid #1C1A17;padding:6px;text-align:center">SCORING</span><span style="flex:1;border:1.5px solid #1C1A17;padding:6px;text-align:center">HISTORY</span></div>
+  <div class="wf-card"><div class="wf-band">HOW ARE WE DOING<span class="wf-sub" style="color:#EFE3C1">31 matches</span></div>
+    <div class="wf-row">MATCHES WON<span>12 of 31 <span class="wf-sub">39%</span></span></div>
+    <div class="wf-row">MY CONTRACTS MADE<span>41 of 58 <span class="wf-sub">71%</span></span></div>
+    <div class="wf-row">TEAM CONTRACTS MADE<span>66 of 97 <span class="wf-sub">68%</span></span></div>
+    <div class="wf-row">BIDDERS WE SET<span>19 of 61 <span class="wf-sub">31%</span></span></div>
+    <div class="wf-row"><span>BIGGEST COMEBACK<div class="wf-sub">from −4 · Sept 3 vs Florian »</div></span><span>21 pts</span></div></div>
+  <div class="wf-card"><div class="wf-band grn">LAST MATCH · WON 25–19</div>
+    <div style="padding:10px;display:flex;flex-direction:column;gap:4px">
+      <div style="height:90px;position:relative;border-left:1.5px solid #1C1A17;border-bottom:1.5px solid #1C1A17;margin:4px 6px 0 20px">
+        <svg width="100%" height="100%" viewBox="0 0 280 90" preserveAspectRatio="none" style="position:absolute;inset:0"><polyline fill="none" stroke="#B8322A" stroke-width="2.5" points="0,88 35,88 35,78 70,78 70,60 105,60 105,66 140,66 140,44 175,44 175,30 210,30 210,14 245,14 245,2 280,2"></polyline><polyline fill="none" stroke="#1C1A17" stroke-width="2" stroke-dasharray="4 3" points="0,88 35,80 35,72 70,72 70,75 105,75 105,58 140,58 140,52 175,52 175,40 210,40 210,32 245,32 245,20 280,20"></polyline></svg>
+        <span style="position:absolute;left:-18px;top:-4px;font:700 9px 'Barlow Condensed'">25</span><span style="position:absolute;left:-12px;bottom:-4px;font:700 9px 'Barlow Condensed'">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font:700 9px 'Barlow Condensed';letter-spacing:.08em;padding-left:20px"><span>H1</span><span>H2</span><span>H3</span><span>H4</span><span>H5</span><span>H6</span><span>H7</span><span>H8</span></div>
+      <div class="wf-sub">Step chart, scores after every hand. Tap a step to open that hand. Solid us, dashed them.</div>
+    </div></div>
+  <div class="wf-sub" style="text-align:center">Bot play only. Pass and play, tutorial and unfinished matches are counted separately in History.</div>
+  <div class="wf-note" style="top:150px">"12 of 31" beats "39%". The addendum's rule: never a percentage without its count. Small samples read as small.</div>
+  <div class="wf-note" style="top:430px">Swift Charts <code>LineMark</code> with <code>.interpolationMethod(.stepEnd)</code>, ink axes, no grid. Accessibility comes free; the paper look is styling, not a custom renderer.</div>
+</div></div>
+
+<div class="dv-opt" id="4b"><div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Bidding tab and the drill-down: statistic → matching hands → one hand → evidence. Tapping "bid 7" opens the hands where you bid 7, not an animation.</div>
+<div class="wf" data-screen-label="4b Bidding drilldown">
+  <div class="wf-hd">«<span>SCOREBOOK · BIDDING</span><div class="wf-disc" style="width:30px;height:30px"></div></div>
+  <div class="wf-card"><div class="wf-band">MADE BY BID LEVEL<span class="wf-sub" style="color:#EFE3C1">my auctions won</span></div>
+    <div style="padding:10px;display:flex;flex-direction:column;gap:6px;font:700 12px 'Barlow Condensed';letter-spacing:.04em">
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:14px">2</span><div style="flex:1;height:14px;background:#E4D6AE;position:relative"><div style="width:90%;height:100%;background:#295742"></div></div><span style="width:56px;text-align:right">9 of 10</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:14px">3</span><div style="flex:1;height:14px;background:#E4D6AE"><div style="width:80%;height:100%;background:#295742"></div></div><span style="width:56px;text-align:right">16 of 20</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:14px">4</span><div style="flex:1;height:14px;background:#E4D6AE"><div style="width:67%;height:100%;background:#295742"></div></div><span style="width:56px;text-align:right">12 of 18</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:14px">5</span><div style="flex:1;height:14px;background:#E4D6AE"><div style="width:50%;height:100%;background:#295742"></div></div><span style="width:56px;text-align:right">3 of 6</span></div>
+      <div style="display:flex;align-items:center;gap:8px;outline:2px solid #B8322A;outline-offset:3px"><span style="width:14px;color:#B8322A">7</span><div style="flex:1;height:14px;background:#E4D6AE"><div style="width:25%;height:100%;background:#B8322A"></div></div><span style="width:56px;text-align:right;color:#B8322A">1 of 4 »</span></div>
+      <div style="display:flex;align-items:center;gap:8px;color:#8A7F6A"><span style="width:14px">6 8 9</span><div style="flex:1"></div><span class="wf-sub">never bid</span></div>
+    </div></div>
+  <div class="wf-card" style="margin-left:14px;transform:rotate(.6deg)"><div class="wf-band red">BID 7 · 4 HANDS</div>
+    <div class="wf-row"><span>Sept 12 · Hand 5 <span class="wf-sub">vs Florian, Phoebe</span></span><span class="wf-stamp" style="font-size:10px">SET −7</span></div>
+    <div class="wf-row"><span>Sept 9 · Hand 2</span><span class="wf-stamp" style="font-size:10px">SET −7</span></div>
+    <div class="wf-row" style="background:#EFE3C1"><span>Sept 4 · Hand 7 <span class="wf-sub">♠ · 7 captured</span></span><span class="wf-stamp" style="font-size:10px;border-color:#295742;color:#295742">MADE</span></div>
+    <div class="wf-row"><span>Aug 30 · Hand 1</span><span class="wf-stamp" style="font-size:10px">SET −7</span></div></div>
+  <div class="wf-card" style="margin-left:28px;transform:rotate(-.5deg)"><div class="wf-band">SEPT 12 · HAND 5</div>
+    <div style="padding:8px 10px;font:400 13px/1.4 'Barlow'"><b>Connor + Ruby</b> bid 7 · captured 5 · score 14 → <b>7</b><br><span style="color:#5C5546">Florian + Phoebe captured 4 · score 9 → 13</span></div>
+    <div class="wf-row" style="font-weight:600">Open the hand review »<span class="wf-sub">every play, as recorded</span></div></div>
+  <div class="wf-note" style="top:110px">Personal contracts (I won the auction) and team contracts (Ruby did) are different denominators. The addendum is right that mixing them lies; our 1c mixed them.</div>
+  <div class="wf-note" style="top:430px">Third card is the existing ReviewView record. No new store: the drill-down is a filter over <code>MatchRecord.history</code> if hands are kept per record (they are: <code>hands</code> is a count today, so the per-hand summaries need saving too; one array, same Codable defaults).</div>
+</div></div>
+
+<div class="dv-opt" id="4c"><div class="dv-olabel"><a class="dv-oid" href="#4c">4c</a>Handoff, revised. The addendum argues the reveal must be a deliberate, separate tap so a double-tap on PLAY cannot expose the next hand. Our 3-second auto-reveal (1c) conflicts. Hybrid proposed.</div>
+<div class="wf" data-screen-label="4c Handoff revised" style="background:#3A3128;color:#EFE3C1;justify-content:center;align-items:center;gap:14px">
+  <div class="wf-card" style="width:290px;align-items:center;padding:0 0 18px;color:#1C1A17;background:#F4ECD6">
+    <div class="wf-band grn" style="width:100%;box-sizing:border-box;justify-content:center">PASS TO JANE</div>
+    <div class="wf-disc" style="width:84px;height:84px;margin-top:18px"></div>
+    <div style="font:800 26px 'Barlow Condensed';letter-spacing:.06em;margin-top:8px">JANE · NORTH</div>
+    <div class="wf-sub">Connor's cards are put away.</div>
+    <div class="wf-flip" style="margin-top:12px;opacity:.35"><span>0</span><span>:</span><span>0</span><span>3</span></div>
+    <div class="wf-sub" style="margin-top:4px">the button wakes at 0:00</div>
+    <div class="wf-btn" style="width:220px;margin-top:12px;box-sizing:border-box;opacity:.35">I'M JANE · SHOW MY HAND</div>
+  </div>
+  <div class="wf-card" style="width:290px;color:#1C1A17;background:#F4ECD6;flex-direction:row;align-items:center;justify-content:space-between;padding:8px 12px"><span style="font:700 13px 'Barlow Condensed';letter-spacing:.08em">DURING JANE'S TURN</span><span class="wf-btn ghost" style="padding:4px 10px;font-size:12px">HIDE HAND</span></div>
+  <div class="wf-note" style="top:20px;color:#C9BC98;border-color:#EFE3C1">The 3 s is now a lockout, not a countdown to reveal: the button is disabled until 0:00 so a stray tap does nothing, then a deliberate tap shows the hand. Both of your asks survive.</div>
+  <div class="wf-note" style="top:260px;color:#C9BC98;border-color:#EFE3C1">From the addendum, worth adopting: re-cover on background and resume; hidden cards absent from VoiceOver labels, not just hidden; a HIDE HAND button on the table during pass and play (a felt change, so it waits for your call). It protects against accidents, not peeking.</div>
+</div></div>
+
+<div class="dv-opt" id="4d"><div class="dv-olabel"><a class="dv-oid" href="#4d">4d</a>Bot honesty labels. Separate difficulty from style, say both in plain words on the roster row and the setup seat. No fake typing delays, no taunts mid-hand.</div>
+<div class="wf" data-screen-label="4d Bot labels" style="min-height:380px;gap:10px">
+  <div class="wf-card"><div class="wf-band red">SHARK</div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>FLORIAN<div class="wf-sub">Whiskey, neat · Fortune 500 consultant</div><div class="wf-sub" style="color:#1C1A17;font-weight:600">Bot · Standard · assertive bidder</div></div></div><span class="wf-sub">AT THE TABLE</span></div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>PHOEBE<div class="wf-sub">Dirty martini · Runs a modelling agency</div><div class="wf-sub" style="color:#1C1A17;font-weight:600">Bot · Standard · steady partner</div></div></div><span>400 »</span></div></div>
+  <div class="wf-card"><div class="wf-band">BEGINNER</div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>RONALD<div class="wf-sub">Perrier · Wedding planner</div><div class="wf-sub" style="color:#1C1A17;font-weight:600">Bot · Easy · careful bidder</div></div></div><span class="wf-sub">AT THE TABLE</span></div></div>
+  <div class="wf-sub">Three styles: careful bidder, assertive bidder, steady partner. They change risk preference and tie-breaks at the same reasoning budget. The engine has Easy and Standard; styles are a third axis, not a strength.</div>
+  <div class="wf-note" style="top:60px">Fits your "tier sets a default strength" and "real AI variants later". The label is the promise the code must keep: a test per style that its observed bids differ in the seeded fixtures.</div>
+  <div class="wf-note" style="top:250px">Voice lines (2d) stay at the match end only, which the addendum allows; it rejects artificial mid-hand chatter, and so does E.10's "only public events" rule.</div>
+</div></div>
+
+<div class="dv-opt" id="4e"><div class="dv-olabel"><a class="dv-oid" href="#4e">4e</a>Take, leave, conflict. The addendum against our decisions, line by line.</div>
+<div class="doc" data-screen-label="4e Addendum triage" style="width:640px">
+<h2>TAKE</h2>
+<table><colgroup><col style="width:38%"><col style="width:62%"></colgroup>
+<tr><th>Idea</th><th>Where it lands</th></tr>
+<tr><td>Scorebook as the feature; Overview · Bidding · Scoring · History</td><td><a class="dv-oid" href="#4a">4a</a>, replaces the two-card Statistics in Catch 5 Paper 1c</td></tr>
+<tr><td>Define every metric: numerator, denominator, eligibility</td><td>Table below; the license and menu show counts next to any rate</td></tr>
+<tr><td>Drill-down statistic → hands → evidence</td><td><a class="dv-oid" href="#4b">4b</a>; needs per-hand summaries saved on MatchRecord</td></tr>
+<tr><td>Score trajectory step chart, bid-level bars</td><td><a class="dv-oid" href="#4a">4a</a>, <a class="dv-oid" href="#4b">4b</a>, Swift Charts styled as paper</td></tr>
+<tr><td>Deliberate reveal, re-cover on resume, VoiceOver exclusion</td><td><a class="dv-oid" href="#4c">4c</a></td></tr>
+<tr><td>Difficulty ≠ style; honest labels</td><td><a class="dv-oid" href="#4d">4d</a></td></tr>
+<tr><td>Stable local player IDs, not names</td><td>Licence number <b>is</b> the ID (C5-0031-12): rename keeps history</td></tr>
+<tr><td>Tabular numerals for data</td><td>Barlow Condensed has <code>tnum</code>; enable on every scorebook column</td></tr>
+<tr><td>Stamps only after the engine resolves the outcome</td><td>Already the rule for hand-end (3e); extend to chips and DONE</td></tr>
+<tr><td>Separate solo, pass-and-play, tutorial, unfinished</td><td>MatchRecord gains <code>kind</code>; scorebook filters default to solo</td></tr>
+<tr><td>Last Trick view</td><td>Felt change; note it for the table pass, not here</td></tr>
+</table>
+<h2>LEAVE</h2>
+<ul>
+<li>Its palette (#F4EBD8 paper, #A64E32 accent, #173D35 table). Ours is chosen and audited (2a); it is a second opinion, not a replacement.</li>
+<li>"Prototype against a flatter hand strip", perimeter vs rail layouts, beginner tap-to-explain, bidding rows: all felt. Untouched by this direction, filed for the table pass.</li>
+<li>Typewriter mono for annotations: you chose condensed grotesk throughout.</li>
+<li>Component names: ours are in 1j and already map onto existing files.</li>
+</ul>
+<h2>CONFLICTS TO SETTLE</h2>
+<ol>
+<li><b>Wallet vs "no store, no commercial progression".</b> Chips are earned only, never bought, and buy no advantage except Undo and Re-deal. Undo is free today (M4). Suggest: consumables leave the shop; chips buy cosmetics and bots only. Then the addendum's objection is met.</li>
+<li><b>Standing (Rookie / Regular / Shark) vs "no fake rank".</b> Standing counts matches won, shown with the count. It is a label on a number, not an Elo. Keep, but never show it without WINS beside it (the licence already does).</li>
+<li><b>Auto-reveal countdown vs deliberate reveal.</b> Resolved by the lockout hybrid in <a class="dv-oid" href="#4c">4c</a>.</li>
+<li><b>"Hide Scorebook in Settings" vs their visible entry.</b> Ours is a licence link (STATISTICS »). Rename it SCOREBOOK and keep it on the card.</li>
+</ol>
+<h2>METRICS, DEFINED AGAINST OUR DATA</h2>
+<table><colgroup><col style="width:26%"><col style="width:44%"><col style="width:30%"></colgroup>
+<tr><th>Metric</th><th>Numerator / denominator</th><th>Source</th></tr>
+<tr><td>Matches won</td><td>completed solo matches humanWon / completed solo matches</td><td><code>MatchRecord</code> today</td></tr>
+<tr><td>My contracts made</td><td>hands I won the auction and made / hands I won the auction</td><td><code>humanBidsMade / humanBids</code> today</td></tr>
+<tr><td>Team contracts made</td><td>hands our team held the contract and made / held</td><td><code>HandSummary.bidder % 2</code>, new</td></tr>
+<tr><td>Made by bid level</td><td>per bid value 2–9: made / attempted, count shown</td><td><code>HandSummary.bid</code>, new per-hand array</td></tr>
+<tr><td>Bidders we set</td><td>opposing contracts failed / opposing contracts</td><td>same array</td></tr>
+<tr><td>Fives caught</td><td>hands where fiveTeam == ours and bidder was theirs / hands the Five was in play</td><td><code>result.fiveTeam</code></td></tr>
+<tr><td>Score trajectory</td><td>both scores after each hand, negatives included</td><td><code>result.points</code> cumulated</td></tr>
+<tr><td>Biggest comeback</td><td>largest end-of-hand deficit in a match we won; store the hand</td><td>derived from trajectory</td></tr>
+</table>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "hi-fi the scorebook <a class="dv-oid" href="#4a">4a</a> in Catch 5 Paper" · "settle the wallet conflict" · "spec the per-hand array on MatchRecord"</p>
+</section>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Third pass, against the code. Read GameModel, TableView, ScoreBarView, HandOutcome, MatchHistory. Two of my earlier claims were wrong and are corrected here; the rest is what each feature costs in the engine, with the data it can use today.</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Corrections and a data audit: which achievement and statistic signals exist in the code now, which need one new field, which need a new event.</div>
+<div class="doc" data-screen-label="3a Data audit" style="width:640px">
+<h2>TWO CORRECTIONS</h2>
+<ul>
+<li><b>The header row's third thing is the gear menu</b>, not a glyph. <code>ScoreBarView</code> is score chip · contract chip · <code>Menu</code> (pause, undo, settings, statistics, how to play, new game). A timer cannot take that slot; see <a class="dv-oid" href="#3c">3c</a>.</li>
+<li><b>The shipped band is wood grain</b> (<code>WoodGrainView</code> clipped by <code>HeaderBandShape</code>, dip = <code>Theme.Table.headerDip</code>). Burgundy is the 2b plan in Catch 5 Box, not the app today. Question 1 in <a class="dv-oid" href="#1j">1j</a> stands, with wood as a third answer: keep the wood band, paper everywhere else.</li>
+</ul>
+<h2>SIGNALS</h2>
+<table>
+<colgroup><col style="width:30%"><col style="width:40%"><col style="width:30%"></colgroup>
+<tr><th>Needed for</th><th>Where it is in the code</th><th>Cost</th></tr>
+<tr><td>Matches, wins, contract rate</td><td><code>Statistics(records)</code>: matches, wins, contractRate</td><td>none</td></tr>
+<tr><td>Hands played</td><td>sum of <code>MatchRecord.hands</code></td><td>none</td></tr>
+<tr><td>Fives caught, bidders set, nine-and-out</td><td><code>HandSummary.result.fiveTeam</code>, <code>bidder</code> vs <code>points</code>, <code>isNineAndOut</code>: all in <code>match.history</code> at record time</td><td>three Ints on MatchRecord, decoded with defaults, computed once in <code>recordMatchIfFinished()</code></td></tr>
+<tr><td>Clean Sweep (all 5 points)</td><td><code>result.points[team] == 5</code> for any hand</td><td>one Bool on MatchRecord</td></tr>
+<tr><td>Caught Red-Handed (the Five off the bidder)</td><td><code>fiveTeam != bidder % 2</code> and fiveTeam == human's team</td><td>one Int, same pass</td></tr>
+<tr><td>Chips: +50 win, +15 contract</td><td><code>humanWon</code>; <code>humanBidsMade</code> (already counted per match)</td><td>Wallet store applies the record; no engine change</td></tr>
+<tr><td>Night Shift, First Deal</td><td><code>MatchRecord.date</code>; records.count == 1</td><td>none</td></tr>
+<tr><td>Murphy Who?</td><td><code>MatchRecord.difficulty</code>: only easy / standard exist</td><td>blocked on question 3 (no Hard)</td></tr>
+<tr><td>Full House, pass-and-play anything</td><td>nothing: the model has one human at seat 0</td><td>see <a class="dv-oid" href="#3b">3b</a></td></tr>
+<tr><td>Joined date</td><td>absent; earliest <code>records.first?.date</code> as a fallback</td><td>one Date on Settings with a default</td></tr>
+</table>
+<div class="wf-sub">Every achievement except two is one pass over <code>match.history</code> when a match is recorded. The record already exists, so achievements never re-read the save file and never fire twice (<code>recordedCurrentMatch</code> guards it).</div>
+</div></div>
+
+<div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Pass and play is an engine change, not a screen. GameModel assumes the human is seat 0 in nine places. The turn loop with the handoff cover inserted.</div>
+<div class="doc" data-screen-label="3b Pass and play engine" style="width:640px">
+<h2>WHAT ASSUMES SEAT 0</h2>
+<table><colgroup><col style="width:44%"><col style="width:56%"></colgroup>
+<tr><th>Today</th><th>With <code>humanSeats: Set&lt;Int&gt;</code></th></tr>
+<tr><td><code>isHumanTurn: nextSeat == 0</code></td><td><code>nextSeat.map(humanSeats.contains) ?? false</code></td></tr>
+<tr><td><code>send(_:)</code> applies at seat 0</td><td>applies at <code>nextSeat</code>; the view proves which human by having passed the cover</td></tr>
+<tr><td><code>stepComputer()</code> guards <code>seat != 0</code></td><td>guards <code>!humanSeats.contains(seat)</code></td></tr>
+<tr><td><code>humanCards</code> reads <code>hands[0]</code></td><td>reads <code>hands[activeHuman]</code>; the fan re-sorts on handoff</td></tr>
+<tr><td><code>canUndo / undo()</code> for seat 0</td><td>per active human; undo cannot cross a handoff (it would reveal a hand)</td></tr>
+<tr><td><code>showHint()</code>, <code>allows</code>, <code>validationMessage</code> at seat 0</td><td>at the active human; hints off in pass and play (partners would coach each other)</td></tr>
+<tr><td><code>performance(forSeat: 0)</code>, <code>MatchRecord</code> human fields</td><td>record per human seat, or record nothing for pass and play (chips and standing exclude it anyway)</td></tr>
+<tr><td><code>seatNames</code> from Settings, seat 0 = player</td><td>from <code>MatchSetup</code>; Settings keeps only the host</td></tr>
+<tr><td>Table always draws seat 0 at the bottom</td><td>rotate the table so the active human sits at the bottom, or keep fixed seats and light the active one. Fixed is cheaper and matches a real table where nobody moves.</td></tr>
+</table>
+<h3>TURN LOOP WITH THE COVER</h3>
+<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font:700 12px 'Barlow Condensed';letter-spacing:.06em">
+<span style="border:1.5px solid #1C1A17;padding:6px 8px">ACTION LANDS</span>›<span style="border:1.5px solid #1C1A17;padding:6px 8px">TRICK HOLD · COLLAPSE</span>›<span style="border:1.5px solid #1C1A17;padding:6px 8px">nextSeat?</span>›<span style="border:1.5px solid #295742;color:#295742;padding:6px 8px">BOT: delay, stepComputer()</span><span style="border:1.5px solid #B8322A;color:#B8322A;padding:6px 8px">HUMAN ≠ last human: COVER UP</span>›<span style="border:1.5px solid #B8322A;color:#B8322A;padding:6px 8px">TAP · 3 s · COVER DOWN</span>›<span style="border:1.5px solid #1C1A17;padding:6px 8px">HAND SHOWS · TIMER STARTS</span>
+</div>
+<div class="wf-sub" style="margin-top:8px">The cover is one more reason in <code>TablePause</code> (<code>handoffShown</code>), so the scheduler stops for it the way it stops for the welcome card. The last trick stays visible under the cover because it is public; the fan is hidden by the cover, not by state, so nothing about the hand changes.</div>
+<h3>TWO HUMANS ARE PARTNERS</h3>
+<div>Seats 0 and 2. Between hands the cover is not needed (no hand to hide) and the hand-end card is public. With three humans the bot fills seat 3 (West), so the host's partner is human.</div>
+</div></div>
+
+<div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>Timer placement, corrected. The middle slot is empty during bidding, so the timer takes it; during play it rides the contract chip. Gear stays.</div>
+<div class="wf" data-screen-label="3c Timer states" style="min-height:360px;background:#295742;padding-top:0;gap:0;overflow:hidden">
+  <div style="margin:0 -16px;background:linear-gradient(#6B4A2E,#553A24);color:#EFE3C1;padding:48px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom-left-radius:40% 18px;border-bottom-right-radius:40% 18px;box-shadow:0 4px 0 rgba(0,0,0,.4)">
+    <div style="font:600 15px 'Barlow Condensed';letter-spacing:.04em">US <b style="font-size:20px">9</b> · THEM <b style="font-size:20px">6</b></div>
+    <div class="wf-flip"><span style="width:20px;height:30px;font-size:18px">2</span><span style="width:20px;height:30px;font-size:18px">4</span></div>
+    <div style="width:22px;height:22px;border-radius:50%;border:2.5px dashed #EFE3C1"></div>
+  </div>
+  <div style="color:#EFE3C1;text-align:center;font:italic 400 12px 'Barlow';opacity:.8;margin:14px 0 30px">bidding: no contract yet, the timer has the middle</div>
+  <div style="margin:0 -16px;background:linear-gradient(#6B4A2E,#553A24);color:#EFE3C1;padding:14px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom-left-radius:40% 18px;border-bottom-right-radius:40% 18px;box-shadow:0 4px 0 rgba(0,0,0,.4)">
+    <div style="font:600 15px 'Barlow Condensed';letter-spacing:.04em">US <b style="font-size:20px">9</b> · THEM <b style="font-size:20px">6</b></div>
+    <div style="display:flex;align-items:center;gap:6px;font:600 18px 'Barlow Condensed';color:#D4AF37">♠ 4 — RUBY<span class="wf-flip"><span style="width:16px;height:24px;font-size:14px">0</span><span style="width:16px;height:24px;font-size:14px">9</span></span></div>
+    <div style="width:22px;height:22px;border-radius:50%;border:2.5px dashed #EFE3C1"></div>
+  </div>
+  <div style="color:#EFE3C1;text-align:center;font:italic 400 12px 'Barlow';opacity:.8;margin:14px 0">playing: timer appended to the contract chip, which already has <code style="color:#EFE3C1">minimumScaleFactor(0.7)</code></div>
+  <div class="wf-note" style="top:60px;color:#EFE3C1;border-color:#EFE3C1">Wood band as shipped. The contract chip is gold by rule 2; the timer digits are ivory on ink so they never read as a fourth gold meaning (D33).</div>
+  <div class="wf-note" style="top:230px;color:#EFE3C1;border-color:#EFE3C1">Timer digits are ink tiles even on the band: they are the same FlipDigit the wallet uses. One component, three homes.</div>
+</div></div>
+
+<div class="dv-opt" id="3d"><div class="dv-olabel"><a class="dv-oid" href="#3d">3d</a>Pit boss payload, built from strings the model already produces. Opens github.com/…/issues/new in Safari. No token, no server, fits a URL.</div>
+<div class="doc" data-screen-label="3d Pit boss payload" style="width:520px">
+<h2>ISSUE BODY, GENERATED</h2>
+<div style="background:#fff;border:1.5px solid #1C1A17;padding:14px;font:400 12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap">**From the table** · Bot too strong
+
+Ruby bid three on nothing and still made it. Is that the Easy player?
+
+---
+Hand 3 · Your team 9, their team 6 · trick 4
+Contract made
+Ruby + Brad bid 3 · captured 4 · score 3 → 6
+Connor + Ronald captured 2 · score 7 → 9
+Game 19–14: Ruby + Brad took the point.
+
+Plays: 9♣ played · Bid 3 · ♠ named trump · Passed …
+
+Catch 5 3.1 · iOS 26.0 · Standard · Beginner mode on</div>
+<table style="margin-top:10px"><colgroup><col style="width:40%"><col style="width:60%"></colgroup>
+<tr><th>Line</th><th>Source</th></tr>
+<tr><td>Hand · scores · phase</td><td><code>model.resumeContext</code></td></tr>
+<tr><td>Headline, bidder, defenders, notes</td><td><code>model.lastHandOutcome</code> (HandOutcome)</td></tr>
+<tr><td>Plays</td><td><code>model.describe(_:)</code> over the hand's actions</td></tr>
+<tr><td>Build, strength, beginner</td><td>Bundle + <code>settings</code></td></tr>
+<tr><td>Label</td><td><code>labels=from-the-table,&lt;category&gt;</code> in the query</td></tr>
+</table>
+<div class="wf-sub">Title: "[Bot too strong] Ruby bid three on nothing…" truncated at 60. Body under 2 KB; GitHub's URL limit is about 8 KB. The player sees GitHub's own form and can back out, which is the consent step.</div>
+</div></div>
+
+<div class="dv-opt" id="3e"><div class="dv-olabel"><a class="dv-oid" href="#3e">3e</a>Hand-end card in paper, with HandOutcome's real strings. Replaces <a class="dv-oid" href="#1f">1f</a>'s guess.</div>
+<div class="wf" data-screen-label="3e Hand end real" style="background:#3A3128;justify-content:center;min-height:520px">
+  <div class="wf-card" style="background:#F4ECD6">
+    <div class="wf-band grn">HAND 3 · CONTRACT MADE</div>
+    <div style="padding:12px 10px 6px;font:400 14px/1.45 'Barlow'">
+      <div><b>Connor + Ruby</b> bid 4 · captured 6 · score 2 → <b>8</b></div>
+      <div style="color:#5C5546">Ronald + Florian captured 3 · score 5 → 8</div>
+    </div>
+    <div style="padding:0 10px 10px;font:italic 400 12px/1.4 'Barlow';color:#5C5546;border-bottom:1px dashed #B9AE8E">Game 21–17: Connor + Ruby took the point.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 10px"><span class="wf-stamp" style="font-size:16px">+15 CHIPS</span><span class="wf-sub">Make your contract · balance 15</span></div>
+    <div style="display:flex;gap:6px;padding:0 10px 12px"><div class="wf-btn" style="flex:1;font-size:13px;padding:8px">DEAL HAND 4</div><div class="wf-btn ghost" style="flex:1;font-size:13px;padding:8px">REVIEW »</div></div>
+  </div>
+  <div class="wf-note" style="top:40px;color:#C9BC98;border-color:#EFE3C1">Band colour follows the headline: green for made, crimson for set, ink for nine-and-out. Team names are the engine's <code style="color:#C9BC98">team(_)</code> strings, so nothing is re-derived.</div>
+  <div class="wf-note" style="top:250px;color:#C9BC98;border-color:#EFE3C1">The stamp is the only paper element that touches the felt experience. It sits on the card, which is already a cover, so the felt itself is still untouched.</div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "answer question 1 with the wood option" · "spec the MatchRecord fields from <a class="dv-oid" href="#3a">3a</a> as a PR list" · "hi-fi <a class="dv-oid" href="#3e">3e</a> in paper"</p>
+</section>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Second pass: measured, not guessed. A contrast audit of the paper palette (one failure found), the four seat colours applied, the chip economy in hours, bot voice lines to tune, the licence at accessibility text sizes, and motion timings for the paper pieces.</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Contrast audit. Computed, WCAG relative luminance. One token fails: the muted label ink. Fix proposed.</div>
+<div class="doc" data-screen-label="2a Contrast audit" style="width:560px">
+<h2>PAPER PALETTE · CONTRAST</h2>
+<table>
+<colgroup><col style="width:44%"><col style="width:12%"><col style="width:44%"></colgroup>
+<tr><th>Pair</th><th>Ratio</th><th>Verdict</th></tr>
+<tr><td><span class="sw" style="background:#EFE3C1"></span>cream on <span class="sw" style="background:#1C1A17"></span>ink band, buttons</td><td>13.6</td><td>pass</td></tr>
+<tr><td><span class="sw" style="background:#1C1A17"></span>ink on <span class="sw" style="background:#EFE3C1"></span>ground</td><td>13.6</td><td>pass</td></tr>
+<tr><td><span class="sw" style="background:#EFE3C1"></span>cream on <span class="sw" style="background:#5C1F2A"></span>box burgundy</td><td>9.8</td><td>pass (paper on the box is safe)</td></tr>
+<tr><td><span class="sw" style="background:#295742"></span>green text on card</td><td>7.6</td><td>pass</td></tr>
+<tr><td><span class="sw" style="background:#5C5546"></span>sub text on card</td><td>6.8</td><td>pass</td></tr>
+<tr><td><span class="sw" style="background:#EFE3C1"></span>cream on <span class="sw" style="background:#295742"></span>green band</td><td>6.5</td><td>pass</td></tr>
+<tr><td><span class="sw" style="background:#B8322A"></span>crimson text, stamps, digits on card / ground</td><td>5.5 / 4.7</td><td>pass, no margin on the ground: keep stamps ≥ 13 pt bold</td></tr>
+<tr><td><span class="sw" style="background:#EFE3C1"></span>cream on <span class="sw" style="background:#B8322A"></span>crimson band, LET'S PLAY</td><td>4.7</td><td>pass at 18 pt+ bold; below 16 pt use ink text on crimson or deepen to #A52A24 (5.6)</td></tr>
+<tr><td><span class="sw" style="background:#8A7F6A"></span>muted labels on card / ground</td><td><b style="color:#B8322A">3.6 / 3.1</b></td><td><b>fail.</b> The 9 pt licence labels, STANDING, LIC. NO., typical-wait text. Replace with <span class="sw" style="background:#6E6450"></span><code>#6E6450</code>: 5.4 on card, 4.6 on ground</td></tr>
+<tr><td><span class="sw" style="background:#EFE3C1"></span>cream on <span class="sw" style="background:#B8943B"></span>mustard (West band)</td><td>2.2</td><td>fail as cream; <b>West band uses ink text</b> (6.1). Same rule the reference uses on its olive ANALYZING pill</td></tr>
+<tr><td><span class="sw" style="background:#EFE3C1"></span>cream on <span class="sw" style="background:#22304F"></span>navy (East band)</td><td>10.2</td><td>pass</td></tr>
+</table>
+<div class="wf-sub">Add <code>#6E6450</code> and the mustard rule to <code>scripts/contrast-sample.swift</code> so the check is a test, not a note. The doc in <a class="dv-oid" href="#1j">1j</a> said 4.6 for the muted ink; that was wrong and this table replaces it.</div>
+</div></div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Seat colours applied. One colour per seat on setup bands, handoff card, seat tiles later. Ink text on mustard only.</div>
+<div class="wf" data-screen-label="2b Seat colours" style="min-height:420px;gap:14px">
+  <div class="wf-card"><div class="wf-band red">SOUTH · YOU<span style="white-space:nowrap;font-size:11px">#B8322A</span></div><div class="wf-row"><div class="wf-disc" style="border-color:#B8322A;border-width:3px"></div>Connor<span class="wf-sub">host, always south</span></div></div>
+  <div class="wf-card"><div class="wf-band grn">NORTH · PARTNER<span style="white-space:nowrap;font-size:11px">#295742</span></div><div class="wf-row"><div class="wf-disc" style="border-color:#295742;border-width:3px"></div>Ruby<span class="wf-sub">bot or human 2</span></div></div>
+  <div class="wf-card"><div class="wf-band" style="background:#22304F;border-color:#141C30">EAST<span style="white-space:nowrap;font-size:11px">#22304F</span></div><div class="wf-row"><div class="wf-disc" style="border-color:#22304F;border-width:3px"></div>Mike<span class="wf-sub">human 3 or bot</span></div></div>
+  <div class="wf-card"><div class="wf-band" style="background:#B8943B;border-color:#7E6320;color:#1C1A17">WEST<span style="white-space:nowrap;font-size:11px">#B8943B · ink text</span></div><div class="wf-row"><div class="wf-disc" style="border-color:#B8943B;border-width:3px"></div>Ronald<span class="wf-sub">bot fills first</span></div></div>
+  <div class="wf-sub" style="text-align:center">Both partnerships read as warm vs cool: crimson + green face navy + mustard. The felt's seat tiles could take the same ring colour later without touching the gold policy (rings are not gold).</div>
+  <div class="wf-note" style="top:60px">Green is already the felt's colour. A green North band on a green table is fine (it is a band on paper), but a green ring on a felt seat tile would vanish. If tiles get rings, North takes ivory instead.</div>
+</div></div>
+
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Chip economy in hours. Your numbers, played out at a 50 % win rate and 8 hands a match (~12 min).</div>
+<div class="doc" data-screen-label="2c Chip economy" style="width:520px">
+<h2>WHAT A PRICE COSTS IN PLAY</h2>
+<table>
+<colgroup><col style="width:36%"><col style="width:14%"><col style="width:22%"><col style="width:14%"><col style="width:14%"></colgroup>
+<tr><th>Item</th><th>Chips</th><th>Wins needed</th><th>Matches ≈</th><th>Time ≈</th></tr>
+<tr><td>Undo</td><td>10</td><td>0 (one contract)</td><td>&lt; 1</td><td>4 min</td></tr>
+<tr><td>Re-deal</td><td>25</td><td>0 (two contracts)</td><td>&lt; 1</td><td>8 min</td></tr>
+<tr><td>Club Stripe back</td><td>350</td><td>7</td><td>14</td><td>2.8 h</td></tr>
+<tr><td>Jane / Brad / Phoebe</td><td>400 each</td><td>8</td><td>16</td><td>3.2 h</td></tr>
+<tr><td>Burgundy or Midnight felt</td><td>500</td><td>10</td><td>20</td><td>4 h</td></tr>
+<tr><td>Everything in the shop</td><td>2,450</td><td>49</td><td>98</td><td>~20 h</td></tr>
+</table>
+<div>Contracts made add roughly 15 × 3 per match won (a winning side makes about three contracts in eight hands), so real income is nearer <b>95 chips per win</b>, which halves the hours above. That is generous for a family game and about right: the first bot unlock arrives in an evening or two.</div>
+<h3>TWO TUNING LEVERS</h3>
+<ul>
+<li>Pay contracts only when the bid was 4 or more. Stops the 2-bid grind and teaches that low bids are for the dealer.</li>
+<li>Multiply match pay by strength: Easy ×0.5, Standard ×1, Murphy's Law ×2 (question 9 in <a class="dv-oid" href="#1j">1j</a>). Without it Beginner's Luck is the farm.</li>
+</ul>
+</div></div>
+
+<div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Bot voice lines to tune. Two per bot (won the match, lost it), in the voice their bio implies. Public events only.</div>
+<div class="doc" data-screen-label="2d Bot voices" style="width:560px">
+<h2>LAST WORDS</h2>
+<table>
+<colgroup><col style="width:28%"><col style="width:36%"><col style="width:36%"></colgroup>
+<tr><th>Bot</th><th>They won</th><th>They lost</th></tr>
+<tr><td><b>Ronald</b><br><span class="wf-sub">Perrier · wedding planner</span></td><td>"Lovely. Everyone sat where I put them."</td><td>"That went off-script. I have a backup script."</td></tr>
+<tr><td><b>Jane</b><br><span class="wf-sub">black coffee · cat mom</span></td><td>"Bartholomew called it in trick two."</td><td>"I'm not upset. The cat is upset."</td></tr>
+<tr><td><b>Ruby</b><br><span class="wf-sub">white wine · real estate</span></td><td>"Location, location, trump."</td><td>"Priced too high. It happens in this market."</td></tr>
+<tr><td><b>Brad</b><br><span class="wf-sub">protein shakes · VC</span></td><td>"Ten-x. Let's circle back on your bidding."</td><td>"Write-off. On to the next round."</td></tr>
+<tr><td><b>Florian</b><br><span class="wf-sub">whiskey, neat · consultant</span></td><td>"Bill me for the lesson."</td><td>"Noted. I'll deck the findings."</td></tr>
+<tr><td><b>Phoebe</b><br><span class="wf-sub">dirty martini · modelling agency</span></td><td>"Darling, you never had the look."</td><td>"The lighting in here is criminal."</td></tr>
+<tr><td><b>Cranky Connor</b><br><span class="wf-sub">rye · retired welder</span></td><td>"Fifty years. You thought that'd work?"</td><td>"Table's warped. I'd know."</td></tr>
+</table>
+<div class="wf-sub">Shown once on the match-over cover (<a class="dv-oid" href="#1f">1f</a>) under the score, and reused as the next launch's House advice when the bot won. Nothing here references a hidden card.</div>
+</div></div>
+
+<div class="dv-opt" id="2e"><div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>The licence at accessibility text sizes. The two-column grid cannot survive AX2; it stacks. Photo stays; barcode and stamps never scale.</div>
+<div class="wf" data-screen-label="2e Licence at AX2" style="min-height:560px">
+  <div class="wf-card" style="border-radius:10px;border-width:2px;overflow:hidden">
+    <div class="wf-band red" style="font-size:18px;padding:10px">PLAYER LICENSE<span>0 ◉</span></div>
+    <div style="display:flex;gap:12px;padding:12px;align-items:flex-start">
+      <div style="width:72px;height:84px;border:1.5px solid #1C1A17;border-radius:5px;display:grid;place-items:center;flex:none"><div class="wf-disc" style="width:52px;height:52px"></div></div>
+      <div style="font:800 34px/1 'Barlow Condensed'">CONNOR</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 12px 12px;font:700 13px 'Barlow Condensed';letter-spacing:.14em;color:#6E6450">
+      <div>D.O.B. (JOINED)<div style="font:700 26px 'Barlow Condensed';color:#1C1A17;letter-spacing:.02em">09 · 15 · 2026</div></div>
+      <div>CLASS<div style="font:italic 600 26px 'Barlow Condensed';color:#5C5546;letter-spacing:0">New player</div></div>
+      <div style="display:flex;gap:24px"><div>WINS<div style="font:800 30px 'Barlow Condensed';color:#B8322A">0</div></div><div>MATCHES<div style="font:800 30px 'Barlow Condensed';color:#295742">2</div></div></div>
+      <div>RESTRICTIONS<div style="font:700 22px 'Barlow Condensed';color:#1C1A17;letter-spacing:.04em">BEGINNER MODE</div></div>
+      <div>ENDORSEMENTS<div style="display:flex;gap:6px;margin-top:4px"><div class="wf-disc" style="width:30px;height:30px;background:#1C1A17"></div><div style="width:30px;height:30px;border-radius:50%;border:2px dashed #8A7F6A"></div><div style="width:30px;height:30px;border-radius:50%;border:2px dashed #8A7F6A"></div></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;border-top:2px solid #1C1A17;background:#EFE3C1;font:700 20px 'Barlow Condensed';letter-spacing:.08em"><div style="padding:12px;border-bottom:1px solid #C9BC98;text-decoration:underline">STATISTICS »</div><div style="padding:12px;text-decoration:underline">ACHIEVEMENTS »</div></div>
+  </div>
+  <div class="wf-note" style="top:40px">Rule: at ≥ XXL the grid is one column and the two links stack. Labels go from 9 to 13 pt here and use the fixed muted ink from <a class="dv-oid" href="#2a">2a</a>. Barcode is gone anyway.</div>
+  <div class="wf-note" style="top:330px">Theme.textBoostSteps = 2 means the default user already sees XXL. So the stacked licence is the common case, not the edge case. The 393 pt hi-fi in Catch 5 Paper is the Large layout; both are needed.</div>
+</div></div>
+
+<div class="dv-opt" id="2f"><div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>Motion for the paper pieces, in Theme.Motion terms. Nothing here adds a wait the player did not already have (E.6).</div>
+<div class="doc" data-screen-label="2f Paper motion" style="width:760px">
+<h2>PAPER MOTION</h2>
+<table>
+<colgroup><col style="width:22%"><col style="width:32%"><col style="width:30%"><col style="width:16%"></colgroup>
+<tr><th>Piece</th><th>Motion</th><th>Timing</th><th>Reduce Motion</th></tr>
+<tr><td>Stamp lands (DONE, +15 CHIPS, FILED)</td><td>Scales 1.6 → 1, rotation settles to its resting angle, one haptic</td><td><code>spring(duration: .28, bounce: .25)</code>; ≤ 350 ms like the bid rules (R18)</td><td>fade in .2 s</td></tr>
+<tr><td>Flip digit</td><td>Top half folds down over the new digit</td><td>.18 s per digit, staggered .04 s; <code>.contentTransition(.numericText())</code> is the fallback</td><td>numeric crossfade</td></tr>
+<tr><td>Paper card presented (sheet)</td><td>Rises from the bottom 24 pt with the deckle leading, opacity 0 → 1</td><td><code>Theme.Motion.overlay</code> (.35 s spring, no bounce)</td><td><code>Theme.Motion.reduced</code></td></tr>
+<tr><td>Licence printed (<a class="dv-oid" href="#1e">1e</a>)</td><td>Card flips face down, stamp lands, flips back, travels to the menu slot</td><td>.25 + .28 + .25 + <code>Theme.Motion.flight</code> (.45) ≈ 1.2 s, skippable by tap</td><td>crossfade .2 s</td></tr>
+<tr><td>Handoff countdown (<a class="dv-oid" href="#1c">1c</a>)</td><td>Three flips, then the card lifts like the lid and the fan deals in</td><td>3 × 1 s, then <code>Theme.Motion.collapse</code></td><td>digits change, no lift</td></tr>
+<tr><td>Segmented pick, toggle knob</td><td>Knob slides, plate fills</td><td><code>Theme.Motion.press</code> (.2 s)</td><td>same, it is already short</td></tr>
+<tr><td>Preset applied (<a class="dv-oid" href="#1a">1a</a>)</td><td>Each changed row's value gets a crimson tick that fades</td><td>tick .2 s in, hold 2 s, .3 s out; rows change with <code>press</code></td><td>same</td></tr>
+<tr><td>Dice</td><td>Glyph spins once, value changes at the half turn</td><td>.3 s ease-in-out</td><td>value changes, no spin</td></tr>
+<tr><td>Timer under 5 s (<a class="dv-oid" href="#1d">1d</a>)</td><td>Digits go crimson; one haptic at 3</td><td>no animation, a colour change</td><td>same</td></tr>
+</table>
+<div class="wf-sub">All of it fits the one-haptic policy: the stamp reuses the haptic the hand-end card already fires; the timer adds exactly one.</div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "fix the muted ink in Catch 5 Paper per <a class="dv-oid" href="#2a">2a</a>" · "write the other four outcomes for <a class="dv-oid" href="#2d">2d</a>" · "hi-fi the AX2 licence <a class="dv-oid" href="#2e">2e</a>"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Unattended pass, 30 minutes. Wireframes for every screen the paper direction still owes, then a working doc: what the reference actually does, questions I could not answer from the repo, ideas, and the SwiftUI plan. Nothing in Catch 5 Paper was touched.</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Play With Bots setup. One card per seat, table settings with a dice per row, presets as a quick-apply row at the bottom, LET'S PLAY.</div>
+<div class="wf" data-screen-label="1a Setup vs bots">
+  <div class="wf-hd">«<span>PLAY WITH BOTS</span><div class="wf-disc" style="width:30px;height:30px"></div></div>
+  <div class="wf-card"><div class="wf-band red">YOU · SOUTH<span style="white-space:nowrap">PARTNER · N</span></div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>CONNOR<div class="wf-sub">Licence C5-0002-00 · New player</div></div></div><span class="wf-sub">edit in Settings</span></div></div>
+  <div class="wf-card"><div class="wf-band grn">PARTNER · NORTH<span>»</span></div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>RUBY<div class="wf-sub">White wine · Real estate agent · Regular</div></div></div><div class="wf-dice">?</div></div></div>
+  <div class="wf-card"><div class="wf-band">OPPONENTS · WEST AND EAST<span>»</span></div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>RONALD<div class="wf-sub">Perrier · Wedding planner · Beginner</div></div></div><div class="wf-dice">?</div></div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div><div>FLORIAN<div class="wf-sub">Whiskey, neat · Consultant · Shark</div></div></div><div class="wf-dice">?</div></div></div>
+  <div class="wf-card"><div class="wf-band">TABLE SETTINGS</div>
+    <div class="wf-row">STRENGTH<div style="display:flex;gap:6px;align-items:center"><div class="wf-seg"><span>EASY</span><span class="on">STANDARD</span><span>HARD</span></div><div class="wf-dice">?</div></div></div>
+    <div class="wf-row">PLAY SPEED<div style="display:flex;gap:6px;align-items:center"><div class="wf-seg"><span class="on">RELAXED</span><span>NORMAL</span><span>QUICK</span></div><div class="wf-dice">?</div></div></div>
+    <div class="wf-row">BEGINNER MODE<div style="width:40px;height:20px;border-radius:10px;background:#295742"></div></div>
+    <div class="wf-row">HAPTICS<div style="width:40px;height:20px;border-radius:10px;background:#295742"></div></div></div>
+  <div class="wf-div">PRESETS</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+    <div class="wf-btn ghost" style="font-size:12px;padding:8px 4px">BEGINNER'S<br>LUCK</div><div class="wf-btn ghost" style="font-size:12px;padding:8px 4px">RANDOMIZE<br>ALL</div><div class="wf-btn ghost" style="font-size:12px;padding:8px 4px">MURPHY'S<br>LAW</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="wf-btn red">LET'S PLAY</div>
+  <div class="wf-note" style="top:300px">Strength has three stops here but the engine has two (Easy, Standard). HARD = Murphy's Law needs a new player or a scoring modifier. Open question 3.</div>
+  <div class="wf-note" style="top:560px">Presets overwrite the rows above; the row shows what changed with a small crimson tick for 2 s.</div>
+</div></div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Pass and Play setup. Player count stepper, a seat diagram that shows who is human, a row per human (name · HIM/HER · face), bots fill the rest, timers per phase.</div>
+<div class="wf" data-screen-label="1b Pass and play setup">
+  <div class="wf-hd">«<span>PASS AND PLAY</span><div class="wf-disc" style="width:30px;height:30px"></div></div>
+  <div class="wf-card"><div class="wf-band">AT THE TABLE</div>
+    <div class="wf-row">HUMANS<div style="display:flex;gap:10px;align-items:center;font-size:18px"><span>—</span><span>3</span><span>+</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto;gap:4px;padding:10px 30px;place-items:center;font:700 11px 'Barlow Condensed';letter-spacing:.06em">
+      <span></span><div style="text-align:center"><div class="wf-disc" style="border-color:#295742"></div>N · JANE</div><span></span>
+      <div style="text-align:center"><div class="wf-disc"></div>W · BOT</div><div style="width:60px;height:40px;border:1.5px dashed #1C1A17;border-radius:6px"></div><div style="text-align:center"><div class="wf-disc"></div>E · MIKE</div>
+      <span></span><div style="text-align:center"><div class="wf-disc" style="border-color:#B8322A"></div>S · CONNOR</div><span></span>
+    </div>
+    <div class="wf-sub" style="padding:0 10px 10px;text-align:center">Two humans sit as partners. With three, a bot takes the seat left of the host.</div></div>
+  <div class="wf-card"><div class="wf-band red">PLAYER 1 · SOUTH (HOST)</div>
+    <div class="wf-row"><div style="display:flex;gap:8px;align-items:center"><div class="wf-disc"></div>CONNOR</div><span class="wf-sub">from licence</span></div></div>
+  <div class="wf-card"><div class="wf-band grn">PLAYER 2 · NORTH</div>
+    <div class="wf-row"><div style="flex:1;border:1.5px solid #1C1A17;padding:6px 8px;color:#8A7F6A;font-weight:500">Name</div><div class="wf-seg"><span class="on">HIM</span><span>HER</span></div></div>
+    <div class="wf-row" style="gap:6px;justify-content:flex-start"><div class="wf-disc" style="border-color:#B8322A"></div><div class="wf-disc"></div><div class="wf-disc"></div><span class="wf-sub">tap a face</span></div></div>
+  <div class="wf-card"><div class="wf-band" style="background:#22304F;border-color:#141C30">PLAYER 3 · EAST</div>
+    <div class="wf-row"><div style="flex:1;border:1.5px solid #1C1A17;padding:6px 8px">Mike</div><div class="wf-seg"><span class="on">HIM</span><span>HER</span></div></div></div>
+  <div class="wf-card"><div class="wf-band">TIMERS<span class="wf-sub" style="color:#EFE3C1">time out = random legal action</span></div>
+    <div class="wf-row">BID<div class="wf-seg"><span>OFF</span><span>15 S</span><span class="on">30 S</span><span>60 S</span></div></div>
+    <div class="wf-row">PLAY A CARD<div class="wf-seg"><span>OFF</span><span class="on">15 S</span><span>30 S</span><span>60 S</span></div></div></div>
+  <div style="flex:1"></div>
+  <div class="wf-btn red">LET'S PLAY</div>
+  <div class="wf-note" style="top:120px">Seat colours: South crimson, North felt green, East navy, West mustard. Same four on the table's seat tiles later, so a band colour means a seat everywhere.</div>
+  <div class="wf-note" style="top:600px">Random legal action is the choice you made. For a bid it means a random raise or pass; for a card a random legal card. Beginner mode should force timers OFF (question 5).</div>
+</div></div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Handoff cover. Hides the hand between humans; a three-second flip-clock counts down before the fan appears. Tapping early skips (same rule as the deal, ideas R5).</div>
+<div class="wf" data-screen-label="1c Handoff" style="background:#3A3128;color:#EFE3C1;justify-content:center;align-items:center;gap:18px">
+  <div class="wf-card" style="width:290px;align-items:center;padding:0 0 22px;color:#1C1A17;background:#F4ECD6">
+    <div class="wf-band grn" style="width:100%;box-sizing:border-box;justify-content:center">PASS THE PHONE</div>
+    <div class="wf-disc" style="width:84px;height:84px;margin-top:18px"></div>
+    <div style="font:800 28px 'Barlow Condensed';letter-spacing:.06em;margin-top:8px">JANE · NORTH</div>
+    <div class="wf-sub">Connor, look away. Jane, tap when it's you.</div>
+    <div class="wf-flip" style="margin-top:14px"><span>0</span><span>:</span><span>0</span><span>3</span></div>
+    <div class="wf-sub" style="margin-top:6px">hand shows at 0:00</div>
+    <div class="wf-btn" style="width:220px;margin-top:14px;box-sizing:border-box">I'M JANE</div>
+  </div>
+  <div class="wf-sub" style="color:#C9BC98">Last trick stays visible behind the card: it is public.</div>
+  <div class="wf-note" style="top:200px;color:#C9BC98;border-color:#EFE3C1">Cover, not sheet: the scheduler holds (screen-flow rule 1). Reuse WelcomeCard's cover plumbing.</div>
+</div></div>
+
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Timer on the header band. Only when a timer is on. Two flip digits sit in the glyph slot of the score · contract · glyph row; the felt below is untouched.</div>
+<div class="wf" data-screen-label="1d Timer on band" style="min-height:300px;background:#295742;padding-top:0;overflow:hidden">
+  <div style="margin:0 -16px;background:#5C1F2A;color:#EFE3C1;padding:48px 20px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom-left-radius:40% 18px;border-bottom-right-radius:40% 18px;box-shadow:0 4px 0 #3D111A">
+    <div style="font:700 22px 'Barlow Condensed';letter-spacing:.04em">US 9 · THEM 6</div>
+    <div style="font:700 22px 'Barlow Condensed';letter-spacing:.04em;border:1.5px solid rgba(239,227,193,.5);padding:2px 10px;border-radius:14px">RUBY 4 ♠</div>
+    <div class="wf-flip"><span style="width:20px;height:30px;font-size:18px">1</span><span style="width:20px;height:30px;font-size:18px">2</span></div>
+  </div>
+  <div style="color:#EFE3C1;text-align:center;font:italic 400 12px 'Barlow';opacity:.8;margin-top:80px">felt: untouched</div>
+  <div class="wf-note" style="top:150px;color:#EFE3C1;border-color:#EFE3C1">Three things stay in the row at 22 pt. When timers are off the glyph returns. Under 5 s the digits go crimson; no sound, one haptic at 3 (one-haptic policy).</div>
+</div></div>
+
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>First run as a licence application. LoginView becomes a form on the licence itself; Deal me in prints it. D.O.B. is stamped with today's date, which answers where "joined" comes from.</div>
+<div class="wf" data-screen-label="1e Licence application">
+  <div style="text-align:center;font:800 40px/.8 'Barlow Condensed';letter-spacing:-.01em;margin-top:10px">CATCH<br>FIVE</div>
+  <div class="wf-div" style="margin-top:8px">APPLY FOR A LICENCE</div>
+  <div class="wf-card" style="border-radius:10px;border-width:2px;overflow:hidden">
+    <div class="wf-band red">THE HOUSE · PLAYER LICENSE<span>BALANCE 0</span></div>
+    <div style="display:flex;gap:12px;padding:12px">
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:80px;height:92px;border:1.5px solid #1C1A17;border-radius:5px;display:grid;place-items:center"><div class="wf-disc" style="width:56px;height:56px"></div></div><div class="wf-seg"><span class="on">HIM</span><span>HER</span></div><div style="display:flex;gap:4px"><div class="wf-disc" style="width:22px;height:22px"></div><div class="wf-disc" style="width:22px;height:22px"></div><div class="wf-disc" style="width:22px;height:22px"></div></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px;font:700 9px 'Barlow Condensed';letter-spacing:.14em;color:#8A7F6A">
+        <div>NAME<div style="border-bottom:1.5px solid #1C1A17;font:700 20px 'Barlow Condensed';color:#1C1A17;letter-spacing:.04em;padding:2px 0">CONNOR|</div></div>
+        <div style="display:flex;gap:14px"><div>D.O.B. (JOINED)<div style="font:700 14px 'Barlow Condensed';color:#1C1A17">09 · 15 · 2026</div></div><div>CLASS<div style="font:italic 600 14px 'Barlow Condensed';color:#5C5546">New player</div></div></div>
+        <div>RESTRICTIONS<div style="display:flex;gap:6px;align-items:center;font:700 13px 'Barlow Condensed';color:#1C1A17">BEGINNER MODE <div style="width:34px;height:18px;border-radius:9px;background:#295742"></div></div></div>
+        <div>ENDORSEMENTS<div style="display:flex;gap:4px;margin-top:2px"><div style="width:20px;height:20px;border-radius:50%;border:1.5px dashed #8A7F6A"></div><div style="width:20px;height:20px;border-radius:50%;border:1.5px dashed #8A7F6A"></div><div style="width:20px;height:20px;border-radius:50%;border:1.5px dashed #8A7F6A"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-sub" style="text-align:center">No account. Nothing leaves the phone. Lose the phone, lose the licence.</div>
+  <div style="flex:1"></div>
+  <div class="wf-btn red">PRINT IT AND DEAL ME IN</div>
+  <div class="wf-btn ghost" style="border:0">LEARN THE GAME FIRST »</div>
+  <div class="wf-note" style="top:240px">Replaces LoginView's three stacked fields with the object the player will see every day. Computer strength moves out of login: it belongs to setup (<a class="dv-oid" href="#1a">1a</a>).</div>
+  <div class="wf-note" style="top:520px">Motion: on PRINT the card flips face-down, a crimson stamp lands (one haptic), flips back, then travels up into the menu's card slot. Under Reduce Motion: crossfade.</div>
+</div></div>
+
+<div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Moments worth a small fuss (ideas E.5). Chips and achievements land on the existing hand-end cover as stamps, never a new modal. Two states shown.</div>
+<div class="wf" data-screen-label="1f Hand end stamps" style="background:#3A3128;justify-content:center;gap:24px">
+  <div class="wf-card" style="background:#F4ECD6;position:relative">
+    <div class="wf-band">HAND 4 · CONTRACT MADE</div>
+    <div class="wf-row">YOU AND RUBY<span style="color:#B8322A">+6</span></div>
+    <div class="wf-row">RONALD AND FLORIAN<span>+3</span></div>
+    <div class="wf-row"><span>High · Jack · Five · Game</span><span class="wf-sub">Low to them</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px"><span class="wf-stamp" style="font-size:16px">+15 CHIPS</span><span class="wf-sub">Make your contract</span></div>
+    <div style="display:flex;gap:6px;padding:0 10px 10px"><div class="wf-btn" style="flex:1;font-size:13px;padding:8px">DEAL NEXT HAND</div><div class="wf-btn ghost" style="flex:1;font-size:13px;padding:8px">REVIEW</div></div>
+  </div>
+  <div class="wf-card" style="background:#F4ECD6">
+    <div class="wf-band grn">MATCH OVER · YOU WON 25 TO 19</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 10px"><span class="wf-stamp" style="font-size:16px">+50 CHIPS</span><span class="wf-stamp" style="border-color:#1C1A17;color:#1C1A17">FIRST DEAL · DONE</span></div>
+    <div class="wf-sub" style="padding:0 10px 10px">Pinned to your licence? <b>PIN »</b></div>
+    <div style="display:flex;gap:6px;padding:0 10px 10px"><div class="wf-btn" style="flex:1;font-size:13px;padding:8px">BACK TO THE MENU</div><div class="wf-btn ghost" style="flex:1;font-size:13px;padding:8px">REMATCH</div></div>
+  </div>
+  <div class="wf-note" style="top:60px;color:#C9BC98;border-color:#EFE3C1">Stamps land 300 ms after the card, with the one haptic the card already fires. Pass and play shows the same cards with no chip stamp.</div>
+</div></div>
+
+<div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Bot dossier, from a roster row. Bio drives the face; the tell is text until real AI variants exist; record vs you comes from MatchRecord once seats are stored per match.</div>
+<div class="wf" data-screen-label="1g Bot dossier" style="min-height:560px">
+  <div class="wf-hd">«<span>FLORIAN</span><div class="wf-disc" style="width:30px;height:30px"></div></div>
+  <div class="wf-card">
+    <div class="wf-band red">SHARK<span>AT THE TABLE</span></div>
+    <div style="display:flex;gap:12px;padding:12px">
+      <div style="width:90px;height:110px;border:1.5px solid #1C1A17;transform:rotate(-3deg);display:grid;place-items:center;background:#fff"><div class="wf-disc" style="width:64px;height:64px"></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px;font:700 9px 'Barlow Condensed';letter-spacing:.14em;color:#8A7F6A">
+        <div>DRINKS<div style="font:700 15px 'Barlow Condensed';color:#1C1A17">Whiskey, neat</div></div>
+        <div>WORKS AS<div style="font:700 15px 'Barlow Condensed';color:#1C1A17">Fortune 500 consultant</div></div>
+        <div>TELL<div style="font:italic 400 13px 'Barlow';color:#1C1A17;letter-spacing:0">Bids the table, not the hand. Never leads the Five.</div></div>
+        <div>DEFAULT STRENGTH<div style="font:700 15px 'Barlow Condensed';color:#B8322A">Murphy's Law</div></div>
+      </div>
+    </div>
+    <div class="wf-row">YOUR RECORD<span>0 – 0</span></div>
+    <div class="wf-row">LAST WORDS<span class="wf-sub">"Bill me for the lesson."</span></div>
+  </div>
+  <div class="wf-btn red">SEAT HIM AS MY PARTNER</div>
+  <div class="wf-btn">SEAT HIM AGAINST ME</div>
+  <div class="wf-note" style="top:120px">Quips are table talk from public events only, the boundary E.5 and E.10 already draw. One line per outcome, six outcomes, seven bots: 42 lines to write.</div>
+</div></div>
+
+<div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>How to Play in paper. The five lessons as a scorepad tab strip; one instruction at a time (ideas R27); the small practice felt stays felt.</div>
+<div class="wf" data-screen-label="1h How to play">
+  <div class="wf-hd">«<span>HOW TO PLAY</span><div class="wf-disc" style="width:30px;height:30px"></div></div>
+  <div style="display:flex;gap:4px;font:700 11px 'Barlow Condensed';letter-spacing:.06em"><span style="flex:1;border:1.5px solid #1C1A17;padding:5px;text-align:center;background:#1C1A17;color:#EFE3C1">1 DEAL ✓</span><span style="flex:1;border:1.5px solid #1C1A17;padding:5px;text-align:center;background:#1C1A17;color:#EFE3C1">2 BID ✓</span><span style="flex:1;border:1.5px solid #B8322A;color:#B8322A;padding:5px;text-align:center">3 TRUMP</span><span style="flex:1;border:1.5px dashed #8A7F6A;color:#8A7F6A;padding:5px;text-align:center">4 TRICKS</span><span style="flex:1;border:1.5px dashed #8A7F6A;color:#8A7F6A;padding:5px;text-align:center">5 SCORE</span></div>
+  <div class="wf-card"><div class="wf-band">LESSON 3 · NAME TRUMP<span>2 OF 4</span></div>
+    <div style="padding:12px;font:400 15px/1.4 'Barlow'">Ruby won the bid with 4. <b>Tap the suit</b> she should name. Her hand is face up for this lesson only.</div>
+    <div style="padding:0 12px 12px"><span class="wf-sub">Why ▸</span></div></div>
+  <div style="height:230px;background:#295742;border-radius:10px;display:grid;place-items:center;color:#EFE3C1;font:italic 400 12px 'Barlow'">practice felt: untouched, 4 suit pills below the pile</div>
+  <div style="flex:1"></div>
+  <div style="display:flex;gap:8px"><div class="wf-btn ghost" style="flex:1">BACK</div><div class="wf-btn" style="flex:2">NEXT »</div></div>
+  <div class="wf-note" style="top:90px">TutorialView's active pill and Next currently import .gold (3e). Here they are ink and crimson: the box-safe styles, on paper.</div>
+</div></div>
+
+<div class="dv-opt" id="1i"><div class="dv-olabel"><a class="dv-oid" href="#1i">1i</a>The pause card, and the open question it exposes: is the frame still the burgundy box (E.8, agreed) with paper sheets inside it, or is paper the frame now?</div>
+<div class="wf" data-screen-label="1i Pause card" style="background:#295742;justify-content:center;gap:16px;min-height:560px">
+  <div style="position:absolute;inset:0;background:#5C1F2A;height:120px;border-radius:32px 32px 40% 40%/32px 32px 18px 18px"></div>
+  <div class="wf-card" style="background:#F4ECD6;position:relative">
+    <div class="wf-band red">PAUSED · HAND 3</div>
+    <div class="wf-row">US 9 · THEM 6<span class="wf-sub">Ruby bid 4 ♠</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:10px"><div class="wf-btn">BACK TO THE TABLE</div><div class="wf-btn ghost">MAIN MENU</div><div class="wf-btn ghost">NEW MATCH</div></div>
+    <div class="wf-row"><span class="wf-sub">Re-deal · 25 chips</span><span class="wf-sub">Undo · 10 chips</span></div>
+  </div>
+  <div class="wf-note" style="top:40px;color:#EFE3C1;border-color:#EFE3C1">Option A: box stays. Header band and screen edge are burgundy; every sheet and cover is paper laid in the well. Paper on burgundy reads well (cream on #5C1F2A is 9:1).</div>
+  <div class="wf-note" style="top:300px;color:#EFE3C1;border-color:#EFE3C1">Option B: paper is the frame; the box exists only as the header band on the table. Cheaper, but E.8's "closed box" main menu is gone. This needs your call (question 1).</div>
+</div></div>
+
+<div class="dv-opt" id="1j"><div class="dv-olabel"><a class="dv-oid" href="#1j">1j</a>Working doc: what the reference does, questions, ideas, the SwiftUI plan.</div>
+<div class="doc" data-screen-label="1j Working doc">
+<h2>WHAT THE REFERENCE ACTUALLY DOES</h2>
+<div>Ten screens, read as a system rather than a look. Everything below has a Catch 5 equivalent in the third column; the second says what our version already does or changes.</div>
+<table>
+<colgroup><col style="width:36%"><col style="width:30%"><col style="width:34%"></colgroup>
+<tr><th>Reference move</th><th>In Catch 5 Paper today</th><th>SwiftUI piece</th></tr>
+<tr><td>Three layers: textured ground, a lighter paper card, a solid band on top of the card</td><td>Same: #EFE3C1 stipple, #FBF5E4 card, ink or crimson band with a 6 pt darker strip</td><td><code>PaperGround</code> (Canvas, seeded like FeltView), <code>PaperCard(band:)</code></td></tr>
+<tr><td>Cards tear at the bottom only; the top is a clean edge under the band</td><td>Same, one clip polygon reused</td><td><code>DeckleEdge: Shape</code> with a seeded 16-point bottom edge</td></tr>
+<tr><td>Band colour says who: red you, blue bot, grey unknown, black system</td><td>Crimson you, green partner; black for system cards</td><td>Four seat colours, one enum: <code>Theme.Paper.seat(.south)</code> …</td></tr>
+<tr><td>Display type is a condensed grotesk in three sizes (band 18, row 17, label 11); body is a typewriter mono</td><td>Barlow Condensed 20/18/13; Barlow body. You chose condensed over mono</td><td>See "Fonts" below: bundle Barlow or use SF with <code>.fontWidth(.condensed)</code></td></tr>
+<tr><td>Buttons: black plate, ivory inset ring, hard offset shadow; one crimson plate per screen for the main action</td><td>Same</td><td><code>InsetRingButtonStyle(.ink / .crimson)</code>: replaces MenuButtons and fixes 3e at the same time, since neither imports gold</td></tr>
+<tr><td>Double rule with ★ LABEL ★ as the section divider</td><td>Same</td><td><code>RuleHeading("PLAY MATCH")</code></td></tr>
+<tr><td>Header: back chevron and title between two rules; a round badge breaks the rule at the right</td><td>Same, per-screen icon in the badge</td><td><code>PaperHeader(title:, badge:)</code>; the badge is the screen's own glyph, only the menu shows the 5-and-hands mark</td></tr>
+<tr><td>Rotated rubber stamps for states (CLASSIFIED, RARE)</td><td>Crimson stamps: DONE, standing, FILED</td><td><code>StampText</code>: border, rotation −3…−8°, uppercase, tracking .14</td></tr>
+<tr><td>Chunky flip digits for the timer</td><td>Wallet balance; timer on the band (<a class="dv-oid" href="#1d">1d</a>)</td><td><code>FlipDigit</code>: two half tiles, digit rolls with <code>.contentTransition(.numericText())</code></td></tr>
+<tr><td>Tilted portrait card with a PICK label</td><td>Roster rows use discs; the licence photo frame is the tilted card</td><td>Same <code>PortraitView</code>, in a rotated frame</td></tr>
+<tr><td>Announcement strip with a mascot glyph</td><td>House advice, moved to the corner as a slip behind a 5♥</td><td>Static array of lines, one per launch</td></tr>
+<tr><td>Everything actionable is underlined and ends in »</td><td>Same</td><td>One <code>LinkRow</code> view</td></tr>
+</table>
+
+<h2>QUESTIONS I COULD NOT ANSWER FROM THE REPO</h2>
+<ol>
+<li><b>Box or paper as the frame.</b> E.8 (agreed Sept 14) makes the deck box the frame and the main menu the closed box. Paper replaces the menu. Either paper sheets sit inside the burgundy well (<a class="dv-oid" href="#1i">1i</a> option A) or paper is the frame and the box survives only as the table's header band (option B). This decides RootView's base and whether Catch 5 Box 2b still ships.</li>
+<li><b>Does the table's header band go paper?</b> You said the felt is untouched; the band was box. If timers live on it (<a class="dv-oid" href="#1d">1d</a>) it stays burgundy in these wireframes.</li>
+<li><b>HARD strength does not exist.</b> The engine has Easy (frozen) and Standard; D22 parked stronger play. Murphy's Law can be a preset that sets Standard bots, Quick speed, beginner mode off and hints off, or a new player. Which is it, and what does Beginner's Luck do beyond Easy + beginner mode? A scoring handicap (bots start at −5) is cheap and honest about being a handicap.</li>
+<li><b>Roster vs the fixed cast.</b> Cast.swift hard-codes Hazel, Otto and Rue at seats 1–3 and Settings stores <code>seatNames</code>. Retiring them means a migration for saved settings and history that name them, and the tutorial text that says "Rue is dealing" (R27).</li>
+<li><b>Timers and beginner mode.</b> Random legal action on timeout will teach a beginner nothing. Proposal: timers are only offered in Pass and Play; beginner mode forces OFF. Confirm.</li>
+<li><b>Which seat does the bot fill with three humans?</b> Wireframe assumes the seat left of the host (West) so the host's partner is always human. Alternative: the bot partners the host so the two guests play as a team.</li>
+<li><b>Joined date.</b> Settings has no creation date. For existing installs use the earliest <code>MatchRecord.date</code>, else today. Confirm that a licence can say "joined" before the first match.</li>
+<li><b>Standing thresholds</b> are placeholders (Rookie / Regular / Shark). Also: does standing count pass-and-play wins? Wallet does not; standing probably should not either, or a friend can farm it.</li>
+<li><b>Chips for Murphy's Law.</b> Same 50 for a win at every strength invites playing Beginner's Luck for chips. A multiplier (Easy ×0.5, Standard ×1, Murphy ×2) or flat pay: your call.</li>
+<li><b>Pit boss without a server.</b> Filing a GitHub issue from the app needs a token or a login. AGENTS.md rules out hosting and paid services. A prefilled <code>github.com/cmurphy1140/catch-5/issues/new?title=…&amp;body=…</code> URL opened in Safari needs nothing and puts the last hand in the body as text. Acceptable?</li>
+<li><b>Who sees the board.</b> You said both. The app cannot read docs/roadmap.md at runtime; a build script can export a JSON of the three columns into the bundle the way RulesText mirrors the rules doc, with a test that they match.</li>
+<li><b>Fonts.</b> Barlow is OFL and can be bundled (two families, six files, Info.plist entries). Or SF with <code>.fontWidth(.condensed)</code> and <code>.fontDesign(.default)</code>: no bundling, Dynamic Type for free, slightly less character. The licence's 9 pt labels are below the 12 pt floor; on the phone they need to be 11 pt minimum and scale with the boost (Theme.textBoostSteps = 2 already makes Large read as XXL).</li>
+<li><b>Old cast.</b> Left blank; wireframes retire them. Otto is the one people quote in the docs ("argue with Otto", E.6). Keep him as the wildcard instead of Cranky Connor, or alongside?</li>
+</ol>
+
+<h2>IDEAS TO TUNE</h2>
+<ul>
+<li><b>Licence renewal.</b> A licence expires visually (a faint EXPIRED stamp) after 30 days without a match and un-expires on the next one. No penalty; a nudge in the object's own language.</li>
+<li><b>Endorsement for beating a Shark.</b> The roster is the achievement list's best friend: one badge per bot beaten as a partner-less opponent (7 badges), which also gives the dossier's "your record" a reason to exist.</li>
+<li><b>Dealer's button.</b> A small ink chip with D on the dealer's seat tile, since the deal passes left and the rules make the dealer special (must bid 2, may match). Felt change, so it waits, but it is one glyph.</li>
+<li><b>Season = month.</b> Statistics' THIS SEASON is the calendar month; the licence shows the month's wins as a small secondary number. No server needed.</li>
+<li><b>House advice lines</b> can come from the loser: after a lost match the next launch's tip is the winning bot's quip. Same array, one extra rule.</li>
+<li><b>Re-deal has a rules cost.</b> Real tables re-deal only on a misdeal. If it is sold, it should be before bidding only and once per match, and the hand record should say so (review honesty, D24).</li>
+<li><b>Undo already exists free (M4).</b> Charging chips for it in bot play changes a shipped decision. Suggest: Undo stays free in beginner mode, costs 10 outside it; or drop it from the shop.</li>
+<li><b>Card backs and felt colours</b> are the only shop items that touch the felt. They must keep the green back's contrast with ivory faces and the five gold meanings (D33): burgundy felt needs a gold check, midnight is fine.</li>
+<li><b>Pass and play as the family screen.</b> Two humans as partners is the E.6 idea in disguise: between hands they can talk strategy legally. The handoff card could show a "partner's note" text field that the partner sees on their next handoff: one line, public to the two of them, illegal at a real table only during a hand.</li>
+</ul>
+
+<h2>SWIFTUI PLAN, FILE BY FILE</h2>
+<table>
+<colgroup><col style="width:4%"><col style="width:22%"><col style="width:74%"></colgroup>
+<tr><th>#</th><th>File</th><th>Change</th></tr>
+<tr><td>1</td><td><code>Theme.swift</code></td><td>Add <code>Theme.Paper</code>: ground #EFE3C1, card #FBF5E4, ink #1C1A17, crimson #B8322A, crimsonDark #7A1F1C, green #295742, greenDark #17302A, rule #C9BC98, muted #8A7F6A (4.6:1 on card, floor), bandStrip #A69F8E; seat colours south crimson, north green, east navy #22304F, west mustard #B8943B; deckle depth 8, stamp rotation range.</td></tr>
+<tr><td>2</td><td><code>PaperSurface.swift</code></td><td>New Canvas: seeded stipple (2600 flecks per 256 tile, 55 % dark α .05–.17, 45 % light α .15–.45), optional suit watermarks at 9 % for the menu only.</td></tr>
+<tr><td>3</td><td><code>PaperKit.swift</code></td><td><code>DeckleEdge</code>, <code>PaperCard</code>, <code>Band</code>, <code>RuleHeading</code>, <code>StampText</code>, <code>LinkRow</code>, <code>InsetRingButtonStyle</code>, <code>FlipDigit</code>, <code>PaperHeader</code>. Replaces <code>MenuButtons</code>; closes 3e.</td></tr>
+<tr><td>4</td><td><code>LicenseCard.swift</code></td><td>Reads Settings + Statistics + Wallet + pinned achievements. Used by MainMenu and the new LoginView (<a class="dv-oid" href="#1e">1e</a>).</td></tr>
+<tr><td>5</td><td><code>Wallet.swift</code>, <code>Achievements.swift</code></td><td>Codable stores beside MatchHistory (Application Support). Events come from <code>GameModel</code> when a record is appended: needs <code>MatchRecord</code> to gain <code>fivesCaught</code>, <code>biddersSet</code>, <code>nineAndOut</code>, <code>humanSeats</code>, <code>isPassAndPlay</code>, with the same decodeIfPresent defaults the file already uses.</td></tr>
+<tr><td>6</td><td><code>Roster.swift</code></td><td>Replaces Cast's fixed opponents: seven <code>Bot</code> values (name, drink, job, tier, default strength, portrait recipe, unlock rule). Cast keeps <code>playerChoices</code> (now 3 + 3). Migration for seatNames.</td></tr>
+<tr><td>7</td><td><code>MatchSetup.swift</code></td><td>Value type the two setup screens build: seats (human or bot), strength, speed, beginner, haptics, timers. <code>GameModel.newGame(setup:)</code>. Presets are static functions on it.</td></tr>
+<tr><td>8</td><td><code>SetupView.swift</code>, <code>PassAndPlaySetupView.swift</code></td><td><a class="dv-oid" href="#1a">1a</a> and <a class="dv-oid" href="#1b">1b</a>. The dice per row is a Button that draws one value; RANDOMIZE ALL draws every row.</td></tr>
+<tr><td>9</td><td><code>HandoffCover.swift</code>, <code>TurnTimer.swift</code></td><td><a class="dv-oid" href="#1c">1c</a> as a cover in RootView's ZStack, same plumbing as WelcomeCard. The timer is an observable that the scheduler consults; on expiry it calls the same <code>PlayerAction</code> path a bot uses, drawing a random legal action.</td></tr>
+<tr><td>10</td><td><code>MainMenuView.swift</code></td><td>Rewrite to Catch 5 Paper 1a. Hamburger goes; Settings is a footer link. Resume strip when <code>matchInProgress</code>.</td></tr>
+<tr><td>11</td><td><code>SettingsView.swift</code></td><td>Custom paper sheet, not a Form. Rows: name, face (HIM/HER + 3), strength, speed, beginner, haptics, then Roster, Pit boss, Board, Explainer.</td></tr>
+<tr><td>12</td><td><code>StatisticsView</code>, <code>WalletView</code>, <code>AchievementsView</code>, <code>RosterView</code></td><td>Paper 1c–1f. Statistics moves out of ReviewView.swift into its own file.</td></tr>
+<tr><td>13</td><td><code>PitBossView.swift</code>, <code>BoardView.swift</code></td><td>Pit boss builds the issues/new URL (question 10). Board reads <code>board.json</code> exported by <code>scripts/export-board.py</code> from the two docs; a test compares them.</td></tr>
+<tr><td>14</td><td>Checks</td><td><code>contrast-sample.swift</code> on muted #8A7F6A over card (4.6:1) and on crimson band text (7.9:1). DTS default / XXXL / AX2 on menu, setup, roster. VoiceOver: stamps read their text without rotation; deckle and watermarks are decorative; flip digits announce as one number.</td></tr>
+</table>
+
+<h2>DECISIONS TO RECORD (docs/decisions.md)</h2>
+<ul>
+<li>D-next: paper replaces the box outside the felt, or nests in it (question 1).</li>
+<li>D-next: chips accrue in bot play only; pass and play pays nothing and does not count toward standing.</li>
+<li>D-next: gold stays felt-only; crimson is paper's only signal colour; no gold token may be imported by any paper view (extends 3e).</li>
+<li>D-next: bots are a roster with tiers; the fixed cast retires or becomes the wildcard slot.</li>
+</ul>
+</div></div>
+</div>
+<p class="dv-next">Try next: "build <a class="dv-oid" href="#1a">1a</a> hi-fi in Catch 5 Paper" · "the licence application in <a class="dv-oid" href="#1e">1e</a> as the login screen" · "answer the questions in <a class="dv-oid" href="#1j">1j</a>"</p>
+</section>
+</x-dc>
+</body>
+</html>

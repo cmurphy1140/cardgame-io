@@ -18,6 +18,7 @@ struct LoginView: View {
                 VStack(spacing: 4) {
                     Text("CATCH 5").font(.system(.largeTitle, design: .serif).weight(.bold))
                     Text("SET UP YOUR PLAYER").font(.system(.caption2, design: .monospaced).weight(.medium)).tracking(1).opacity(0.7)
+                    Text("This stays on your device.").font(.footnote).opacity(0.6).padding(.top, 4)
                 }
                 .padding(.top, 40)
 

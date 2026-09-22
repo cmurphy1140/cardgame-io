@@ -32,10 +32,10 @@ Desktop is iCloud-synced, so worktrees live under `~/Developer/active/`, which i
 cd ~/Desktop/Projects/catch-5 && git worktree add ~/Developer/active/catch-5-worktrees/engine -b engine/<task> main
 ```
 
-Remove it when the branch has merged:
+Remove it once `gh pr view engine/<task>` shows the PR merged. The branch delete takes a capital `-D`, because a squash-merged branch never looks merged to `git branch -d` (section 5):
 
 ```bash
-cd ~/Desktop/Projects/catch-5 && git worktree remove ~/Developer/active/catch-5-worktrees/engine && git branch -d engine/<task>
+cd ~/Desktop/Projects/catch-5 && git worktree remove ~/Developer/active/catch-5-worktrees/engine && git branch -D engine/<task>
 ```
 
 A worktree isolates files only. It shares the simulator, the Mac's CPU, and the saved game inside any simulator device. Two writers never point at the same simulator.
@@ -63,9 +63,17 @@ After editing any page listed in `docs/learning-path.md`, refresh the in-app cop
 
 *Change this when the branch or PR habits change.*
 
-- One task, one branch, one PR. Commits, pushes and PRs happen only when Connor asks.
-- CI (`Tests` workflow: `swift-test` and `simulator-build`) must be green before merge. Squash-merge, delete the branch.
-- One PR at a time. Squash merging means an old branch still looks "ahead of main" after it has landed; compare trees (`git diff main <branch>`), never commit counts.
+GitHub Flow: `main` plus short-lived task branches, nothing else. There is no `develop` or release branch, because the phone install is built from `main`. The ruleset "Protect main" (GitHub → Settings → Rules → Rulesets, created September 17, 2026) enforces the first three rules below with no bypass, for Connor and every session alike, but only while the repository is public or the account has GitHub Pro. The repository stays public for that reason (and for free CI minutes). The same night it was briefly made private, from 02:12 to 02:31, and GitHub stopped enforcing the ruleset until it was public again. If visibility ever changes, re-check with `gh api repos/cmurphy1140/catch-5/rules/branches/main`.
+
+- **Nobody pushes to `main`.** Every change reaches it through a pull request. Force pushes and deleting `main` are blocked.
+- **CI must pass.** `swift-test` and `simulator-build` (the `Tests` workflow) are required checks. Both run on every PR, docs-only ones included.
+- **Squash only.** One PR becomes one commit on `main`. GitHub deletes the remote branch when the PR merges.
+- **One task, one branch, one PR.** Branch off an up-to-date `main` (`git pull --ff-only` first), named by track: `ui/`, `engine/`, `docs/`, `fix/`.
+- **Commits, pushes and PRs happen only when Connor asks.** When he does, finished work gets its PR straight away, as a draft if it is not ready. A branch without a PR is invisible: CI never runs on it and it drops out of the record. The GitHub PR list is the board of work in flight.
+- **"Is it merged?" is answered by GitHub, not by branch counts.** `gh pr view <branch>` gives the state. A squash merge gives the landed change a new hash, so `git branch --merged` and `git branch -d` call a finished branch unmerged; `git cherry main <branch>` prints `-` for a change already on `main`.
+- **After a merge:** `git switch main && git pull --ff-only`, then `git branch -D <branch>` once the PR shows merged, then `git fetch --prune`.
+- **One PR at a time,** merged before the next task branches off `main`.
+- **No required approvals.** GitHub does not let an owner approve their own PR. For a second pair of eyes before merging, run `/code-review` or ask the coordinator.
 - When a change needs both sides, the engine side lands first. The interface between them (a type or a function signature) is agreed through the coordinator before either writer starts.
 - Docs pages are shared. A writer edits only the section that describes its own module (`types-and-functions.md`, `testing.md`, `decisions.md` entries it adds). The coordinator resolves anything else.
 
@@ -179,3 +187,11 @@ Local notes from before this log existed sit in the gitignored `notes/` folder o
 - Checks: `swift test` 159 of 159 passed, which is also the number the corrected pages now carry (counted independently as 159 `@Test` annotations under `Tests/`). `swift test --filter Explainer` 3 of 3, confirming the bundle mirror. Read-back greps found no surviving "149 tests", "No increment has started" or `131c941` claim. Branch and worktree state read from `gh` and `git`, not from the documents being corrected.
 - Skipped: no Swift changed, so no simulator build, no simulator run and no phone re-install for this commit. Editing the two mirrored pages by hand rather than running `scripts/export-docs.py --app` deliberately avoided regenerating all 25 diagram PNGs for a text-only change; the fence counts are unchanged, so the existing PNGs stay valid and the bundle test proves it.
 - Next: four things stay open and were not touched here. Two finished branches off this same commit have never been PR'd, so CI has never run on them (`tests.yml` fires only on pull requests and pushes to `main`): `docs/deck-box-contrast-correction` and `fix/install-phone-device-detection`. Both carry their own 2026-09-14 entry for this log, so entries will land out of date order once they do; expect a conflict at the foot of this section and keep both, in order. The merged `engine/five-discount` worktree is still mounted at `~/Developer/active/catch-5-worktrees/engine` and is safe to remove — `git diff origin/main engine/five-discount -- Sources Tests` is empty. And `.build` is 439 MB on the iCloud-synced Desktop with no ignore xattr, while `work/` has one; Xcode 27.0 is still 3.6 GB on the Desktop, unexcluded.
+
+### 2026-09-17, design review round 1, `main` protected, repo audited (Claude Code, app session, main checkout)
+
+- Base: `main` at `cd83ec1`, on `main` itself with everything uncommitted (no commit authorised). Single writer; the split into two tracks is paused. Full narrative in the local note `notes/handoff-2026-09-17-design-review-and-cleanup.md`.
+- Changed: new root `design-review.md`, the round-1 reply to the Catch 5 Paper package, in START-HERE's six sections at 1,796 words. Both design packages archived as received under `docs/history/design-reviews/v1` and `v2`, with the dev-side drafts and 31 held ideas in each `dev-response/`, plus one index line in `docs/history/README.md`. This file: section 5 rewritten as house rules, section 3's branch delete now `-D`. On GitHub: ruleset "Protect main" (id 23580641) requires a PR, squash merges only, and passing `swift-test` and `simulator-build`, with no bypass. Outside the repo: the iCloud ignore xattr set on `.build` and `.swiftpm`, then at 02:34 on the repository root itself. Foundation now reports the root, `.git` and `notes/` excluded from sync and no longer in iCloud. That makes true, for this repo, the claim in section 7 and in `README.md` and `docs/build-and-run.md` that the root is excluded; `plug-and-pitch` has no local checkout on this Mac any more, so the doc claims naming it are stale. No Time Machine destination is configured, and the nightly backup script copies only `.zshrc` and VS Code settings, so GitHub is now the only copy of committed work off this Mac, and `notes/` has none.
+- Checks: about twenty of the review's code and doc citations re-read against the files, all confirmed. The ruleset was read back from `gh api repos/cmurphy1140/catch-5/rules/branches/main`, and both required checks run unconditionally on every PR. `git cherry` confirmed `engine/five-discount` squash-merged as #79, while `fix/install-phone-device-detection` and `docs/deck-box-canvas-setup` are not on `main`.
+- Skipped: no Swift changed, so no `swift test`, simulator build or phone install. No real push to `main` was tried to watch the ruleset reject it. None of the read-only cleanup audit's deletions were carried out.
+- Next: Connor decides when to record paper versus box, and whether the paper loop outranks Increment 2 (#53). (Between 02:12 and 02:31 the repository was private, and GitHub Free stopped enforcing the ruleset. Connor chose public, and enforcement was confirmed again through the rules API.) Then `design-review.md` goes to the design chat. After that, a `docs/` branch and PR for tonight's files; a PR for `fix/install-phone-device-detection`; and the cleanup walkthrough, starting with the repo root and `.git` still syncing to iCloud.

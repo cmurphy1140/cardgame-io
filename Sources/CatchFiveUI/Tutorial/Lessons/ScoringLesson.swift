@@ -6,13 +6,7 @@ struct ScoringLesson: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            LessonText(paragraphs: [
-                "Nine points a hand, all decided by what each team captured.",
-                "High and Low: the highest and lowest trump played, 1 point each. The jack of trump: 1. The five of trump: 5.",
-                "Game: 1 point for the higher count, where tens are 10, aces 4, kings 3, queens 2, jacks 1. A tie goes to the bidders.",
-                "Bidders keep their points if they made the bid and lose the bid if not. The other team always keeps its points. First to 25 wins.",
-            ], tactic: "The five outweighs everything else together. Feed it to your partner's winning card, and watch for an opponent forced to play it.")
-            Text("Spades were trump and they bid 4. Assign each point to the team that earned it.").font(.subheadline).multilineTextAlignment(.center)
+            Text("Spades were trump and they bid 4. Assign each point to the team that earned it.").font(.headline).multilineTextAlignment(.center)
             pile("US", TutorialFixtures.usCaptured)
             pile("THEM", TutorialFixtures.themCaptured)
             VStack(spacing: 8) {
@@ -32,6 +26,15 @@ struct ScoringLesson: View {
             Feedback(text: model.allScoringCorrect
                      ? "Hand points: us 2, them 7. They bid 4 and took 7, so they keep all 7. Scores go from 10–5 to 12–12."
                      : "")
+            
+            DisclosureGroup("Why?") {
+                LessonText(paragraphs: [
+                    "Nine points a hand, all decided by what each team captured.",
+                    "High and Low: the highest and lowest trump played, 1 point each. The jack of trump: 1. The five of trump: 5.",
+                    "Game: 1 point for the higher count, where tens are 10, aces 4, kings 3, queens 2, jacks 1. A tie goes to the bidders.",
+                    "Bidders keep their points if they made the bid and lose the bid if not. The other team always keeps its points. First to 25 wins.",
+                ], tactic: "The five outweighs everything else together. Feed it to your partner's winning card, and watch for an opponent forced to play it.")
+            }.tint(.gold)
         }
     }
 

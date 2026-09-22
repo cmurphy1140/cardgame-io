@@ -7,18 +7,21 @@ struct DealLesson: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            LessonText(paragraphs: [
-                "You and the player across from you are partners. West and East are the other team.",
-                "The dealer gives everyone six cards, three at a time, starting on their left and going clockwise, themselves last.",
-                "The rest of the deck stays face down and out of play, scoring cards included.",
-            ], tactic: "Partners sit across from each other. Cards left in the deck never score.")
-            Text("East is dealing. Tap the seat that receives the first three cards.").font(.subheadline)
+            Text("East is dealing. Tap the seat that receives the first three cards.").font(.headline)
             VStack(spacing: 12) {
                 tile(2)
                 HStack { tile(1); Spacer(); tile(3) }
                 tile(0)
             }
             Feedback(text: model.dealFeedback)
+            
+            DisclosureGroup("Why?") {
+                LessonText(paragraphs: [
+                    "You and the player across from you are partners. West and East are the other team.",
+                    "The dealer gives everyone six cards, three at a time, starting on their left and going clockwise, themselves last.",
+                    "The rest of the deck stays face down and out of play, scoring cards included.",
+                ], tactic: "Partners sit across from each other. Cards left in the deck never score.")
+            }.tint(.gold)
         }
     }
 

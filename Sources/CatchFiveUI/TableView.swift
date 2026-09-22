@@ -13,7 +13,6 @@ public struct TableView: View {
     @State private var confirmNineAndOut = false
     @State private var showSettings = false
     @State private var showTutorial = false
-    @State private var showReview = false
     @State private var showScoreboard = false
     @State private var showStatistics = false
     /// Completed tricks whose cards have already collapsed toward the winner.
@@ -45,7 +44,7 @@ public struct TableView: View {
     private var pause: TablePause {
         TablePause(sceneActive: scenePhase == .active,
                    welcomeShown: covered,
-                   sheetShown: showSettings || showTutorial || showReview || showScoreboard || showStatistics,
+                   sheetShown: showSettings || showTutorial || showScoreboard || showStatistics,
                    dialogShown: confirmNewGame || confirmNineAndOut || model.errorMessage != nil || model.saveError != nil,
                    inspectingTrick: reopenedTrick != nil,
                    drawShown: drawShown)
@@ -83,10 +82,8 @@ public struct TableView: View {
             ScoreBarView(us: model.match.scores[0], them: model.match.scores[1],
                          usLabel: teamLabel(0), themLabel: teamLabel(1),
                          contract: contractChip,
-                         canUndo: model.canUndo, onUndo: { model.undo() },
-                         onScores: { showScoreboard = true }, onSettings: { showSettings = true },
-                         onStatistics: { showStatistics = true }, onTutorial: { showTutorial = true },
-                         onNewGame: { confirmNewGame = true }, onPause: onLeave)
+                         canUndo: model.canUndo,
+                         onScores: { showScoreboard = true }, onPause: onLeave)
                 .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 8)
                 // A solid header band: runs up behind the status bar and ends in a frown, the corners
                 // hanging lower than the middle, so the scores sit on one colour and the wood starts beneath.
@@ -99,7 +96,7 @@ public struct TableView: View {
             TableSurface(model: model, namespace: cards, collapsedTricks: collapsedTricks, reopenedTrick: reopenedTrick, toast: toast,
                          onReopenTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = model.match.hand.completedTricks.count } },
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
-                         onReview: { showReview = true }, onNineAndOut: { confirmNineAndOut = true },
+                         onNineAndOut: { confirmNineAndOut = true },
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 16)
@@ -168,12 +165,8 @@ public struct TableView: View {
         withHaptics
             .sheet(isPresented: $showSettings) { SettingsView(settings: $model.settings) }
             .sheet(isPresented: $showTutorial, onDismiss: { model.markRulesSeen() }) { TutorialView(model: tutorial) { showTutorial = false } }
-            .sheet(isPresented: $showReview) {
                 if let review = model.handReview() {
-                    ReviewView(review: review, names: model.seatNames, difficulty: model.settings.difficulty, describe: model.describe) { showReview = false }
                 } else {
-                    ReviewUnavailableView { showReview = false }
-                }
             }
             .sheet(isPresented: $showScoreboard) { ScoreboardView(history: model.match.history, names: model.seatNames) { showScoreboard = false } }
             .sheet(isPresented: $showStatistics) { StatisticsView(stats: model.statistics, records: model.records) { showStatistics = false } }
