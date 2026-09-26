@@ -65,25 +65,99 @@ struct ScoreboardView: View {
     let names: [String]
     let onDismiss: () -> Void
 
+    private var scores: [Int] { history.last?.scores ?? [0, 0] }
+
     var body: some View {
         NavigationStack {
-            List {
-                if history.isEmpty { Text("No hands scored yet.").foregroundStyle(.secondary) }
+            ZStack {
+                WoodGrainView().ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 18) {
+                        VStack(spacing: 3) {
+                            Text("SCORE").font(.system(.largeTitle, design: .serif).weight(.bold))
+                            Text("FIRST TO 25 POINTS").font(.caption.monospaced().weight(.semibold)).tracking(2)
+                        }
+                        .foregroundStyle(.ivory)
+
+                        VStack(spacing: 18) {
+                            HStack {
+                                team("US", names: "\(names[0]) & \(names[2])", symbol: "♥", score: scores[0], red: true)
+                                Divider().frame(height: 74)
+                                team("THEM", names: "\(names[1]) & \(names[3])", symbol: "♠", score: scores[1], red: false)
+                            }
+                            Divider()
+                            track("US", score: scores[0])
+                            track("THEM", score: scores[1])
+                        }
+                        .padding(18)
+                        .background(.ivory, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Theme.Wood.header.opacity(0.45), lineWidth: 1.5))
+                        .foregroundStyle(.black)
+
+                        handHistory
+                    }
+                    .padding(20)
+                }
+            }
+            .toolbar { Button("Done", action: onDismiss).tint(.ivory) }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func team(_ label: String, names: String, symbol: String, score: Int, red: Bool) -> some View {
+        VStack(spacing: 3) {
+            HStack(spacing: 5) {
+                Text(symbol).foregroundStyle(red ? Color.suitRed : .black)
+                Text(label).font(.caption.monospaced().weight(.bold)).tracking(1)
+            }
+            Text(names).font(.caption2).opacity(0.65).lineLimit(1).minimumScaleFactor(0.7)
+            Text(score, format: .number)
+                .font(.system(size: 42, weight: .bold, design: .serif))
+                .foregroundStyle(Color.suitRed)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func track(_ label: String, score: Int) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("\(label) · \(score)").font(.caption.monospaced().weight(.bold)).tracking(1)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
+                ForEach(1...25, id: \.self) { point in
+                    Text("\(point)")
+                        .font(.caption2.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(point <= score ? Color.ivory : .black.opacity(0.6))
+                        .frame(maxWidth: .infinity, minHeight: 30)
+                        .background(point <= score ? Color.suitRed : Color.clear, in: Circle())
+                        .overlay(Circle().stroke(.black.opacity(0.2), lineWidth: point <= score ? 0 : 1))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var handHistory: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("HANDS").font(.caption.monospaced().weight(.bold)).tracking(2).foregroundStyle(.ivory)
+            if history.isEmpty {
+                Text("No hands scored yet.").foregroundStyle(.ivory.opacity(0.75))
+            } else {
                 ForEach(history, id: \.number) { hand in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Hand \(hand.number)").font(.subheadline.weight(.semibold))
-                            Text("\(names[hand.bidder]) bid \(hand.isNineAndOut ? "9 and out" : String(hand.bid)), \(hand.contractMade ? "made" : "set") · points \(hand.result.points[0])–\(hand.result.points[1])")
-                                .font(.footnote).foregroundStyle(.secondary)
+                            Text("\(names[hand.bidder]) bid \(hand.isNineAndOut ? "9 and out" : String(hand.bid)), \(hand.contractMade ? "made" : "set")")
+                                .font(.footnote).opacity(0.65)
                         }
                         Spacer()
                         Text("\(hand.scores[0]) – \(hand.scores[1])").font(.headline.monospacedDigit())
                     }
+                    .padding(12)
+                    .background(.ivory, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .foregroundStyle(.black)
                 }
             }
-            .scrollContentBackground(.hidden).background(WoodGrainView().ignoresSafeArea())
-            .navigationTitle("Scoreboard")
-            .toolbar { Button("Done", action: onDismiss) }
         }
     }
 }

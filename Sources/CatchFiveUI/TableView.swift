@@ -114,7 +114,7 @@ public struct TableView: View {
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(.ivory)
-        .background(FeltView().equatable().ignoresSafeArea())
+        .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
 

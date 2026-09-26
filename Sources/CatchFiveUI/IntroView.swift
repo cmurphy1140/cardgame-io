@@ -21,7 +21,7 @@ struct IntroView: View {
         ScrollView {
             VStack(spacing: 28) {
                 VStack(spacing: 4) {
-                    Text("CATCH 5").font(.system(.largeTitle, design: .serif).weight(.bold))
+                    Text("Catch 5").font(.system(size: 46, weight: .bold, design: .serif))
                     Text("HOW A HAND GOES").font(.system(.caption2, design: .monospaced).weight(.medium)).tracking(1).opacity(0.7)
                 }
                 .padding(.top, 32)
@@ -32,8 +32,8 @@ struct IntroView: View {
                             VStack(spacing: 0) {
                                 ZStack {
                                     Circle().fill(Theme.Wood.inlay).frame(width: 36, height: 36)
-                                    Circle().stroke(.gold.opacity(0.7), lineWidth: 1).frame(width: 36, height: 36)
-                                    Image(systemName: step.symbol).font(.subheadline).foregroundStyle(.gold)
+                                    Circle().stroke(Color.suitRed.opacity(0.8), lineWidth: 1.5).frame(width: 36, height: 36)
+                                    Image(systemName: step.symbol).font(.subheadline).foregroundStyle(Color.suitRed)
                                 }
                                 if index < Self.steps.count - 1 {
                                     Rectangle().fill(.ivory.opacity(0.18)).frame(width: 1).frame(maxHeight: .infinity)
@@ -49,7 +49,8 @@ struct IntroView: View {
                     }
                 }
                 .padding(18)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Theme.Wood.inlay.opacity(0.82), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.14)))
 
                 VStack(spacing: 10) {
                     Button { showTutorial = true } label: {
@@ -59,13 +60,13 @@ struct IntroView: View {
                     Button(action: onDone) {
                         Text("Deal me in").font(.headline).frame(maxWidth: .infinity).frame(minHeight: 50)
                     }
-                    .buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black)
+                    .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
                 }
             }
             .padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
         .foregroundStyle(.ivory)
-        .background(LinearGradient(colors: [.felt, .black], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea())
+        .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
         .tutorialCover(isPresented: $showTutorial) { TutorialView(model: tutorial, isIntro: true) { showTutorial = false; onDone() } }
     }

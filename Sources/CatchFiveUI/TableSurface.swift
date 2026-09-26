@@ -315,12 +315,16 @@ struct TableSurface: View {
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Theme.Table.auctionButtonSpacing), count: 4),
                       spacing: Theme.Table.auctionButtonSpacing) {
-                ForEach(HouseRules.bidRange, id: \.self) { bid in actionButton(String(bid), action: .bid(bid)) }
+                ForEach(HouseRules.bidRange, id: \.self) { bid in
+                    actionButton(String(bid), action: .bid(bid), fill: .ivory,
+                                 font: .title2.weight(.bold), labelColor: .suitRed)
+                }
             }
             HStack(spacing: Theme.Table.auctionButtonSpacing) {
-                actionButton("Pass", action: .bid(nil), font: .body.weight(.semibold))
+                actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
+                             font: .body.weight(.semibold), labelColor: .ivory)
                 Button { onNineAndOut() } label: { Text("9 and out").font(.body.weight(.semibold)) }
-                    .buttonStyle(PillButtonStyle(fill: Theme.Wood.inlay))
+                    .buttonStyle(PillButtonStyle(fill: Theme.Wood.inlay, labelColor: .ivory))
                     .disabled(!model.allows(.nineAndOut))
                     .accessibilityHint(model.allows(.nineAndOut) ? "Take all nine points or lose the match; asks you to confirm"
                                        : model.validationMessage(for: .nineAndOut) ?? "")
@@ -338,8 +342,9 @@ struct TableSurface: View {
                 VStack(spacing: 2) {
                     // The glyph carries the suit's colour on the same dark pill as every other choice; a red
                     // fill only hid the glyph (spec R13).
-                    actionButton(suit.glyph, action: .chooseTrump(suit), font: .largeTitle.weight(.bold),
-                                 labelColor: suit.isRed ? Color.suitRed : .ivory)
+                    actionButton(suit.glyph, action: .chooseTrump(suit), fill: .ivory,
+                                 font: .largeTitle.weight(.bold),
+                                 labelColor: suit.isRed ? Color.suitRed : .black)
                         .accessibilityLabel("\(suit.rawValue), \(model.trumpPreview(for: suit) ?? "")")
                     // The suit on one line and, in beginner mode, what it keeps on a second (spec R30), so no
                     // caption is ever shrunk to fit its column; the draw count is implied and VoiceOver reads it all.
@@ -363,8 +368,8 @@ struct TableSurface: View {
                               font: Font = .title3.weight(.semibold), labelColor: Color = .ivory) -> some View {
         // One dry run per pill: the reason, when there is one, is also why the pill is greyed.
         let reason = model.validationMessage(for: action)
-        return Button { model.send(action) } label: { Text(label).font(font).foregroundStyle(labelColor) }
-            .buttonStyle(PillButtonStyle(fill: fill))
+        return Button { model.send(action) } label: { Text(label).font(font) }
+            .buttonStyle(PillButtonStyle(fill: fill, labelColor: labelColor))
             .disabled(reason != nil)
             // A greyed pill still says why it is greyed to assistive technology.
             .accessibilityHint(reason ?? "")
@@ -386,8 +391,8 @@ struct TableSurface: View {
             .padding(12)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Theme.Wood.inlay, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.15)))
+        .background(.ivory, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.Wood.header.opacity(0.45), lineWidth: 1.5))
         .padding(8)
         .transition(reduceMotion ? .opacity : .offset(y: 12).combined(with: .opacity))
         .accessibilitySortPriority(40)
@@ -395,13 +400,13 @@ struct TableSurface: View {
 
     private var reviewButton: some View {
         Button(action: onReview) { Label("Review", systemImage: "list.bullet.rectangle") }
-            .buttonStyle(.bordered).tint(.ivory.opacity(0.8)).lineLimit(1)
+            .buttonStyle(.bordered).tint(Theme.Wood.header).foregroundStyle(.black).lineLimit(1)
     }
 
     private var dealButton: some View {
         Button(model.match.winner == nil ? "Deal next hand" : "Play again") {
             if model.match.winner == nil { model.nextHand() } else { model.newGame() }
-        }.buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black).lineLimit(1)
+        }.buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory).lineLimit(1)
     }
 
     /// The card shown once a team reaches 25 or a 9-and-out resolves.
@@ -414,7 +419,7 @@ struct TableSurface: View {
                 Text("You made \(performance.bidsMade) of \(performance.bids) contracts and played the strategy's card \(performance.playsAgreed) of \(performance.plays) times.")
                     .font(.footnote).multilineTextAlignment(.center).opacity(0.8)
             }
-        }.foregroundStyle(.gold)
+        }.foregroundStyle(Color.suitRed)
     }
 }
 
@@ -500,19 +505,20 @@ extension Suit {
 }
 
 extension Color {
-    /// A playing-card red for suit glyphs on dark panels.
-    static var suitRed: Color { Color(red: 0.86, green: 0.18, blue: 0.22) }
+    /// Catch 5 red: the five, hearts/diamonds, and the one primary action on non-felt surfaces.
+    static var suitRed: Color { Color(red: 0.698, green: 0.122, blue: 0.180) } // #B21F2E
 }
 
 /// The auction's pills: a solid fill, ivory label, a faint edge, dimmed when the rule disallows the
 /// action, and a small press. Fills the column it is given.
 struct PillButtonStyle: ButtonStyle {
     var fill: Color
+    var labelColor: Color = .ivory
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(.ivory)
+            .foregroundStyle(labelColor)
             .frame(maxWidth: .infinity, minHeight: Theme.Table.auctionButtonHeight)
             .background(fill, in: RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)

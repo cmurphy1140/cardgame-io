@@ -9,15 +9,15 @@ struct HandSummaryView: View {
     var body: some View {
         if let summary = match.history.last, let outcome {
             VStack(spacing: 8) {
-                // The verdict first, in gold as a key result, then what it did to the score.
-                Text(outcome.headline).font(.system(.title3, design: .serif).weight(.semibold)).foregroundStyle(.gold)
+                // The verdict reads like a stamped result on the score card.
+                Text(outcome.headline).font(.system(.title3, design: .serif).weight(.semibold)).foregroundStyle(Color.suitRed)
                 VStack(spacing: 2) {
                     Text(outcome.bidderLine)
                     Text(outcome.defenderLine)
                 }
                 .font(.footnote).multilineTextAlignment(.center).opacity(0.9)
                 .accessibilityElement(children: .combine)
-                Divider().overlay(.ivory.opacity(0.15)).padding(.vertical, 2)
+                Divider().overlay(.black.opacity(0.15)).padding(.vertical, 2)
                 Text("HAND POINTS  \(summary.result.points[0]) – \(summary.result.points[1])").font(.headline)
                 row("High", team: summary.result.highTeam)
                 row("Low", team: summary.result.lowTeam)
@@ -27,7 +27,9 @@ struct HandSummaryView: View {
                 ForEach(outcome.notes, id: \.self) { note in
                     Text(note).font(.caption).opacity(0.75).multilineTextAlignment(.center)
                 }
-            }.padding(16).background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+            }
+            .padding(16)
+            .foregroundStyle(.black)
         }
     }
     private func row(_ name: String, team: Int?) -> some View {

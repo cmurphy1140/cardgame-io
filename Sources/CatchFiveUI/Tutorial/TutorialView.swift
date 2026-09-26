@@ -44,7 +44,7 @@ struct TutorialView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("CATCH 5").font(.system(.largeTitle, design: .serif).weight(.bold))
+            Text("Catch 5").font(.system(.largeTitle, design: .serif).weight(.bold))
             Text("HOW TO PLAY · LESSON \(model.lesson + 1) OF \(TutorialModel.lessonCount)")
                 .font(.system(.caption2, design: .monospaced).weight(.medium)).tracking(1)
         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -61,9 +61,9 @@ struct TutorialView: View {
                                 Text("\(index + 1) · \(TutorialModel.titles[index])").font(.footnote.weight(.semibold))
                             }
                             .padding(.horizontal, 14).frame(height: 44)
-                            .background(index == model.lesson ? .gold.opacity(0.15) : Theme.Wood.inlay.opacity(0.5), in: Capsule())
-                            .overlay(Capsule().stroke(index == model.lesson ? .gold : .white.opacity(0.1)))
-                        }.buttonStyle(.plain).foregroundStyle(index == model.lesson ? .gold : .ivory)
+                            .background(index == model.lesson ? Color.suitRed.opacity(0.18) : Theme.Wood.inlay.opacity(0.5), in: Capsule())
+                            .overlay(Capsule().stroke(index == model.lesson ? Color.suitRed : .white.opacity(0.1)))
+                        }.buttonStyle(.plain).foregroundStyle(index == model.lesson ? Color.suitRed : .ivory)
                         .accessibilityLabel("Lesson \(index + 1), \(TutorialModel.titles[index])\(model.completed.contains(index) ? ", complete" : "")")
                     }
                 }
@@ -87,7 +87,7 @@ struct TutorialView: View {
             Button("Back") { model.back() }.buttonStyle(.bordered).tint(.ivory.opacity(0.8)).disabled(model.lesson == 0)
             Spacer()
             Button(model.isLastLesson ? (isIntro ? "Deal me in" : "Finish") : "Next lesson") { if model.isLastLesson { onDismiss() } else { model.next() } }
-                .buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black)
+                .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
         }
     }
 }
@@ -136,7 +136,7 @@ struct SeatTile: View {
                 if let portrait { PortraitView(portrait: portrait, size: Theme.Table.tutorialPortraitSize) }
                 Text(name).font(.subheadline.weight(.semibold))
                 Text(detail).font(.caption).opacity(0.7)
-                if let badge { Text(badge).font(.system(.caption2, design: .monospaced)).foregroundStyle(.gold) }
+                if let badge { Text(badge).font(.system(.caption2, design: .monospaced)).foregroundStyle(Color.suitRed) }
             }
             .lineLimit(1).minimumScaleFactor(0.7)
             .padding(.horizontal, 8).padding(.vertical, 10)
@@ -163,6 +163,6 @@ struct PickableCard: View {
 }
 
 extension Color {
-    static var correctRing: Color { .gold }
+    static var correctRing: Color { .suitRed }
     static var incorrectRing: Color { .white.opacity(0.6) }
 }

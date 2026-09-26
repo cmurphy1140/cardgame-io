@@ -40,7 +40,7 @@ struct SettingsView: View {
                             Button { settings.playerPortrait = choice } label: {
                                 PortraitView(portrait: choice, size: 44)
                                     .opacity(settings.playerPortrait == choice ? 1 : Theme.Card.dimmedOpacity)
-                                    .overlay(Circle().stroke(.gold, lineWidth: settings.playerPortrait == choice ? 3 : 0))
+                                    .overlay(Circle().stroke(Color.suitRed, lineWidth: settings.playerPortrait == choice ? 3 : 0))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Face \(index + 1)")
@@ -67,6 +67,9 @@ struct SettingsView: View {
                     Text("The engineering explainer: architecture, game flow, every type, the tests and the decision log, readable offline.")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(WoodGrainView().ignoresSafeArea())
+            .tint(Color.suitRed)
             #if canImport(UIKit)
             .sheet(isPresented: $showExplainer) { ExplainerView { showExplainer = false } }
             #endif

@@ -57,12 +57,12 @@ struct WelcomeCard: View {
     }
 }
 
-/// The menu's two buttons, shared by the pause card and the main menu: one gold primary per screen, and
-/// bordered ivory for the rest. On the main actor because the button styles are (CI's Swift 6.1 checks this).
+/// The menu's two buttons, shared by the pause card and the main menu: one Catch 5 red primary per screen,
+/// and bordered ivory for the rest. On the main actor because the button styles are (CI's Swift 6.1 checks this).
 @MainActor enum MenuButtons {
     static func prominent(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(label).font(.headline).frame(maxWidth: .infinity).frame(minHeight: 48) }
-            .buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black)
+            .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
     }
 
     static func plain(_ label: String, action: @escaping () -> Void) -> some View {

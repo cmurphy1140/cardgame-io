@@ -19,12 +19,22 @@ struct MainMenuView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 28) {
-                VStack(spacing: 4) {
-                    Text("CATCH 5").font(.system(.largeTitle, design: .serif).weight(.bold))
-                    Text("MAIN MENU").font(.system(.caption2, design: .monospaced).weight(.medium)).tracking(1).opacity(0.7)
+            VStack(spacing: 24) {
+                VStack(spacing: 6) {
+                    Text("Catch 5")
+                        .font(.system(size: 48, weight: .bold, design: .serif))
+                    Text("A FAMILY CARD GAME")
+                        .font(.system(.caption, design: .monospaced).weight(.semibold))
+                        .tracking(2)
+                        .opacity(0.82)
                 }
-                .padding(.top, 40)
+                .padding(.top, 34)
+
+                // The five is the visual signature of the game, not another control.
+                HomeFiveCard()
+                    .rotationEffect(.degrees(-5))
+                    .padding(.vertical, 4)
+                    .accessibilityHidden(true)
 
                 HStack(spacing: 14) {
                     PortraitView(portrait: model.settings.playerPortrait, size: 56)
@@ -40,7 +50,8 @@ struct MainMenuView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(16)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Theme.Wood.inlay.opacity(0.82), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.14)))
                 .accessibilityElement(children: .combine)
 
                 // One setting for guidance (spec R14): on adds hints and explanations, off is a clean table.
@@ -50,9 +61,10 @@ struct MainMenuView: View {
                         Text("Hints and guided play").font(.footnote).opacity(0.75)
                     }
                 }
-                .tint(.gold)
+                .tint(Color.suitRed)
                 .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Theme.Wood.inlay.opacity(0.82), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.14)))
 
                 VStack(spacing: 10) {
                     if model.match.winner == nil {
@@ -84,7 +96,7 @@ struct MainMenuView: View {
             .padding(.trailing, 12).padding(.top, 4)
         }
         .foregroundStyle(.ivory)
-        .background(LinearGradient(colors: [.felt, .black], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea())
+        .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showSettings) { SettingsView(settings: $model.settings) }
         .sheet(isPresented: $showTutorial, onDismiss: { model.markRulesSeen() }) { TutorialView(model: tutorial) { showTutorial = false } }
@@ -96,5 +108,36 @@ struct MainMenuView: View {
             Button("Start new match", role: .destructive) { model.newGame(); onPlay() }
             Button("Cancel", role: .cancel) {}
         } message: { Text("This replaces your saved game.") }
+    }
+}
+
+
+/// The home-screen signature card: a real five-of-hearts pip layout, larger than gameplay cards.
+private struct HomeFiveCard: View {
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.ivory)
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(.black.opacity(0.18)))
+                .shadow(color: .black.opacity(0.35), radius: 5, y: 4)
+            VStack {
+                HStack { heart; Spacer(); heart }
+                Spacer()
+                heart
+                Spacer()
+                HStack { heart; Spacer(); heart }
+            }
+            .padding(.horizontal, 23).padding(.vertical, 24)
+            VStack(spacing: -4) {
+                Text("5").font(.system(size: 27, weight: .bold, design: .serif))
+                Text("♥").font(.system(size: 20))
+            }
+            .foregroundStyle(Color.suitRed)
+            .padding(.top, 8).padding(.leading, 9)
+        }
+        .frame(width: 112, height: 168)
+    }
+    private var heart: some View {
+        Text("♥").font(.system(size: 27)).foregroundStyle(Color.suitRed)
     }
 }
