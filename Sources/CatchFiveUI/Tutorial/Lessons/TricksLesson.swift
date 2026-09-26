@@ -7,14 +7,17 @@ struct TricksLesson: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            LessonText(paragraphs: [
-                "The bid winner leads. Each player adds one card; those four cards are a trick. The winner takes them and leads next.",
-                "Follow the led suit if you can. If you cannot, play anything, trump included. The highest trump wins; with no trump, the highest card of the led suit.",
-            ], tactic: "Never lead the five of trump. Lead your highest trump to pull the others out, and save the five for a trick your side is already winning.")
-            Text(model.trickPrompt).font(.subheadline).multilineTextAlignment(.center)
+            Text(model.trickPrompt).font(.headline).multilineTextAlignment(.center)
             table
             if model.trickPart == 0 { hand }
             Feedback(text: model.trickFeedback)
+            
+            DisclosureGroup("Why?") {
+                LessonText(paragraphs: [
+                    "The bid winner leads. Each player adds one card; those four cards are a trick. The winner takes them and leads next.",
+                    "Follow the led suit if you can. If you cannot, play anything, trump included. The highest trump wins; with no trump, the highest card of the led suit.",
+                ], tactic: "Never lead the five of trump. Lead your highest trump to pull the others out, and save the five for a trick your side is already winning.")
+            }.tint(.gold)
         }
         .task(id: model.trickPick) {
             // After a correct pick, move on to the second part once the feedback has been read.

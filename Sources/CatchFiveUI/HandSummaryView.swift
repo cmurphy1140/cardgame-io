@@ -6,6 +6,11 @@ struct HandSummaryView: View {
     let names: [String]
     /// Built once by the model from the same history; nil only before any hand has finished.
     let outcome: HandOutcome?
+    let review: HandReview?
+    let difficulty: Difficulty
+    let describe: (PlayReview) -> String
+    let coaching: Bool
+
     var body: some View {
         if let summary = match.history.last, let outcome {
             VStack(spacing: 8) {
@@ -18,23 +23,72 @@ struct HandSummaryView: View {
                 .font(.footnote).multilineTextAlignment(.center).opacity(0.9)
                 .accessibilityElement(children: .combine)
                 Divider().overlay(.ivory.opacity(0.15)).padding(.vertical, 2)
-                Text("HAND POINTS  \(summary.result.points[0]) – \(summary.result.points[1])").font(.headline)
-                row("High", team: summary.result.highTeam)
-                row("Low", team: summary.result.lowTeam)
-                row("Jack", team: summary.result.jackTeam)
-                row("Five · 5 points", team: summary.result.fiveTeam)
-                row("Game · \(summary.result.gameValues[0])–\(summary.result.gameValues[1])", team: summary.result.gameTeam)
-                ForEach(outcome.notes, id: \.self) { note in
-                    Text(note).font(.caption).opacity(0.75).multilineTextAlignment(.center)
+                
+                DisclosureGroup("Points and scoring") {
+                    VStack(spacing: 8) {
+                        Text("HAND POINTS  \(summary.result.points[0]) – \(summary.result.points[1])").font(.headline)
+                        row("High", team: summary.result.highTeam)
+                        row("Low", team: summary.result.lowTeam)
+                        row("Jack", team: summary.result.jackTeam)
+                        row("Five · 5 points", team: summary.result.fiveTeam)
+                        row("Game · \(summary.result.gameValues[0])–\(summary.result.gameValues[1])", team: summary.result.gameTeam)
+                        ForEach(outcome.notes, id: \.self) { note in
+                            Text(note).font(.caption).opacity(0.75).multilineTextAlignment(.center)
+                        }
+                    }.padding(.top, 4)
+                }.tint(.gold)
+                
+                if let review {
+                    Divider().overlay(.ivory.opacity(0.15)).padding(.vertical, 2)
+                    DisclosureGroup("What happened in the tricks (\(review.tricks.count))") {
+                        if coaching {
+                            let (agreed, total) = review.agreement(forSeat: 0)
+                            Text("Matched suggested plays: \(agreed) of \(total). Standard's choice is a recommendation, not proof that another legal play was wrong.")
+                                .font(.caption).opacity(0.8).multilineTextAlignment(.leading)
+                                .padding(.bottom, 4)
+                        }
+                        VStack(spacing: 4) {
+                            ForEach(review.tricks, id: \.number) { trick in
+                                DisclosureGroup("Trick \(trick.number) · \(names[trick.winner]) took it") {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(trick.plays, id: \.play.card) { reviewPlay in
+                                            playRow(reviewPlay)
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                    .padding(.leading, 8)
+                                }.tint(.ivory.opacity(0.7)).font(.subheadline)
+                            }
+                        }
+                    }.tint(.gold)
                 }
             }.padding(16).background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
         }
     }
+    
     private func row(_ name: String, team: Int?) -> some View {
         HStack {
             Text(name)
             Spacer()
             Text(team.map { $0 == 0 ? "Your team" : "\(names[1]) + \(names[3])" } ?? "Out of play")
         }.font(.caption)
+    }
+    
+    @ViewBuilder private func playRow(_ reviewPlay: PlayReview) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(names[reviewPlay.play.seat]).font(.caption.weight(.semibold))
+                Spacer()
+                Text(reviewPlay.play.card.name).font(.caption)
+                if coaching {
+                    Image(systemName: reviewPlay.agreed ? "checkmark" : "arrow.triangle.branch")
+                        .foregroundStyle(reviewPlay.agreed ? Color.secondary : Color.primary)
+                }
+            }
+            if coaching && !reviewPlay.agreed {
+                Text(describe(reviewPlay)).font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }

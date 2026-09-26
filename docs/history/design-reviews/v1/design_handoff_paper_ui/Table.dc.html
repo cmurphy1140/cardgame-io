@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div data-screen-label="Table {{ tag }}" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#1A4030;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;color:#FAF5E3;">
+  <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 45%, #295742 40px, #1A4030 380px, #0A211A 720px);"></div>
+  <div style="position:absolute;inset:0;background-image:url('{{ felt }}');background-size:128px 128px;"></div>
+
+  <!-- deck top-right (38 wide, offset −2,−2 per back) and discards top-left (32 wide, rotated): thickness only -->
+  <sc-for list="{{ deck }}" as="d" hint-placeholder-count="3">
+    <div style="position:absolute;left:{{ d.x }}px;top:{{ d.y }}px;width:{{ d.w }}px;height:{{ d.h }}px;border-radius:{{ d.r }}px;background:#0F382E;box-shadow:inset 0 0 0 1.5px rgba(250,245,227,.7), inset 0 0 0 5px #0F382E, inset 0 0 0 6px rgba(250,245,227,.35), 0 2px 3px rgba(0,0,0,.3);transform:rotate({{ d.rot }}deg);opacity:{{ d.op }};"></div>
+  </sc-for>
+
+  <!-- seats: portrait 68, halo 3pt gold 3pt out on the seat to act, name headline, badges row -->
+  <sc-for list="{{ seats }}" as="s" hint-placeholder-count="3">
+    <div style="position:absolute;left:{{ s.x }}px;top:{{ s.y }}px;width:116px;display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="position:relative;width:68px;height:68px;margin:3px 0;border-radius:50%;background:#1A3D33;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(250,245,227,.7);">
+        <sc-for list="{{ s.parts }}" as="q" hint-placeholder-count="0">
+          <div style="position:absolute;left:{{ q.l }}px;top:{{ q.t }}px;width:{{ q.w }}px;height:{{ q.h }}px;border-radius:{{ q.r }};background:{{ q.bg }};box-shadow:{{ q.sh }};"></div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:18px;top:-0px;width:80px;height:80px;border-radius:50%;box-shadow:0 0 0 3px #E8BF6B;opacity:{{ s.halo }};pointer-events:none;"></div>
+      <div style="font-size:21px;font-weight:600;line-height:26px;">{{ s.name }}</div>
+      <div style="display:flex;align-items:center;gap:6px;height:23px;">
+        <div style="position:relative;width:20px;height:21px;margin-right:6px;">
+          <div style="position:absolute;left:0;top:0;width:14px;height:21px;border-radius:1px;background:#0F382E;box-shadow:inset 0 0 0 1px rgba(250,245,227,.7);"></div>
+          <div style="position:absolute;left:3px;top:0;width:14px;height:21px;border-radius:1px;background:#0F382E;box-shadow:inset 0 0 0 1px rgba(250,245,227,.7);"></div>
+          <div style="position:absolute;left:6px;top:0;width:14px;height:21px;border-radius:1px;background:#0F382E;box-shadow:inset 0 0 0 1px rgba(250,245,227,.7), inset 0 0 0 3px #0F382E, inset 0 0 0 4px rgba(250,245,227,.35);"></div>
+        </div>
+        <sc-if value="{{ s.dealer }}" hint-placeholder-val="{{ false }}"><div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:15px;color:#E8BF6B;">DEALER</div></sc-if>
+        <sc-if value="{{ s.bidder }}" hint-placeholder-val="{{ false }}"><div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:15px;opacity:.7;">BIDDER</div></sc-if>
+      </div>
+    </div>
+  </sc-for>
+
+  <!-- pile: 62×93, nudged toward the seat that played it, tossed; winner ringed 3pt gold -->
+  <sc-for list="{{ trick }}" as="c" hint-placeholder-count="0">
+    <div style="position:absolute;left:{{ c.x }}px;top:{{ c.y }}px;width:62px;height:93px;border-radius:3.72px;background:#FAF5E3;color:{{ c.color }};transform:rotate({{ c.rot }}deg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15), 0 0 0 {{ c.ringW }}px #E8BF6B, 0 3px 3px rgba(0,0,0,.25);font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;">
+      <div style="position:absolute;left:5px;top:4px;display:flex;flex-direction:column;align-items:center;font-weight:700;font-size:13px;line-height:13px;">{{ c.r }}<span style="font-size:12px;line-height:12px;">{{ c.s }}</span></div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-weight:700;font-size:26px;line-height:28px;">{{ c.r }}</div><div style="font-size:28px;line-height:30px;">{{ c.s }}</div></div>
+    </div>
+  </sc-for>
+  <sc-if value="{{ showFirstLead }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:344px;text-align:center;font-size:15px;opacity:.7;">First lead</div>
+  </sc-if>
+
+  <!-- status line (title3 medium) with 44pt glyph slots, then one commentary line -->
+  <div style="position:absolute;left:16px;right:16px;top:586px;height:44px;display:flex;align-items:center;gap:8px;">
+    <div style="width:44px;height:44px;flex:none;"></div>
+    <div style="flex:1;text-align:center;font-size:24px;line-height:30px;font-weight:500;white-space:nowrap;"><span style="color:{{ statusColor }};">{{ status }}</span>{{ statusTail }}</div>
+    <div style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;opacity:{{ hintOp }};"><div style="width:14px;height:18px;border:2px solid #FAF5E3;border-radius:7px 7px 3px 3px;position:relative;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45));"><div style="position:absolute;left:2px;right:2px;bottom:-6px;height:2px;border-bottom:2px solid #FAF5E3;"></div></div></div>
+  </div>
+  <div style="position:absolute;left:24px;right:24px;top:636px;text-align:center;font-size:17px;line-height:22px;color:rgba(250,245,227,.7);">{{ sub }}</div>
+
+  <!-- hand: 58×87, r 3.48, overlap −8 (50pt strip), −8°…+8° about the bottom edge, outer cards drop 6 -->
+  <sc-for list="{{ hand }}" as="c" hint-placeholder-count="6">
+    <div style="position:absolute;left:{{ c.x }}px;top:{{ c.y }}px;width:58px;height:87px;border-radius:3.48px;background:#FAF5E3;color:{{ c.color }};transform:rotate({{ c.rot }}deg);transform-origin:50% 100%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15), 0 3px 3px rgba(0,0,0,.25);font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;">
+      <div style="position:absolute;left:5px;top:4px;display:flex;flex-direction:column;align-items:center;font-weight:700;font-size:13px;line-height:13px;">{{ c.r }}<span style="font-size:12px;line-height:12px;">{{ c.s }}</span></div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-weight:700;font-size:24px;line-height:26px;">{{ c.r }}</div><div style="font-size:27px;line-height:28px;">{{ c.s }}</div></div>
+    </div>
+  </sc-for>
+  <div style="position:absolute;left:0;right:0;top:797px;text-align:center;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:15px;letter-spacing:1px;opacity:.7;">YOUR HAND</div>
+
+  <!-- ===== HEADER BAND: the box. HeaderBandShape: rect to y113, frown to y95 at centre (control 36 above) ===== -->
+  <svg width="393" height="140" viewBox="0 0 393 140" style="position:absolute;left:0;top:0;"><defs><filter id="bandshadow-{{ tag }}" x="-5%" y="-5%" width="110%" height="140%"><feGaussianBlur stdDeviation="5"></feGaussianBlur></filter></defs><path d="M0 0H393V117Q196.5 81 0 117Z" fill="rgba(0,0,0,.45)" filter="url(#bandshadow-{{ tag }})"></path></svg>
+  <div style="position:absolute;left:0;top:0;width:393px;height:113px;clip-path:path('M0 0H393V113Q196.5 77 0 113Z');background:{{ bandBg }};">
+    <sc-if value="{{ isOak }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(179deg, rgba(0,0,0,0) 0 3px, rgba(60,32,12,.18) 3px 4px, rgba(255,220,160,.09) 5px 7px, rgba(0,0,0,0) 8px 12px);"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,.38) 100%);"></div>
+    </sc-if>
+    <sc-if value="{{ isBox }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:{{ clothSize }}px {{ clothSize }}px;"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.14));"></div>
+    </sc-if>
+    <sc-if value="{{ isWorn }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60px 40px at 0% 100%, rgba(255,215,190,.16), transparent), radial-gradient(ellipse 60px 40px at 100% 100%, rgba(255,215,190,.16), transparent), radial-gradient(ellipse 140px 30px at 50% 0%, rgba(0,0,0,.18), transparent);"></div>
+    </sc-if>
+    <svg width="393" height="113" viewBox="0 0 393 113" style="position:absolute;left:0;top:0;">
+      <defs><linearGradient id="foilg-{{ tag }}" x1="0" x2="1"><stop offset="0" stop-color="#8E6B2A"></stop><stop offset=".3" stop-color="#CFA85A"></stop><stop offset=".5" stop-color="#F0D890"></stop><stop offset=".7" stop-color="#CFA85A"></stop><stop offset="1" stop-color="#8E6B2A"></stop></linearGradient></defs>
+      <sc-if value="{{ foil }}" hint-placeholder-val="{{ false }}">
+        <path d="M0 108Q196.5 72 393 108" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="{{ foilW }}" transform="translate(0 1)"></path>
+        <path d="M0 108Q196.5 72 393 108" fill="none" stroke="url(#foilg-{{ tag }})" stroke-width="{{ foilW }}"></path>
+      </sc-if>
+      <sc-if value="{{ isLid }}" hint-placeholder-val="{{ false }}">
+        <path d="M0 113Q196.5 77 0 113" fill="none"></path>
+        <path d="M0 106Q196.5 70 393 106" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="6"></path>
+        <path d="M0 103.5Q196.5 67.5 393 103.5" fill="none" stroke="rgba(255,225,205,.22)" stroke-width="1.5"></path>
+        <path d="M0 112Q196.5 76 393 112" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="2"></path>
+      </sc-if>
+      <sc-if value="{{ isPlate }}" hint-placeholder-val="{{ false }}">
+        <path d="M0 105Q196.5 69 393 105" fill="none" stroke="rgba(255,225,205,.22)" stroke-width=".75"></path>
+        <path d="M0 108Q196.5 72 393 108" fill="none" stroke="rgba(255,225,205,.22)" stroke-width=".75"></path>
+        <path d="M0 112Q196.5 76 393 112" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="1.5"></path>
+      </sc-if>
+    </svg>
+    <!-- status bar -->
+    <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+    <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+    <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+    <!-- ScoreBarView: padding 16, HStack spacing 10 — score · contract · menu -->
+    <div style="position:absolute;left:16px;right:16px;top:61px;height:44px;display:flex;align-items:center;gap:10px;">
+      <div style="flex:none;display:flex;align-items:baseline;gap:4px;font-size:19px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;"><span style="opacity:.7;">Us</span><span style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-size:24px;">{{ scoreUs }}</span><span style="opacity:.5;">·</span><span style="opacity:.7;">Them</span><span style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-size:24px;">{{ scoreThem }}</span></div>
+      <div style="flex:1;min-width:0;display:flex;justify-content:center;">
+        <sc-if value="{{ showContract }}" hint-placeholder-val="{{ true }}">
+          <div style="height:36px;padding:0 {{ chipPad }}px;border-radius:12px;background:{{ chipBg }};box-shadow:{{ chipShadow }};display:flex;align-items:center;gap:5px;font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:600;font-size:24px;color:#E8BF6B;white-space:nowrap;"><span style="color:#DB2E38;">♥</span><span>4</span><span style="opacity:.6;">—</span><span>Rue</span></div>
+        </sc-if>
+      </div>
+      <div style="flex:none;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:5px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));"><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:393,&quot;height&quot;:852},&quot;mid&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;oak&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;cloth&quot;,&quot;options&quot;:[&quot;cloth&quot;,&quot;worn&quot;,&quot;lid&quot;,&quot;plate&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;foil&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;chipFelt&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;tag&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;t&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { felt: '', tiles: {}, parts: {} };
+  async componentDidMount() {
+    const m = await import('./textures.js');
+    const parts = {}; for (const n of Object.keys(m.CAST)) parts[n] = m.portraitParts(m.CAST[n], 68);
+    this.setState({ felt: m.feltTile(12), tiles: { cloth: m.clothTile(11), twill: m.twillTile(13), leather: m.leatherTile(17) }, parts });
+  }
+  renderVals() {
+    const p = this.props, mid = p.mid ?? true, oak = p.oak ?? false, variant = p.variant ?? 'cloth', foil = (p.foil ?? false) && !oak, chipFelt = (p.chipFelt ?? false) && !oak;
+    const red = '#B31F2E', blk = '#000', ink = s => (s === '♥' || s === '♦') ? red : blk;
+    const fan = [['10','♥'],['5','♥'],['4','♥'],['3','♥'],['4','♦'],['K','♠']];
+    const hand = fan.map(([r, s], i) => { const t = i / 5; return { r, s, color: ink(s), x: 42.5 + i * 50, y: 690 + Math.pow((t - .5) * 2, 2) * 6, rot: (t - .5) * 16 }; });
+    // pile centre (196.5, 352); card 62×93; nudges W(−48,+4) N(0,−42) E(+48,+4) S(0,+42); toss ≤ 11°
+    const trick = mid ? [
+      { r: 'K', s: '♠', x: 165.5, y: 263.5, rot: -4, ringW: 0 },
+      { r: '9', s: '♠', x: 117.5, y: 309.5, rot: -9, ringW: 0 },
+      { r: '7', s: '♥', x: 213.5, y: 309.5, rot: 7, ringW: 3 },
+      { r: '6', s: '♠', x: 165.5, y: 347.5, rot: 3, ringW: 0 },
+    ].map(c => ({ ...c, color: ink(c.s) })) : [];
+    const P = this.state.parts;
+    const seats = [
+      { name: 'Otto', x: 138.5, y: 129, halo: 0, dealer: false, bidder: false, parts: P.Otto || [] },
+      { name: 'Hazel', x: 16, y: 290, halo: 0, dealer: true, bidder: false, parts: P.Hazel || [] },
+      { name: 'Rue', x: 261, y: 290, halo: mid ? 1 : 0, dealer: false, bidder: mid, parts: P.Rue || [] },
+    ];
+    const deck = [0, 1, 2, 3].map(i => ({ x: 339 - i * 2, y: 156 - i * 2, w: 38, h: 57, r: 2.28, rot: 0, op: 1 }))
+      .concat(mid ? [0, 1, 2].map(i => ({ x: 16 + i * 1.5, y: 156 - i * 1.5, w: 32, h: 48, r: 1.9, rot: 5 - i * 5, op: .8 })) : []);
+    const tile = this.state.tiles[variant === 'worn' ? 'twill' : variant === 'plate' ? 'leather' : 'cloth'] || '';
+    const boardBg = { cloth: '#5C1F2A', worn: '#4F1A24', lid: '#5C1F2A', plate: '#3F1119' }[variant] || '#5C1F2A';
+    return {
+      tag: p.tag ?? 't', felt: this.state.felt, cloth: tile, clothSize: variant === 'worn' ? 48 : variant === 'plate' ? 40 : 64, foilW: p.foilW ?? 1.5,
+      seats, trick, hand, deck, showFirstLead: !mid, showContract: mid,
+      status: mid ? 'Rue is thinking' : 'Your turn', statusTail: mid ? '' : ' · lead any card', statusColor: mid ? '#FAF5E3' : '#E8BF6B', hintOp: mid ? 0 : 1,
+      sub: mid ? 'Tap a card on the table to see why it was played' : '',
+      scoreUs: mid ? '21' : '0', scoreThem: mid ? '14' : '0',
+      isOak: oak, isBox: !oak, isWorn: !oak && variant === 'worn', isLid: !oak && variant === 'lid', isPlate: !oak && variant === 'plate', foil,
+      bandBg: oak ? 'linear-gradient(170deg,#B3824A 0%,#8A5E33 55%,#614021 100%)' : boardBg,
+      chipBg: chipFelt ? 'radial-gradient(ellipse at 50% 40%, #295742, #1A4030)' : 'transparent',
+      chipShadow: chipFelt ? 'inset 0 1px 3px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.35), 0 1px 0 rgba(255,225,205,.12)' : 'none',
+      chipPad: chipFelt ? 14 : 0,
+    };
+  }
+}
+</script>
+</body>
+</html>

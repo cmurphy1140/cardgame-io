@@ -58,6 +58,8 @@ struct HandFanView: View {
         .frame(maxWidth: .infinity)
     }
 
+    @State private var selectedCard: Card?
+
     /// One row of cards. Fanned rows rotate and dip; the two-row fallback lays cards flat so nothing
     /// overlaps a neighbour's touch strip.
     private func row(_ cards: [Card], indices: [Int], strip: Double, fanned: Bool) -> some View {
@@ -67,9 +69,20 @@ struct HandFanView: View {
             ForEach(indices, id: \.self) { index in
                 let card = cards[index]
                 let playable = model.allows(.play(card))
+                let isSelected = selectedCard == card
                 let style: CardStyle = playing && model.isHumanTurn ? (playable ? .playable : .dimmed) : .rest
                 Button {
-                    if playable { model.send(.play(card)) } else { onIllegal(card) }
+                    if playable {
+                        if selectedCard == card {
+                            model.send(.play(card))
+                            selectedCard = nil
+                        } else {
+                            selectedCard = card
+                        }
+                    } else {
+                        onIllegal(card)
+                        selectedCard = nil
+                    }
                 } label: {
                     CardView(card: card, width: cardWidth, style: style)
                         .overlay(RoundedRectangle(cornerRadius: Theme.Card.radius(width: cardWidth), style: .continuous)
@@ -80,11 +93,12 @@ struct HandFanView: View {
                 .modifier(ShakeEffect(trigger: shakes[card, default: 0]))
                 .rotationEffect(.degrees(reduceMotion || !fanned ? 0 : fanAngle(index, of: fanCount)), anchor: .bottom)
                 .offset(y: reduceMotion || !fanned ? 0 : fanDrop(index, of: fanCount))
+                .offset(y: isSelected ? -24 : 0)
                 .allowsHitTesting(playing)
                 .accessibilityValue(model.accessibilityValue(for: card))
                 .modifier(MatchedCard(card: card, namespace: namespace, enabled: !reduceMotion))
                 .transition(handTransition(index: index, width: measuredWidth))
-                .zIndex(Double(index))
+                .zIndex(isSelected ? 100 : Double(index))
             }
         }
     }

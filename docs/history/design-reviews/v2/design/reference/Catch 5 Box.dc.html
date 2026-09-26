@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><script src="./image-slot.js"></script><link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&amp;display=swap" rel="stylesheet"><style>.wf{font-family:'Patrick Hand','Segoe Print','Bradley Hand',cursive;color:#222}.wf-frame{position:relative;width:236px;height:512px;border:2px solid #222;border-radius:26px;background:#fbfaf7;overflow:hidden;display:flex;flex-direction:column;flex:none}.wf-box{background:repeating-linear-gradient(135deg,#e9d3d7 0 3px,#f4e6e8 3px 7px)}.wf-felt{background:repeating-linear-gradient(0deg,#d6e6dc 0 3px,#e6f0ea 3px 6px)}.wf-ivory{background:#fffdf5;border:1.5px solid #222}.wf-btn{height:34px;border:2px solid #222;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;background:#fff}.wf-btn.p{background:#cfe3d6}.wf-lbl{font-size:13px;line-height:1.25;color:#444}.wf-ph{border:1.5px dashed #777;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666}.wf-arrow{display:flex;align-items:center;font-size:26px;color:#666;padding:0 4px}.wf-cap{font-size:14px;line-height:1.35;color:#333;max-width:236px}.wf-cap b{color:#5C1F2A}.wf-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}.dv-spec .dv-oid{background:#1a1a1a;color:#fff}</style><style>body{margin:0;background:#1c1a1c;font-family:system-ui,sans-serif;color:#eee}a{color:#F0D890}a:hover{color:#fff}.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#fff;color:#000;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#eee}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.14);color:#eee;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 system-ui,sans-serif;color:rgba(255,255,255,.65)}.dv-card{max-width:100%;border-radius:8px}.dv-opt:target .dv-oid{background:#F0D890;color:#000}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(255,255,255,.5)}.dv-spec{width:393px;box-sizing:border-box;padding:14px 16px;background:#f2eee6;color:#221c1c;border-radius:10px;font:11.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre-wrap;text-wrap:pretty}.dv-spec b{font-weight:700}.dv-note{max-width:820px;font:13px/1.55 system-ui,sans-serif;color:rgba(255,255,255,.8);margin:0 0 24px}.dv-note b{color:#fff}</style></helmet>
+
+<section class="dv-turn wf" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Wiring the box into the app, and five ideas the metaphor unlocks. Wireframes first, then the file-by-file plan.</span></div>
+<div class="dv-note"><b>What I read.</b> RootView owns four screens (login, intro, menu, table) and one cover (the pause card); sheets are Tutorial, Review, Scoreboard, Statistics, Settings, HintDetail, Explainer. Six surfaces draw WoodGrainView or the felt→black gradient; every one of them is a <b>.background()</b> call, so the box is a one-view swap. Two things the code does that the brief did not mention: <b>MenuButtons.prominent</b>, the Tutorial's <b>Next</b> and its active <b>pill</b> are all gold on the box side today, so candidate B is not yet true by construction; and Login/Intro sit on the felt gradient and would be the box's first impression.</div>
+
+<div class="dv-opts">
+
+<div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Lift the lid — one motion ties menu, table and pause together</div><div class="wf-row" style="max-width:1140px;">
+  <div class="wf-frame wf-box"><div style="padding:52px 18px 0;display:flex;flex-direction:column;gap:10px;"><div style="font-size:30px;font-weight:700;text-align:center;">CATCH 5</div><div class="wf-lbl" style="text-align:center;letter-spacing:.2em;">MAIN MENU</div><div class="wf-ph" style="height:64px;margin-top:8px;">player card</div><div class="wf-ph" style="height:36px;">beginner toggle</div><div class="wf-btn p" style="margin-top:8px;">Continue game ↑</div><div class="wf-btn">New match</div><div class="wf-btn">How to play</div></div><div class="wf-lbl" style="position:absolute;left:0;right:0;bottom:14px;text-align:center;">the lid, closed</div></div>
+  <div class="wf-arrow">→</div>
+  <div class="wf-frame wf-felt"><div class="wf-box" style="height:260px;border-bottom:2px solid #222;border-radius:0 0 40% 40%/0 0 22px 22px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;"><div class="wf-lbl">lid sliding up · 0.45 s spring</div></div><div class="wf-lbl" style="padding:18px;text-align:center;">felt appears beneath, seats already in place</div></div>
+  <div class="wf-arrow">→</div>
+  <div class="wf-frame wf-felt"><div class="wf-box" style="height:70px;border-bottom:2px solid #222;border-radius:0 0 50% 50%/0 0 14px 14px;display:flex;align-items:center;justify-content:space-between;padding:22px 12px 0;font-size:13px;"><span>Us 21 · Them 14</span><span>♥ 4 — Rue</span><span>≡</span></div><div style="flex:1;display:flex;align-items:center;justify-content:center;"><div class="wf-ph" style="width:150px;height:110px;">table, unchanged</div></div><div class="wf-lbl" style="padding:0 18px 16px;text-align:center;">the band is the lid's edge left in view</div></div>
+  <div class="wf-arrow">⇄</div>
+  <div class="wf-frame wf-felt"><div class="wf-box" style="height:300px;border-bottom:2px solid #222;border-radius:0 0 40% 40%/0 0 22px 22px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;padding:0 18px 18px;"><div style="font-size:22px;font-weight:700;text-align:center;">Paused</div><div class="wf-btn p">Continue game</div><div class="wf-btn">New match</div><div class="wf-btn">Main menu</div></div><div class="wf-lbl" style="padding:18px;text-align:center;">pause = the lid lowered halfway; table dimmed under it</div></div>
+</div>
+<div class="wf-cap"><b>Idea.</b> Menu is the closed lid; Continue game lifts it; the header band is the lid's edge that stays; Pause lowers it halfway. Same three actions as WelcomeCard, same routes as RootView — only the transitions change. Reduce Motion: crossfade, as today.</div></div>
+
+<div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>The rules leaflet — intro and How to play as an ivory card from the box, dark ink</div><div class="wf-row">
+  <div class="wf-frame wf-box"><div style="position:absolute;left:14px;right:14px;top:56px;bottom:70px;transform:rotate(-1.5deg);" class="wf-ivory"><div style="padding:16px;display:flex;flex-direction:column;gap:8px;"><div style="font-size:22px;font-weight:700;">How a hand goes</div><div class="wf-lbl">1 · Deal — six each, partners across</div><div class="wf-lbl">2 · Bid — 2 to 9, high bid names trump</div><div class="wf-lbl">3 · Trump — draw up to six</div><div class="wf-lbl">4 · Tricks — follow suit if you can</div><div class="wf-lbl">5 · Score — the trump ♥5 is five points</div></div></div><div style="position:absolute;left:18px;right:18px;bottom:16px;display:flex;flex-direction:column;gap:6px;"><div class="wf-btn" style="background:#fffdf5;">Learn the game</div><div class="wf-btn p">Deal me in</div></div></div>
+  <div class="wf-frame wf-box"><div style="padding:52px 14px 0;display:flex;flex-direction:column;gap:8px;"><div class="wf-lbl" style="letter-spacing:.15em;">HOW TO PLAY · 3 OF 5</div><div style="display:flex;gap:6px;"><div class="wf-ph" style="width:40px;height:26px;">Deal</div><div class="wf-ph" style="width:34px;height:26px;">Bid</div><div class="wf-ph wf-ivory" style="width:50px;height:26px;border-style:solid;">Trump</div><div class="wf-ph" style="width:38px;height:26px;">Play</div></div></div><div class="wf-ivory" style="position:absolute;left:14px;right:14px;top:120px;bottom:64px;padding:14px;display:flex;flex-direction:column;gap:8px;"><div style="font-size:26px;font-weight:700;">Trump</div><div class="wf-lbl">Every card of the named suit beats every card of the other three…</div><div class="wf-ph" style="height:70px;">exercise: three cards</div></div><div style="position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:8px;"><div class="wf-btn" style="flex:1;background:#fffdf5;">Back</div><div class="wf-btn p" style="flex:1;">Next</div></div></div>
+</div>
+<div class="wf-cap"><b>Idea.</b> A deck box holds a printed rules card. Reading on ivory with #1F130A ink is 15:1 and reads like paper; the board frames it. Fixes the oak's failing headings by removing the case. LessonText, RulesFigures and the exercises are unchanged; only the sheet's background and ink flip.</div></div>
+
+<div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>The scorepad — Scoreboard and Hand review on ruled paper</div><div class="wf-row">
+  <div class="wf-frame wf-box"><div class="wf-ivory" style="position:absolute;left:14px;right:14px;top:56px;bottom:16px;background:repeating-linear-gradient(0deg,#fffdf5 0 27px,#cfd8e6 27px 28px);padding:14px;"><div style="font-size:22px;font-weight:700;line-height:28px;">Scoreboard</div><div style="display:flex;justify-content:space-between;line-height:28px;font-size:15px;"><span>Hand</span><span>Us</span><span>Them</span></div><div style="display:flex;justify-content:space-between;line-height:28px;font-size:15px;"><span>1 · Rue bid 4, made</span><span>0</span><span>4</span></div><div style="display:flex;justify-content:space-between;line-height:28px;font-size:15px;"><span>2 · You bid 3, made</span><span>9</span><span>4</span></div><div style="display:flex;justify-content:space-between;line-height:28px;font-size:15px;"><span>3 · Otto bid 5, set</span><span>21</span><span>14</span></div><div style="display:flex;justify-content:space-between;line-height:28px;font-size:15px;color:#aaa;"><span>4 · …</span><span></span><span></span></div></div></div>
+  <div class="wf-frame wf-box"><div class="wf-ivory" style="position:absolute;left:14px;right:14px;top:56px;bottom:16px;background:repeating-linear-gradient(0deg,#fffdf5 0 27px,#cfd8e6 27px 28px);padding:14px;"><div style="font-size:22px;font-weight:700;line-height:28px;">Hand 3 · review</div><div class="wf-lbl" style="line-height:28px;">Trick 1 · Rue took it</div><div class="wf-lbl" style="line-height:28px;padding-left:12px;">Otto K♠ · Hazel 9♠ · Rue 7♥ ✓ · you 6♠</div><div class="wf-lbl" style="line-height:28px;">Trick 2 · Rue took it</div><div class="wf-lbl" style="line-height:28px;padding-left:12px;">Rue A♥ · you 3♥ ⑂ · Otto J♥ · Hazel 5♥</div><div class="wf-lbl" style="line-height:28px;padding-left:12px;color:#5C1F2A;">⑂ Standard plays the 4♥ here…</div></div></div>
+</div>
+<div class="wf-cap"><b>Idea.</b> The pad is what a family keeps score on. Both are Lists today; the change is scrollContentBackground(.hidden) + a paper background + serif numerals. Branch marks and ticks stay. No counts added; hand numbers already exist on the score sheet.</div></div>
+
+<div class="dv-opt" id="3d"><div class="dv-olabel"><a class="dv-oid" href="#3d">3d</a>Name plate — login as the label on the lid</div><div class="wf-row">
+  <div class="wf-frame wf-box"><div style="padding:56px 18px 0;display:flex;flex-direction:column;gap:14px;"><div style="font-size:30px;font-weight:700;text-align:center;">CATCH 5</div><div class="wf-lbl" style="text-align:center;letter-spacing:.2em;">THIS DECK BELONGS TO</div><div class="wf-ivory" style="height:44px;display:flex;align-items:center;padding:0 12px;font-size:18px;border-radius:6px;">Connor|</div><div class="wf-lbl">Pick a face</div><div style="display:flex;justify-content:space-between;"><div class="wf-ph" style="width:44px;height:44px;border-radius:50%;border-style:solid;">1</div><div class="wf-ph" style="width:44px;height:44px;border-radius:50%;">2</div><div class="wf-ph" style="width:44px;height:44px;border-radius:50%;">3</div><div class="wf-ph" style="width:44px;height:44px;border-radius:50%;">4</div></div><div class="wf-lbl">Computer strength</div><div style="display:flex;"><div class="wf-btn" style="flex:1;border-radius:9px 0 0 9px;">Easy</div><div class="wf-btn p" style="flex:1;border-radius:0 9px 9px 0;">Standard</div></div><div class="wf-btn p" style="margin-top:8px;">Open the box</div></div></div>
+</div>
+<div class="wf-cap"><b>Idea.</b> Same fields as LoginView, same sitDown(); the copy and the plate make it a possession rather than an account. Selected face keeps its ring in ivory here, gold only once it sits on felt.</div></div>
+
+<div class="dv-opt" id="3e"><div class="dv-olabel"><a class="dv-oid" href="#3e">3e</a>Gold by construction — the button system that makes candidate B true, and A safe</div><div class="wf-row">
+  <div class="wf-frame" style="height:auto;padding:16px;gap:12px;background:#fbfaf7;"><div class="wf-lbl" style="letter-spacing:.15em;">ON THE BOX</div><div class="wf-box" style="padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:8px;"><div class="wf-btn p">primary · felt</div><div class="wf-btn">secondary · ivory ring</div><div class="wf-btn" style="border-style:dashed;">pill · ivory, active = filled</div></div><div class="wf-lbl" style="letter-spacing:.15em;margin-top:6px;">ON THE FELT</div><div class="wf-felt" style="padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:8px;"><div class="wf-btn" style="background:#f3dfae;">primary · gold (Deal next hand)</div><div class="wf-btn" style="background:#333;color:#fff;">auction pill · inlay</div><div class="wf-lbl">halo · badge · winner ring · contract: gold</div></div><div class="wf-lbl" style="margin-top:6px;">One rule in code: <b>gold is a ShapeStyle the box files never import.</b> MenuButtons and TutorialView lose <span style="text-decoration:line-through;">.tint(.gold)</span>; the table keeps it.</div></div>
+</div>
+<div class="wf-cap"><b>Idea.</b> Today gold reaches the box through MenuButtons.prominent, the Tutorial's Next and active pill, and the intro's step icons. Route all of those through two box styles (FeltButtonStyle, BoxRingButtonStyle) and the sixth gold cannot come back by accident. Under A, foil is a third, static style with no button using it.</div></div>
+
+</div>
+
+<div class="dv-spec" style="width:1024px;margin-top:28px;"><b>WIRING PLAN — file by file, one PR per row, most-seen first</b>
+
+<b>1  Theme.swift</b>       add `Theme.Box` { board #5C1F2A · lit #7A2E3A · shadow #3D111A · well #33101A · emboss #66232F · ink #D9C7C0 · foil (#F0D890, #CFA85A, #8E6B2A) · seed 13 · lipWidth 14 · wellRadius 16 · dip stays Theme.Table.headerDip }. `Wood.felt*` untouched; `Wood.light/base/dark` deleted in the last PR.
+<b>2  BoxSurface.swift</b>  new. `BoxSurface(edge: .none | .lip | .frown(dip:), light: .pool | .linear)` — a Canvas like WoodGrainView: fill board → cloth procedure (weave rows/cols or twill strokes, flecks on a 4 pt grid from GrainRandom(seed)) → wear pools → lighting → edge (lip strokes or foil rule along the same path as HeaderBandShape). `.equatable()`, `rendersAsynchronously`, `.accessibilityHidden(true)`. With Increase Contrast: texture α 0, flat board. `BoxWell()` ViewModifier = pressed panel (fill well, inset shadow, lip); `BoxTitleStyle` = letterpress or foil Text modifier.
+<b>3  Buttons</b>            `FeltButtonStyle` (radial #295742→#1A4030 + FeltView nap, ivory label, min 56) and `BoxRingButtonStyle` (1.5 pt ivory .55 ring). `MenuButtons.prominent/plain` → these. TutorialView: pill active = ivory fill / board ink; Next → FeltButtonStyle. IntroView step discs: ivory ring, not gold.
+<b>4  TableView.swift:93</b> `WoodGrainView(vignette: .linear)` → `BoxSurface(edge: .frown(dip: 18), light: .linear)`; keep clipShape + shadow. ScoreBarView: contract chip gets `.background(FeltWindow())` only under candidate A (a felt RoundedRectangle r 12 with inset shadow); under B nothing changes.
+<b>5  MainMenuView.swift:86</b> gradient → `BoxSurface()`. Player card and toggle: `.boxWell()`. Title: `.boxTitle(.foil | .letterpress)`. Hamburger unchanged.
+<b>6  RootView.swift</b>     ZStack base gradient → `BoxSurface()` so Login and Intro inherit the box; remove their own backgrounds. Transitions (<a class="dv-oid" href="#3a">3a</a>): menu `.move(edge: .top)` out / table `.opacity` in; pause card `.move(edge: .top)` from the band; `reduceMotion` keeps `.opacity`.
+<b>7  Sheets</b>              TutorialView, ReviewView, ScoreboardView, StatisticsView, HintDetailView, ExplainerView: `.background(WoodGrainView())` → `.background(BoxSurface())`. Reading option <a class="dv-oid" href="#3b">3b</a>/<a class="dv-oid" href="#3c">3c</a>: `.background(PaperSurface())` + `.foregroundStyle(Theme.Box.paperInk)` inside the sheet only; List rows `.listRowBackground(.clear)`.
+<b>8  WelcomeCard.swift</b>  inlay → `Theme.Box.shadow` + `.boxWell()`; anchored to the top under the band when presented from the table.
+<b>9  Checks</b>              `scripts/contrast-sample.swift` on the new band and on a bare-board heading (target ≥ 4.5 floor; board gives ≥ 10); DTS default / XXXL / AX2 on menu, lesson 3, review; Increase Contrast + Reduce Motion no-ops; `swift test` untouched. docs: D62 in decisions.md, `Theme.Box` in types-and-functions.md, this file exported to docs/export/Deck-Box.dc.html.</div>
+
+<p class="dv-next">Try next: "hi-fi <a class="dv-oid" href="#3a">3a</a>'s lid motion as a short animation" · "build <a class="dv-oid" href="#3b">3b</a> lesson 3 at full size in <a class="dv-oid" href="#2b">2b</a>'s box" · "write docs/deck-box-spec.md from turn 2 + this plan"</p>
+</section>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Three richer boxes, built on the real code. Each: main menu + header over the live felt.</span></div>
+<div class="dv-note"><b>What changed underneath.</b> The table is now drawn from the repository, not from screenshots: <b>HeaderBandShape</b> (band to 113 pt, frown to 95 at centre), <b>ScoreBarView</b> (16 pt padding, 10 pt gaps, serif numerals at title3), the fan from <b>HandFanView</b> (58 pt cards, 50 pt strip, ±8°, 6 pt drop), pile nudges from <b>TableSurface</b> (±48 / ±42, toss ≤ 11°), and the cast's faces from <b>PortraitView</b> + <b>Cast</b> as the same part recipe, so no uploads are needed. The felt stipple is FeltView's procedure verbatim.<br><br>
+<b>Why turn 1 read as thin, honestly:</b> the board was one flat colour with a texture too faint to see at 1:1, the foil was a hairline, and nothing had depth. The three below fix that three different ways while holding every approved rule: geometry untouched, three things in the band, hamburger where it is, felt and cards as drawn by the app. Bare-board heading contrast is the case proven on each (the oak's failing case at 4.4:1); all three boards clear 10:1.</div>
+
+<div class="dv-opts">
+
+<!-- ================= 2a · WORN CLOTH ================= -->
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Worn cloth — twill board, rubbed corners, double foil rule, suits in the corners (candidate A)</div><div class="dv-card" style="display:flex;gap:24px;">
+<div data-screen-label="2a Menu" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#4F1A24;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ twill }}');background-size:48px 48px;"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(170deg,rgba(255,255,255,.06) 0%,rgba(0,0,0,0) 40%,rgba(0,0,0,.18) 100%);"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(90px 70px at 0% 0%,rgba(255,215,190,.16),transparent),radial-gradient(90px 70px at 100% 0%,rgba(255,215,190,.14),transparent),radial-gradient(90px 70px at 0% 100%,rgba(255,215,190,.12),transparent),radial-gradient(90px 70px at 100% 100%,rgba(255,215,190,.14),transparent);box-shadow:inset 0 0 34px rgba(255,215,190,.07);"></div>
+  <div style="position:absolute;inset:13px;border-radius:40px;padding:{{ foilW }}px;background:rgba(0,0,0,.5);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+  <div style="position:absolute;inset:12px;border-radius:40px;padding:{{ foilW }}px;background:linear-gradient(160deg,#8E6B2A,#CFA85A 30%,#F0D890 52%,#CFA85A 72%,#8E6B2A);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+  <div style="position:absolute;inset:20px;border-radius:33px;padding:.75px;background:linear-gradient(160deg,#8E6B2A,#CFA85A 30%,#F0D890 52%,#CFA85A 72%,#8E6B2A);opacity:.85;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+  <div style="position:absolute;left:34px;top:64px;font-size:26px;line-height:1;color:#5C2430;text-shadow:-1px -1px 0 rgba(255,225,205,.22), 1px 1px 1px rgba(0,0,0,.6);">♠</div>
+  <div style="position:absolute;right:34px;top:64px;font-size:26px;line-height:1;color:#5C2430;text-shadow:-1px -1px 0 rgba(255,225,205,.22), 1px 1px 1px rgba(0,0,0,.6);">♥</div>
+  <div style="position:absolute;left:96px;top:64px;font-size:26px;line-height:1;color:#5C2430;text-shadow:-1px -1px 0 rgba(255,225,205,.22), 1px 1px 1px rgba(0,0,0,.6);">♦</div>
+  <div style="position:absolute;right:96px;top:64px;font-size:26px;line-height:1;color:#5C2430;text-shadow:-1px -1px 0 rgba(255,225,205,.22), 1px 1px 1px rgba(0,0,0,.6);">♣</div>
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <div style="position:absolute;right:12px;top:60px;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45));"><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div></div>
+  <div style="position:absolute;left:28px;right:28px;top:136px;display:flex;flex-direction:column;gap:28px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:64px;line-height:66px;letter-spacing:.02em;background:linear-gradient(172deg,#F0D890 0%,#CFA85A 46%,#8E6B2A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.65)) drop-shadow(0 2px 3px rgba(0,0,0,.3));">CATCH 5</div>
+      <div style="display:flex;align-items:center;gap:10px;width:200px;"><div style="flex:1;height:.75px;background:linear-gradient(90deg,transparent,#CFA85A);"></div><div style="width:5px;height:5px;transform:rotate(45deg);background:#CFA85A;box-shadow:0 1px 0 rgba(0,0,0,.5);"></div><div style="flex:1;height:.75px;background:linear-gradient(90deg,#CFA85A,transparent);"></div></div>
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.32em;color:#D9C7C0;padding-left:.32em;">MAIN MENU</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:16px;background:#33101A;box-shadow:inset 0 2px 4px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.3), 0 1px 0 rgba(255,225,205,.16);">
+      <div style="position:relative;width:64px;height:64px;flex:none;border-radius:50%;background:#1A3D33;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(250,245,227,.7);">
+        <sc-for list="{{ connor }}" as="q" hint-placeholder-count="0"><div style="position:absolute;left:{{ q.l }}px;top:{{ q.t }}px;width:{{ q.w }}px;height:{{ q.h }}px;border-radius:{{ q.r }};background:{{ q.bg }};box-shadow:{{ q.sh }};"></div></sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+        <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:600;font-size:24px;line-height:28px;">Connor</div>
+        <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Standard opponents</div>
+        <div style="font-size:17px;line-height:22px;">Hand 3 · Your team 21, their team 14 · trick 4</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;">
+        <div style="font-size:21px;line-height:26px;font-weight:600;">Beginner mode</div>
+        <div style="width:51px;height:31px;border-radius:16px;background:#295742;flex:none;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.4);"><div style="position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#FAF5E3;box-shadow:0 2px 4px rgba(0,0,0,.4);"></div></div>
+      </div>
+      <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Hints and guided play</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="min-height:56px;border-radius:14px;background:radial-gradient(ellipse at 50% 30%,#295742,#1A4030);box-shadow:inset 0 1px 0 rgba(140,204,158,.25), inset 0 0 0 1px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">Continue game</div>
+      <div style="min-height:56px;border-radius:14px;box-shadow:inset 0 0 0 1.5px rgba(250,245,227,.55);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">New match</div>
+      <div style="min-height:56px;border-radius:14px;box-shadow:inset 0 0 0 1.5px rgba(250,245,227,.55);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">How to play</div>
+    </div>
+  </div>
+</div>
+<dc-import name="Table" tag="2a" mid="{{ true }}" variant="worn" foil="{{ true }}" chip-felt="{{ true }}" foil-w="{{ foilW }}" hint-size="393px,852px"></dc-import>
+</div>
+<div class="dv-spec" style="width:810px;"><b>Board</b>  #4F1A24 (ivory {{ cr2a }}) · lit #6E2733 · shadow #33101A · emboss fill #5C2430 · foil #F0D890 / #CFA85A / #8E6B2A
+<b>Twill (seed 13, 48 pt tile)</b>  45° ridges at 3 pt pitch: 1 pt light stroke rgba(255,235,220,.07) with a 1 pt dark stroke rgba(0,0,0,.10) beside it; counter-diagonal every 6 pt rgba(0,0,0,.04). Flecks 4 pt grid: r&lt;.14 light rgba(255,220,200,.04–.10), r&lt;.24 dark rgba(0,0,0,.14).
+<b>Wear</b>  four corner pools radial 90 × 70 pt rgba(255,215,190,.12–.16) + inner glow 34 pt rgba(255,215,190,.07); lighting 170° white .06 → black .18. On the band: pools at the two lower corners, a dark pool under the status bar.
+<b>Rules</b>  outer foil 1.5 pt inset 12, r 40; inner foil 0.75 pt inset 20, r 33, α .85. Both with 1 pt dark below. Title ornament: two 0.75 pt foil hairlines fading outward + a 5 pt foil diamond.
+<b>Title</b>  New York 64/66 bold, tracking .02 em, foil gradient 172° clipped to glyphs, shadow (0,1) black .65 + (0,2) blur 3 black .30.
+<b>Suits</b>  four glyphs across the top under the status bar (♠ ♦ … ♣ ♥ at x 34 / 96 from each edge, y 64), SF 26 pt, raised: fill #5C2430, highlight (−1,−1) rgba(255,225,205,.22), shadow (+1,+1) blur 1 black .60. Ornament only, clear of the content column so they never collide with buttons at large type; never on the felt.
+<b>Menu glyph</b>  drawn as three lines here; ScoreBarView currently uses SF `gearshape`. Either is the approved "bare glyph, 44 × 44"; pick one for both screens.
+<b>Player well</b>  #33101A r 16, inset shadow (0,2) blur 4 black .60 + 1 pt rim black .30, lip below rgba(255,225,205,.16).
+<b>Band (right)</b>  same board + twill + wear; foil 1.5 pt along the curve inset 5 (M0 108 Q196.5 72 393 108); contract chip is a felt window (r 12, h 36, pad 14, radial #295742→#1A4030, inset (0,1) blur 3 black .60) so signal gold sits only on felt.</div></div>
+
+<!-- ================= 2b · LID & WELL ================= -->
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Lid and well — a bevelled lip around the screen, letterpress title, felt-lined wells (candidate B, no gold)</div><div class="dv-card" style="display:flex;gap:24px;">
+<div data-screen-label="2b Menu" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background:linear-gradient(135deg,#7A2E3A 0%,#5C1F2A 45%,#3D111A 100%);"></div>
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;"></div>
+  <div style="position:absolute;inset:14px;border-radius:40px;background:#5C1F2A;box-shadow:inset 0 8px 18px rgba(0,0,0,.55), inset 0 -2px 5px rgba(255,225,205,.08), 0 0 0 1px rgba(255,225,205,.18), 0 0 0 2px rgba(0,0,0,.35);overflow:hidden;">
+    <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,0) 22%,rgba(0,0,0,.14) 100%);"></div>
+  </div>
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <div style="position:absolute;right:12px;top:60px;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45));"><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div></div>
+  <div style="position:absolute;left:30px;right:30px;top:136px;display:flex;flex-direction:column;gap:28px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:64px;line-height:66px;letter-spacing:.02em;color:#3D111A;text-shadow:1px 1px 0 rgba(255,225,205,.26), -1px -1px 1px rgba(0,0,0,.75), 0 0 1px rgba(0,0,0,.4);">CATCH 5</div>
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.32em;color:#D9C7C0;padding-left:.32em;">MAIN MENU</div>
+    </div>
+    <div style="position:relative;display:flex;align-items:center;gap:16px;padding:16px;border-radius:16px;background:radial-gradient(ellipse at 50% 30%,#295742,#1A4030 70%,#0A211A);box-shadow:inset 0 3px 6px rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,225,205,.16);overflow:hidden;">
+      <div style="position:absolute;inset:0;background-image:url('{{ feltTile }}');background-size:128px 128px;pointer-events:none;"></div>
+      <div style="position:relative;width:64px;height:64px;flex:none;border-radius:50%;background:#1A3D33;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(250,245,227,.7);">
+        <sc-for list="{{ connor }}" as="q" hint-placeholder-count="0"><div style="position:absolute;left:{{ q.l }}px;top:{{ q.t }}px;width:{{ q.w }}px;height:{{ q.h }}px;border-radius:{{ q.r }};background:{{ q.bg }};box-shadow:{{ q.sh }};"></div></sc-for>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;">
+        <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:600;font-size:24px;line-height:28px;">Connor</div>
+        <div style="font-size:17px;line-height:22px;opacity:.75;">Standard opponents</div>
+        <div style="font-size:17px;line-height:22px;">Hand 3 · Your team 21, their team 14 · trick 4</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;">
+        <div style="font-size:21px;line-height:26px;font-weight:600;">Beginner mode</div>
+        <div style="width:51px;height:31px;border-radius:16px;background:#295742;flex:none;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.4);"><div style="position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#FAF5E3;box-shadow:0 2px 4px rgba(0,0,0,.4);"></div></div>
+      </div>
+      <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Hints and guided play</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="position:relative;min-height:56px;border-radius:14px;background:radial-gradient(ellipse at 50% 30%,#295742,#1A4030);box-shadow:inset 0 2px 5px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,225,205,.16);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;overflow:hidden;"><div style="position:absolute;inset:0;background-image:url('{{ feltTile }}');background-size:128px 128px;"></div><span style="position:relative;">Continue game</span></div>
+      <div style="min-height:56px;border-radius:14px;background:#4A161F;box-shadow:inset 0 2px 4px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.35), 0 1px 0 rgba(255,225,205,.14);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">New match</div>
+      <div style="min-height:56px;border-radius:14px;background:#4A161F;box-shadow:inset 0 2px 4px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.35), 0 1px 0 rgba(255,225,205,.14);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">How to play</div>
+    </div>
+  </div>
+</div>
+<dc-import name="Table" tag="2b" mid="{{ true }}" variant="lid" chip-felt="{{ true }}" hint-size="393px,852px"></dc-import>
+</div>
+<div class="dv-spec" style="width:810px;"><b>Board</b>  #5C1F2A (ivory {{ crBoard }}) · lip lit #7A2E3A → shadow #3D111A (ivory on shadow {{ crLip }}) · pressed fill #4A161F · title fill #3D111A. No gold anywhere on the box.
+<b>Lip</b>  14 pt frame: linear 135° #7A2E3A → #5C1F2A 45 % → #3D111A, plain cloth over it. Inner panel r 40: board + cloth, inset shadow (0,8) blur 18 black .55 (light from the top), inset lift below (0,−2) blur 5 rgba(255,225,205,.08), 1 pt light rim rgba(255,225,205,.18) then 1 pt dark rim black .35. Panel lighting: black .18 at top → clear at 22 % → black .14.
+<b>Letterpress title</b>  New York 64/66 bold, fill #3D111A (board −1 step); highlight (+1,+1) rgba(255,225,205,.26) below-right, shadow (−1,−1) blur 1 black .75 above-left, plus 1 pt black .40 halo. Pressed, not raised: light falls from the top so the pit is dark at its top edge. MAIN MENU stays in muted ivory #D9C7C0 ({{ crMuted }}); a 14 pt label is too small to emboss legibly.
+<b>Felt wells</b>  player card and Continue are cut through to the felt: radial #295742 → #1A4030 70 % → #0A211A, FeltView stipple, inset (0,3) blur 6 black .65, 1 pt dark rim black .50, lip below rgba(255,225,205,.16). Continue is the only felt button on a screen, so it stays the single primary.
+<b>Pressed buttons</b>  #4A161F, inset (0,2) blur 4 black .55, rim black .35, lip rgba(255,225,205,.14). Radius 14, min 56 pt.
+<b>Band (right)</b>  board + cloth; the frown edge is a lip: 6 pt shade black .28 along the curve inset 7, 1.5 pt light line rgba(255,225,205,.22) at inset 9.5, 2 pt dark edge black .60 at inset 1. Contract chip is a felt window, as in <a class="dv-oid" href="#2a">2a</a>.</div></div>
+
+<!-- ================= 2c · PLATE ================= -->
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Leather and plate — darkest board, stitched border, title on a labelled plate with a foil frame (candidate A, restrained)</div><div class="dv-card" style="display:flex;gap:24px;">
+<div data-screen-label="2c Menu" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#3F1119;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ leather }}');background-size:40px 40px;"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(255,225,205,.07),transparent 70%),linear-gradient(180deg,rgba(0,0,0,0) 60%,rgba(0,0,0,.22) 100%);"></div>
+  <div style="position:absolute;inset:11px;border-radius:42px;padding:.75px;background:linear-gradient(160deg,#8E6B2A,#CFA85A 30%,#F0D890 52%,#CFA85A 72%,#8E6B2A);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+  <div style="position:absolute;inset:17px;border-radius:37px;border:1px dashed rgba(250,245,227,.28);"></div>
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <div style="position:absolute;right:12px;top:60px;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45));"><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div></div>
+  <div style="position:absolute;left:32px;right:32px;top:132px;display:flex;flex-direction:column;gap:26px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div style="position:relative;padding:18px 30px 16px;border-radius:10px;background:#2C0B12;box-shadow:0 3px 6px rgba(0,0,0,.55), 0 1px 0 rgba(0,0,0,.6), inset 0 1px 0 rgba(255,225,205,.10);overflow:hidden;">
+        <div style="position:absolute;inset:0;background-image:url('{{ leather }}');background-size:40px 40px;"></div>
+        <div style="position:absolute;inset:5px;border-radius:6px;padding:.75px;background:linear-gradient(160deg,#8E6B2A,#CFA85A 30%,#F0D890 52%,#CFA85A 72%,#8E6B2A);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+        <div style="position:relative;font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:46px;line-height:50px;letter-spacing:.08em;color:#CFA85A;text-shadow:0 1px 0 rgba(0,0,0,.7), 0 -0.5px 0 rgba(255,235,200,.35);">CATCH 5</div>
+      </div>
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.32em;color:#D9C7C0;padding-left:.32em;">MAIN MENU</div>
+    </div>
+    <div style="position:relative;display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;background:#2C0B12;box-shadow:inset 0 0 0 1px rgba(255,225,205,.14), 0 2px 4px rgba(0,0,0,.45);overflow:hidden;">
+      <div style="position:absolute;inset:0;background-image:url('{{ leather }}');background-size:40px 40px;"></div>
+      <div style="position:relative;width:64px;height:64px;flex:none;border-radius:50%;background:#1A3D33;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(250,245,227,.7);">
+        <sc-for list="{{ connor }}" as="q" hint-placeholder-count="0"><div style="position:absolute;left:{{ q.l }}px;top:{{ q.t }}px;width:{{ q.w }}px;height:{{ q.h }}px;border-radius:{{ q.r }};background:{{ q.bg }};box-shadow:{{ q.sh }};"></div></sc-for>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;">
+        <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:600;font-size:24px;line-height:28px;">Connor</div>
+        <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Standard opponents</div>
+        <div style="font-size:17px;line-height:22px;">Hand 3 · Your team 21, their team 14 · trick 4</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;">
+        <div style="font-size:21px;line-height:26px;font-weight:600;">Beginner mode</div>
+        <div style="width:51px;height:31px;border-radius:16px;background:#295742;flex:none;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.4);"><div style="position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#FAF5E3;box-shadow:0 2px 4px rgba(0,0,0,.4);"></div></div>
+      </div>
+      <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Hints and guided play</div>
+    </div>
+    <div style="height:.75px;background:rgba(255,225,205,.18);box-shadow:0 1px 0 rgba(0,0,0,.5);"></div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="min-height:56px;border-radius:12px;background:radial-gradient(ellipse at 50% 30%,#295742,#1A4030);box-shadow:inset 0 1px 0 rgba(140,204,158,.25), inset 0 0 0 1px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">Continue game</div>
+      <div style="min-height:56px;border-radius:12px;background:#2C0B12;box-shadow:inset 0 0 0 1px rgba(255,225,205,.16), 0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">New match</div>
+      <div style="min-height:56px;border-radius:12px;background:#2C0B12;box-shadow:inset 0 0 0 1px rgba(255,225,205,.16), 0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">How to play</div>
+    </div>
+  </div>
+</div>
+<dc-import name="Table" tag="2c" mid="{{ true }}" variant="plate" hint-size="393px,852px"></dc-import>
+</div>
+<div class="dv-spec" style="width:810px;"><b>Board</b>  #3F1119 (ivory {{ cr2c }}) · plate and panels #2C0B12 · foil body #CFA85A on plate {{ crPlate }} · lit #5C1F2A · hairline rgba(255,225,205,.14–.18)
+<b>Leather (seed 17, 40 pt tile)</b>  3 pt grid, jitter 0–3: r&lt;.35 a pebble Ø 1.5–2.5 pt, light top rgba(255,220,200,.05–.09) with a dark rim 0.8 pt below rgba(0,0,0,.14–.22); r&lt;.45 a 1 pt pit black .18. Lighting: soft pool radial 70 × 50 % at (0.5, 0.3) rgba(255,225,205,.07); bottom shade black .22 from 60 %.
+<b>Border</b>  0.75 pt foil hairline inset 11, r 42; inside it a stitched line: 1 pt dashed rgba(250,245,227,.28) inset 17, r 37 (SwiftUI: StrokeStyle(lineWidth:1, dash:[4,3])).
+<b>Plate</b>  #2C0B12 + leather, r 10, padding 18/30/16, shadow (0,3) blur 6 black .55 + 1 pt black .60 under-edge, inset top light rgba(255,225,205,.10). Foil frame: 0.75 pt inset 5, r 6. Title New York 46/50 bold, tracking .08 em, flat foil #CFA85A with shadow (0,1) black .70 and highlight (0,−0.5) rgba(255,235,200,.35). Foil is stamped, not gradient-lit, so it never catches the eye the way signal gold does.
+<b>Panels</b>  #2C0B12 + leather, r 12, 1 pt hairline rgba(255,225,205,.14–.16), shadow (0,2) blur 4 black .45. Primary is felt, as everywhere.
+<b>Band (right)</b>  board + leather; two 0.75 pt hairlines rgba(255,225,205,.22) along the curve at insets 8 and 5, 1.5 pt dark edge black .55. No foil on the band; the only gold on this screen is signal gold on the board (chip 7.1:1) and on the felt.</div></div>
+
+</div>
+<p class="dv-next">Try next: "take <a class="dv-oid" href="#2b">2b</a>'s lip with <a class="dv-oid" href="#2a">2a</a>'s foil title" · "re-cut the reading screens (7–9) in <a class="dv-oid" href="#2c">2c</a>" · "show <a class="dv-oid" href="#2a">2a</a> at AX2 type size"</p>
+</section>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Catch 5 — the box around the table. Ten artboards, iPhone 16 (393 × 852), both gold candidates.</span></div>
+
+<div class="dv-note"><b>Assumptions.</b> The table is drawn from your screenshots and left alone; only the header band and the screen edge change. Text is set two Dynamic Type steps up (body 21, headline 24, large title 40). Portraits are drop targets: drag your images onto any disc. Every texture is a seeded procedure (4 pt fleck grid, 2 pt weave) and is written out in each spec panel. Per your correction, the contrast case proven below is <b>ivory heading on bare board</b> (artboards 7–9), measured on the flat colour plus the texture's worst-case lightening (+5 %).<br><br>
+<b>Two calls I made that you may want back:</b> (1) The primary button on the menu and the reading screens is <b>felt green</b> (the table showing through the box), so candidate B truly has no gold and A and B stay identical apart from the title. (2) Under A the contract chip in the header becomes a <b>felt window</b> cut into the lid (<a class="dv-oid" href="#1e">1e</a> left), so signal gold still only ever sits on felt; the right-hand table there is the bare band, which is what candidate B uses too.</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 28px;">
+  <sc-for list="{{ palette }}" as="c" hint-placeholder-count="6">
+    <div style="width:132px;border-radius:10px;overflow:hidden;background:#2a272a;">
+      <div style="height:64px;background:{{ c.hex }};display:flex;align-items:flex-end;justify-content:flex-end;padding:8px;font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:22px;color:{{ c.ink }};">Aa</div>
+      <div style="padding:8px 10px;font:11px/1.45 ui-monospace,Menlo,monospace;color:#eee;">{{ c.name }}<br><span style="opacity:.7;">{{ c.hex }}</span><br><span style="opacity:.7;">ivory {{ c.cr }}</span></div>
+    </div>
+  </sc-for>
+</div>
+
+<div class="dv-opts">
+
+<!-- ================= 1 · BOARD STUDY ================= -->
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Artboard 1 · Board study, 1:1 and 3:1</div><div class="dv-card">
+<div data-screen-label="01 Board study" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.12));"></div>
+  <div style="position:absolute;left:24px;top:76px;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:13px;letter-spacing:.18em;color:#D9C7C0;">BOARD · 1:1</div>
+  <div style="position:absolute;left:24px;top:104px;width:180px;height:180px;border-radius:12px;background:#5C1F2A;overflow:hidden;">
+    <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+    <div style="position:absolute;inset:14px;border-radius:6px;padding:{{ foilW }}px;background:linear-gradient(135deg,#8E6B2A,#CFA85A 30%,#F0D890 50%,#CFA85A 70%,#8E6B2A);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;filter:drop-shadow(0 1px 0 rgba(0,0,0,.5));"></div>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;line-height:1;color:#66232F;text-shadow:-1px -1px 0 rgba(255,225,205,.20), 1px 1px 1px rgba(0,0,0,.55);">♠</div>
+  </div>
+  <div style="position:absolute;left:224px;top:104px;width:145px;font-size:15px;line-height:22px;color:#D9C7C0;">Cloth board, foil rule at 1.5 pt, one raised suit. This is the size the phone renders it.</div>
+  <div style="position:absolute;left:24px;top:324px;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:13px;letter-spacing:.18em;color:#D9C7C0;">BOARD · 3:1</div>
+  <div style="position:absolute;left:24px;top:352px;width:345px;height:345px;border-radius:12px;overflow:hidden;">
+    <div style="position:absolute;left:0;top:0;width:115px;height:115px;background:#5C1F2A;transform:scale(3);transform-origin:0 0;">
+      <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+      <div style="position:absolute;inset:9px;border-radius:4px;padding:{{ foilW }}px;background:linear-gradient(135deg,#8E6B2A,#CFA85A 30%,#F0D890 50%,#CFA85A 70%,#8E6B2A);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;filter:drop-shadow(0 1px 0 rgba(0,0,0,.5));"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:46px;line-height:1;color:#66232F;text-shadow:-1px -1px 0 rgba(255,225,205,.20), 1px 1px 1px rgba(0,0,0,.55);">♠</div>
+    </div>
+  </div>
+  <div style="position:absolute;left:24px;right:24px;top:716px;font-size:15px;line-height:22px;color:#D9C7C0;">At 3:1 the weave shows as a 2 pt grid and the flecks as single points. Neither should be visible as pattern at 1:1, only as nap.</div>
+</div></div>
+<div class="dv-spec"><b>Board</b>  fill #5C1F2A  ·  lit #7A2E3A  ·  shadow #3D111A
+<b>Cloth (procedure, seed 11, 64 pt tile)</b>
+  weft: every 2 pt, 1 pt row rgba(255,235,220,.05)
+  warp: every 2 pt, 1 pt column rgba(0,0,0,.07)
+  flecks on 4 pt grid, jitter 0–3 pt, 1 pt square:
+    r&lt;.10 light rgba(255,220,200, .04–.09)
+    r&lt;.16 dark  rgba(0,0,0,.12)
+  lighting: linear top→bottom rgba(255,255,255,.05) → rgba(0,0,0,.12)
+<b>Foil rule</b>  1.5 pt, linear 135° #8E6B2A → #CFA85A 30% → #F0D890 50% → #CFA85A 70% → #8E6B2A, then 1 pt shadow below rgba(0,0,0,.50). Corner radius 6 pt inset 14.
+<b>Emboss (raised)</b>  glyph fill #66232F
+  highlight: offset (−1,−1) blur 0  rgba(255,225,205,.20)
+  shadow:    offset (+1,+1) blur 1  rgba(0,0,0,.55)
+  SwiftUI: Text(suit).foregroundStyle(Color(#66232F)).shadow(hi).shadow(lo)</div></div>
+
+<!-- ================= 2 · FOIL & EMBOSS ================= -->
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Artboard 2 · Foil at three weights, four suits, lit and shadowed board</div><div class="dv-card">
+<div data-screen-label="02 Foil and emboss" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+  <div style="position:absolute;left:24px;right:24px;top:76px;bottom:40px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <sc-for list="{{ boards }}" as="b" hint-placeholder-count="2">
+      <div style="position:relative;border-radius:14px;background:{{ b.hex }};overflow:hidden;display:flex;flex-direction:column;padding:18px 16px;gap:22px;">
+        <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+        <div style="position:relative;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:12px;letter-spacing:.16em;color:#D9C7C0;">{{ b.name }}<br><span style="opacity:.7;">{{ b.hex }}</span></div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:18px;">
+          <div><div style="height:0.75px;background:linear-gradient(90deg,#8E6B2A,#CFA85A 30%,#F0D890 50%,#CFA85A 70%,#8E6B2A);box-shadow:0 1px 0 rgba(0,0,0,.5);"></div><div style="margin-top:8px;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:11px;color:#D9C7C0;">0.75 pt · hairline</div></div>
+          <div><div style="height:1.5px;background:linear-gradient(90deg,#8E6B2A,#CFA85A 30%,#F0D890 50%,#CFA85A 70%,#8E6B2A);box-shadow:0 1px 0 rgba(0,0,0,.5);"></div><div style="margin-top:8px;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:11px;color:#D9C7C0;">1.5 pt · rule</div></div>
+          <div><div style="height:3px;background:linear-gradient(90deg,#8E6B2A,#CFA85A 30%,#F0D890 50%,#CFA85A 70%,#8E6B2A);box-shadow:0 1px 0 rgba(0,0,0,.5), inset 0 -1px 0 rgba(0,0,0,.25);"></div><div style="margin-top:8px;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:11px;color:#D9C7C0;">3 pt · band</div></div>
+        </div>
+        <div style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px 6px;justify-items:center;font-size:56px;line-height:64px;color:{{ b.emboss }};text-shadow:-1px -1px 0 rgba(255,225,205,.20), 1px 1px 1px rgba(0,0,0,.55);">
+          <div>♠</div><div>♥</div><div>♦</div><div>♣</div>
+        </div>
+        <div style="position:relative;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:11px;line-height:16px;color:#D9C7C0;">raised, fill {{ b.emboss }}</div>
+        <div style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px 6px;justify-items:center;font-size:56px;line-height:64px;color:{{ b.deboss }};text-shadow:1px 1px 0 rgba(255,225,205,.16), -1px -1px 1px rgba(0,0,0,.6);">
+          <div>♠</div><div>♥</div><div>♦</div><div>♣</div>
+        </div>
+        <div style="position:relative;font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:11px;line-height:16px;color:#D9C7C0;">pressed, fill {{ b.deboss }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div></div>
+<div class="dv-spec"><b>Foil weights</b>  0.75 pt hairline (dividers inside reading screens) · 1.5 pt rule (box edge, band edge) · 3 pt band (never used on a screen; shown to reject). Foil gradient runs along the rule's length. Shadow 1 pt below rgba(0,0,0,.50). At 3 pt add inner bottom line rgba(0,0,0,.25).
+<b>Foil palette</b>  #F0D890 highlight · #CFA85A body · #8E6B2A shadow. Body differs from signal gold #E8BF6B by −9 L, +6 C, warmer hue; they never share a rectangle.
+<b>Raised emboss</b>  lit board: fill #8A3A47 · base board: #66232F · shadow board: #4A1620. Highlight (−1,−1) rgba(255,225,205,.20); shadow (+1,+1) blur 1 rgba(0,0,0,.55).
+<b>Pressed emboss</b>  fill one step darker than board (lit #5C1F2A · base #4A161F · shadow #2C0B12). Highlight (+1,+1) rgba(255,225,205,.16); shadow (−1,−1) blur 1 rgba(0,0,0,.60).
+Suits are the system glyphs ♠♥♦♣ in SF at 56 pt, no image.</div></div>
+
+<!-- ================= 3 & 4 · MAIN MENU ================= -->
+<sc-for list="{{ menus }}" as="m" hint-placeholder-count="2">
+<div class="dv-opt" id="{{ m.id }}"><div class="dv-olabel"><a class="dv-oid" href="#{{ m.id }}">{{ m.id }}</a>{{ m.label }}</div><div class="dv-card">
+<div data-screen-label="{{ m.screen }}" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14));"></div>
+  <sc-if value="{{ m.foil }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;inset:13px;border-radius:40px;padding:{{ foilW }}px;background:rgba(0,0,0,.5);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+    <div style="position:absolute;inset:12px;border-radius:40px;padding:{{ foilW }}px;background:linear-gradient(160deg,#8E6B2A,#CFA85A 30%,#F0D890 52%,#CFA85A 72%,#8E6B2A);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+  </sc-if>
+  <sc-if value="{{ m.plain }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:13px;border-radius:40px;padding:1px;background:rgba(0,0,0,.55);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+    <div style="position:absolute;inset:12px;border-radius:40px;padding:1px;background:rgba(255,225,205,.18);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;"></div>
+  </sc-if>
+  <!-- status bar -->
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <!-- hamburger: bare glyph, 44×44, top right -->
+  <div style="position:absolute;right:12px;top:60px;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;"><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div><div style="width:22px;height:2px;background:#FAF5E3;border-radius:1px;"></div></div>
+
+  <div style="position:absolute;left:24px;right:24px;top:132px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;align-items:stretch;gap:28px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <sc-if value="{{ m.foil }}" hint-placeholder-val="{{ true }}">
+        <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:60px;line-height:64px;letter-spacing:.01em;background:linear-gradient(172deg,#F0D890 0%,#CFA85A 48%,#8E6B2A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.6));">CATCH 5</div>
+      </sc-if>
+      <sc-if value="{{ m.plain }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:60px;line-height:64px;letter-spacing:.01em;color:#6E2733;text-shadow:-1px -1px 0 rgba(255,225,205,.22), 1px 1px 1px rgba(0,0,0,.6), 2px 2px 3px rgba(0,0,0,.25);">CATCH 5</div>
+      </sc-if>
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.32em;color:#D9C7C0;padding-left:.32em;">MAIN MENU</div>
+    </div>
+
+    <!-- player card: a well pressed into the lid -->
+    <div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:16px;background:#3D111A;box-shadow:inset 0 1.5px 3px rgba(0,0,0,.55), 0 1px 0 rgba(255,225,205,.14);">
+      <div style="width:64px;height:64px;border-radius:50%;flex:none;background:#2C0B12;box-shadow:0 0 0 1.5px rgba(250,245,227,.35);overflow:hidden;"><image-slot id="player-{{ m.id }}" shape="circle" placeholder="Connor" style="width:64px;height:64px;"></image-slot></div>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+        <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:26px;line-height:30px;">Connor</div>
+        <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Standard opponents</div>
+        <div style="font-size:17px;line-height:22px;">Hand 3 · Your team 21, their team 14 · trick 4</div>
+      </div>
+    </div>
+
+    <!-- beginner toggle -->
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;">
+        <div style="font-size:21px;line-height:26px;font-weight:600;">Beginner mode</div>
+        <div style="width:51px;height:31px;border-radius:16px;background:#295742;flex:none;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.4);"><div style="position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#FAF5E3;box-shadow:0 2px 4px rgba(0,0,0,.4);"></div></div>
+      </div>
+      <div style="font-size:17px;line-height:22px;color:#D9C7C0;">Greys out cards you may not play and explains every hint.</div>
+    </div>
+
+    <!-- actions -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="min-height:56px;border-radius:14px;background:radial-gradient(ellipse at 50% 30%,#295742,#1A4030);box-shadow:inset 0 1px 0 rgba(140,204,158,.25), 0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;color:#FAF5E3;padding:14px 20px;text-align:center;">Continue game</div>
+      <div style="min-height:56px;border-radius:14px;box-shadow:inset 0 0 0 1.5px rgba(250,245,227,.55);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">New match</div>
+      <div style="min-height:56px;border-radius:14px;box-shadow:inset 0 0 0 1.5px rgba(250,245,227,.55);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px 20px;text-align:center;">How to play</div>
+    </div>
+  </div>
+</div></div>
+<div class="dv-spec">{{ m.spec }}</div></div>
+</sc-for>
+
+<!-- ================= 5 · HEADER OVER LIVE FELT ================= -->
+<sc-for list="{{ tables }}" as="t" hint-placeholder-count="2">
+<div class="dv-opt" id="{{ t.id }}"><div class="dv-olabel"><a class="dv-oid" href="#{{ t.id }}">{{ t.id }}</a>{{ t.label }}</div><div class="dv-card">
+  <dc-import name="Table" tag="{{ t.id }}" mid="{{ true }}" foil="{{ t.foil }}" chip-felt="{{ t.chipFelt }}" foil-w="{{ foilW }}" hint-size="393px,852px"></dc-import>
+</div>
+<div class="dv-spec">{{ t.spec }}</div></div>
+</sc-for>
+
+<!-- ================= 6 · OAK vs BOX ================= -->
+<div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Artboard 6 · Same header state, drawn oak (today) left, box right</div><div class="dv-card" style="display:flex;gap:24px;">
+  <div style="width:393px;height:250px;overflow:hidden;border-radius:52px 52px 0 0;"><dc-import name="Table" tag="6oak" mid="{{ true }}" oak="{{ true }}" hint-size="393px,852px"></dc-import></div>
+  <div style="width:393px;height:250px;overflow:hidden;border-radius:52px 52px 0 0;"><dc-import name="Table" tag="6box" mid="{{ true }}" hint-size="393px,852px"></dc-import></div>
+</div>
+<div class="dv-spec" style="width:810px;"><b>Left, oak as drawn today</b>  linear #B8844E → #9A6535 → #7E4E25 with a 16 pt repeating grain stripe. Contract gold on oak measured 6.90:1 (your figure); the problem was never this band.
+<b>Right, box</b>  same geometry: band height 122 pt at the corners, 104 at centre; edge path  M0 122  Q196.5 86  393 122  (control 36 pt above the corner line, so the middle rises 18). Shadow onto felt: same path, black .45, blur 3, offset y +3. Fill #5C1F2A + cloth + top-to-bottom lighting .05 white → .10 black.
+Three things only, one flex row (left 16, right 12, 44 pt tall): score chip (Us/Them SF 17 semibold, numerals New York 22 bold) · contract chip centred in the remaining space (New York 22 bold, signal gold #E8BF6B, suit in #DB2E38) · menu glyph 22 × 2 pt lines, 44 × 44 hit area. Fits two-digit scores and a long name without touching.
+Ivory on band: 11.6:1. Signal gold on band: 7.1:1.</div></div>
+
+<!-- ================= 7 · HOW TO PLAY ================= -->
+<div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>Artboard 7 · How to play, lesson 3 of 5</div><div class="dv-card">
+<div data-screen-label="07 How to play" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.12));"></div>
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <div style="position:absolute;left:12px;top:60px;height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;font-size:20px;"><div style="width:11px;height:11px;border-left:2.5px solid #FAF5E3;border-bottom:2.5px solid #FAF5E3;transform:rotate(45deg);margin-right:2px;"></div>Menu</div>
+  <div style="position:absolute;left:24px;right:24px;top:120px;display:flex;flex-direction:column;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.18em;color:#D9C7C0;">HOW TO PLAY · 3 OF 5</div>
+      <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:40px;line-height:46px;">Trump</div>
+    </div>
+    <div style="display:flex;gap:8px;overflow:hidden;margin:0 -24px;padding:0 24px;">
+      <sc-for list="{{ chapters }}" as="ch" hint-placeholder-count="5">
+        <div style="flex:none;height:44px;padding:0 18px;border-radius:22px;display:flex;align-items:center;font-size:17px;font-weight:600;white-space:nowrap;color:{{ ch.ink }};background:{{ ch.bg }};box-shadow:{{ ch.ring }};">{{ ch.label }}</div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px;font-size:21px;line-height:30px;text-wrap:pretty;">
+      <p style="margin:0;">After the bid, the winner names a trump suit. Every card of that suit outranks every card of the other three, whatever its face.</p>
+      <p style="margin:0;">You must follow the suit that was led if you can. If you cannot, you may play a trump to take the trick, or throw off any card.</p>
+      <p style="margin:0;">The five of trump is the card to catch. It scores five points to whichever team wins the trick it falls in, and that is where the game gets its name.</p>
+    </div>
+  </div>
+  <div style="position:absolute;left:24px;right:24px;bottom:34px;display:flex;gap:12px;">
+    <div style="flex:1;min-height:56px;border-radius:14px;box-shadow:inset 0 0 0 1.5px rgba(250,245,227,.55);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px;">Back</div>
+    <div style="flex:1;min-height:56px;border-radius:14px;background:radial-gradient(ellipse at 50% 30%,#295742,#1A4030);box-shadow:inset 0 1px 0 rgba(140,204,158,.25), 0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;padding:14px;">Next</div>
+  </div>
+</div></div>
+<div class="dv-spec"><b>Bare board as page.</b> Body sits straight on #5C1F2A, no sheet. Heading ivory #FAF5E3 on board: <b>{{ crBoard }}</b> flat; worst case over a light fleck (+5 % L) 10.6:1. Muted ink #D9C7C0 for eyebrows and captions: {{ crMuted }}.
+<b>Type</b>  eyebrow SF Mono 14 / .18 em · title New York 40/46 bold · body SF 21/30 · pills SF 17 semibold.
+<b>Chapter pills</b>  44 pt tall, radius 22, padding 18. Active: ivory fill, ink #5C1F2A. Others: 1.5 pt ring rgba(250,245,227,.55), ivory label. Row scrolls; never wraps or clips labels.
+<b>Footer</b>  two buttons, 56 pt min height (grows with type), radius 14. Next = primary = felt radial #295742→#1A4030, inner top line rgba(140,204,158,.25). Back = 1.5 pt ivory ring at .55.
+<b>Back</b>  chevron 2.5 pt + "Menu", 44 pt row, left 12.</div></div>
+
+<!-- ================= 8 · HAND REVIEW ================= -->
+<div class="dv-opt" id="1i"><div class="dv-olabel"><a class="dv-oid" href="#1i">1i</a>Artboard 8 · Hand review, long scroll</div><div class="dv-card">
+<div data-screen-label="08 Hand review" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.12));"></div>
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <div style="position:absolute;left:12px;top:60px;height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;font-size:20px;"><div style="width:11px;height:11px;border-left:2.5px solid #FAF5E3;border-bottom:2.5px solid #FAF5E3;transform:rotate(45deg);margin-right:2px;"></div>Table</div>
+  <div style="position:absolute;left:24px;right:24px;top:120px;display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.18em;color:#D9C7C0;">HAND 3 · REVIEW</div>
+      <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:36px;line-height:42px;">Us 21 · Them 14</div>
+      <div style="font-size:19px;line-height:26px;color:#D9C7C0;">Rue bid 4 in hearts. Otto, you and Hazel passed. Hazel dealt.</div>
+    </div>
+    <div style="height:0.75px;background:rgba(255,225,205,.18);box-shadow:0 1px 0 rgba(0,0,0,.45);"></div>
+    <sc-for list="{{ review }}" as="r" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:22px;line-height:28px;">{{ r.title }}</div><div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:13px;letter-spacing:.14em;color:#D9C7C0;">{{ r.who }}</div></div>
+        <div style="font-size:19px;line-height:27px;text-wrap:pretty;">{{ r.text }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:70px;background:linear-gradient(180deg,rgba(92,31,42,0),#4E1A24);"></div>
+</div></div>
+<div class="dv-spec"><b>Dense text on bare board.</b> Body SF 19/27 ivory, {{ crBoard }}. Trick label New York 22 bold; taker in SF Mono 13 / .14 em, muted ink #D9C7C0 ({{ crMuted }}). Suit glyphs inline in the body use ♥♦ in #DB2E38, which is a table colour and here is only text.
+<b>Divider</b>  0.75 pt rgba(255,225,205,.18) with 1 pt dark below (pressed hairline, not foil; foil is reserved for the box edge).
+<b>Scroll</b>  the list is a plain ScrollView; bottom fade is the board darkening 30 pt (#5C1F2A → #4E1A24), not a separate colour. No counts anywhere: trick numbers are positions in the hand, not tallies.</div></div>
+
+<!-- ================= 9 · HOW CATCH 5 IS BUILT ================= -->
+<div class="dv-opt" id="1j"><div class="dv-olabel"><a class="dv-oid" href="#1j">1j</a>Artboard 9 · How Catch 5 is built</div><div class="dv-card">
+<div data-screen-label="09 How it is built" style="position:relative;width:393px;height:852px;overflow:hidden;border-radius:52px;background:#5C1F2A;color:#FAF5E3;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;">
+  <div style="position:absolute;inset:0;background-image:url('{{ cloth }}');background-size:64px 64px;opacity:{{ texOp }};"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.12));"></div>
+  <div style="position:absolute;left:38px;top:16px;font-size:17px;font-weight:600;">2:38</div>
+  <div style="position:absolute;left:131px;top:11px;width:131px;height:37px;border-radius:19px;background:#000;"></div>
+  <div style="position:absolute;right:34px;top:20px;display:flex;align-items:center;gap:6px;"><div style="width:16px;height:11px;border-bottom:3px solid #FAF5E3;border-radius:0 0 2px 2px;opacity:.9;"></div><div style="width:26px;height:12px;border:1.5px solid rgba(250,245,227,.7);border-radius:4px;padding:1.5px;"><div style="height:100%;background:#FAF5E3;border-radius:2px;"></div></div></div>
+  <div style="position:absolute;left:12px;top:60px;height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;font-size:20px;"><div style="width:11px;height:11px;border-left:2.5px solid #FAF5E3;border-bottom:2.5px solid #FAF5E3;transform:rotate(45deg);margin-right:2px;"></div>Menu</div>
+  <div style="position:absolute;left:24px;right:24px;top:120px;display:flex;flex-direction:column;gap:20px;text-wrap:pretty;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-family:'SF Mono',Menlo,ui-monospace,monospace;font-size:14px;letter-spacing:.18em;color:#D9C7C0;">ABOUT</div>
+      <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:36px;line-height:42px;">How Catch 5 is built</div>
+    </div>
+    <p style="margin:0;font-size:19px;line-height:27px;">Catch 5 is a trick-taking game for four, played in pairs. This app was written for one family, and it keeps to that: no accounts, no adverts, nothing to buy.</p>
+    <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:26px;line-height:32px;margin-top:6px;">The deck</div>
+    <p style="margin:0;font-size:19px;line-height:27px;">A standard 52-card deck, dealt nine to a seat. Ranks and suits are set in New York and drawn as text, so they scale with your type size and never blur.</p>
+    <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:26px;line-height:32px;margin-top:6px;">The opponents</div>
+    <p style="margin:0;font-size:19px;line-height:27px;">Otto, Hazel and Rue play from the same rules you do. They see only their own hands and the cards that have been played. Standard opponents count trumps and remember what has fallen; beginner opponents do not.</p>
+    <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:26px;line-height:32px;margin-top:6px;">Drawn, not painted</div>
+    <p style="margin:0;font-size:19px;line-height:27px;">Nothing in the app is an image. The felt, the box, the cards and the frames around the portraits are drawn in code from a fixed seed, so they are sharp at any size and identical every time you open it.</p>
+    <div style="font-family:'New York','Iowan Old Style',Palatino,Georgia,serif;font-weight:700;font-size:26px;line-height:32px;margin-top:6px;">Your data</div>
+    <p style="margin:0;font-size:19px;line-height:27px;">Saved matches live on this phone. Nothing leaves it.</p>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:70px;background:linear-gradient(180deg,rgba(92,31,42,0),#4E1A24);"></div>
+</div></div>
+<div class="dv-spec"><b>The densest text.</b> H1 New York 36/42 bold · H2 New York 26/32 bold, 6 pt extra above · body SF 19/27, paragraph gap 20. All ivory on bare board, {{ crBoard }}. Column 24 pt margins, max 480 pt centred on wider devices. No plates, no rules between sections: rhythm comes from the serif headings alone. Texture under text stays ≤ .07 α so no fleck ever pulls a letter below 10:1.</div></div>
+
+<!-- ================= 10 · DO NOT TOUCH ================= -->
+<div class="dv-opt" id="1k"><div class="dv-olabel"><a class="dv-oid" href="#1k">1k</a>Artboard 10 · DO NOT TOUCH — the felt table, default state</div><div class="dv-card" style="position:relative;">
+  <dc-import name="Table" tag="10" mid="{{ false }}" oak="{{ true }}" hint-size="393px,852px"></dc-import>
+  <div style="position:absolute;left:0;right:0;top:500px;display:flex;justify-content:center;pointer-events:none;"><div style="padding:6px 12px;border:1.5px solid #E8BF6B;color:#E8BF6B;font:700 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;background:rgba(0,0,0,.35);transform:rotate(-4deg);">DO NOT TOUCH</div></div>
+</div>
+<div class="dv-spec"><b>Table palette, held exactly</b>  ivory #FAF5E3 · signal gold #E8BF6B · suit red #DB2E38 · felt centre #295742 · base #1A4030 · edge #0A211A · flecks #8CCC9E.
+<b>Felt (procedure, seed 5)</b>  radial ellipse 78 × 66 % at (0.50, 0.45): #295742 0 % → #1A4030 55 % → #0A211A 100 %. Stipple on 4 pt grid, 128 pt tile, 1 pt square, jitter 0–2 pt: r&lt;.30 light #8CCC9E α .05–.12; r&lt;.52 dark #0A211A α .10–.20; else none.
+<b>Cards</b>  2:3, radius 6 % of width (hand 60 × 90, r 3.6; trick 65 × 97, r 4). Hand overlap leaves a 44 pt strip. Backs #1A4030, 1.5 pt ivory .55 edge, 1 pt inner line inset 4.
+<b>Seats</b>  66 pt portrait, 2 pt ring ivory .55; to-act ring 3 pt #E8BF6B. Name SF 26 semibold. Won-tricks glyph: three 14 × 20 backs. Badge SF Mono 15 / .12 em in signal gold.
+Header shown in today's oak only as a boundary; the band is the one part of this artboard that the box replaces.</div></div>
+
+</div>
+<p class="dv-next">Try next: "go with A, felt-window chip" · "go with B and re-cut <a class="dv-oid" href="#1c">1c</a> with the embossed title heavier" · "show the menu at the largest accessibility type size"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;foilWeight&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;1.5&quot;,&quot;options&quot;:[&quot;0.75&quot;,&quot;1.5&quot;,&quot;3&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Box&quot;},&quot;texture&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Box&quot;}}">
+class Component extends DCLogic {
+  state = { cloth: '', crBoard: '', crMuted: '', pal: null };
+  async componentDidMount() {
+    const m = await import('./textures.js');
+    const cr = (a, b) => m.contrast(a, b);
+    this.setState({
+      twill: m.twillTile(13), leather: m.leatherTile(17), felt: m.feltTile(12), connor: m.portraitParts(m.CAST.Connor, 64),
+      cr2a: cr('#FAF5E3', '#4F1A24'), cr2c: cr('#FAF5E3', '#3F1119'), crPlate: cr('#CFA85A', '#2C0B12'), crLip: cr('#FAF5E3', '#3D111A'),
+      cloth: m.clothTile(11), crBoard: cr('#FAF5E3', '#5C1F2A'), crMuted: cr('#D9C7C0', '#5C1F2A'),
+      pal: { board: cr('#FAF5E3', '#5C1F2A'), lit: cr('#FAF5E3', '#7A2E3A'), shadow: cr('#FAF5E3', '#3D111A'), foil: cr('#CFA85A', '#5C1F2A'), emboss: cr('#66232F', '#5C1F2A'), muted: cr('#D9C7C0', '#5C1F2A') },
+    });
+  }
+  renderVals() {
+    const p = this.props, foilW = Number(p.foilWeight ?? 1.5), texOp = (p.texture ?? true) ? 1 : 0;
+    const pal = this.state.pal || {};
+    const palette = [
+      { name: 'Board', hex: '#5C1F2A', ink: '#FAF5E3', cr: pal.board || '' },
+      { name: 'Board, lit', hex: '#7A2E3A', ink: '#FAF5E3', cr: pal.lit || '' },
+      { name: 'Board, shadow', hex: '#3D111A', ink: '#FAF5E3', cr: pal.shadow || '' },
+      { name: 'Foil', hex: '#CFA85A', ink: '#3D111A', cr: 'vs board ' + (pal.foil || '') },
+      { name: 'Emboss fill', hex: '#66232F', ink: '#FAF5E3', cr: 'vs board ' + (pal.emboss || '') },
+      { name: 'Box ink, muted', hex: '#D9C7C0', ink: '#5C1F2A', cr: 'on board ' + (pal.muted || '') },
+    ];
+    const boards = [
+      { name: 'LIT', hex: '#7A2E3A', emboss: '#8A3A47', deboss: '#5C1F2A' },
+      { name: 'SHADOW', hex: '#3D111A', emboss: '#4A1620', deboss: '#2C0B12' },
+    ];
+    const menuSpecCommon = `Screen edge rule inset 12 pt, radius 40 (follows the 52 pt screen corner).
+Title New York 60/64 bold · MAIN MENU SF Mono 14 / .32 em #D9C7C0 · hamburger 22 × 2 pt lines, 44 × 44, right 12 top 60.
+Player card: well pressed into the lid, #3D111A, radius 16, padding 16, inset shadow (0,1.5) blur 3 rgba(0,0,0,.55) + 1 pt lip below rgba(255,225,205,.14). Portrait 64, ring 1.5 pt ivory .35. Name New York 26 bold; lines SF 17.
+Toggle: SF 21 semibold + iOS switch; on-colour is felt #295742, knob ivory. Explanation SF 17 #D9C7C0.
+Buttons: min 56 pt, radius 14, gap 12. Continue = felt radial #295742 → #1A4030 + inner top line rgba(140,204,158,.25). New match / How to play = 1.5 pt ivory ring .55. Content max 480 pt, side margins 24.`;
+    const menus = [
+      { id: '1c', screen: '03 Main menu A', foil: true, plain: false, label: 'Artboard 3 · Main menu, candidate A — title in gold foil (hero)',
+        spec: `CANDIDATE A · gold foil on the box. Rule: foil is material, signal is state. Nothing here changes with the game.
+Title: linear 172° #F0D890 0 % → #CFA85A 48 % → #8E6B2A 100 % clipped to the glyphs, 1 pt shadow below rgba(0,0,0,.60). SwiftUI: Text.foregroundStyle(LinearGradient) + .shadow.
+Edge: foil rule ${foilW} pt, same gradient at 160°, 1 pt dark line beneath rgba(0,0,0,.50).
+${menuSpecCommon}` },
+      { id: '1d', screen: '04 Main menu B', foil: false, plain: true, label: 'Artboard 4 · Main menu, candidate B — title embossed, no gold on screen',
+        spec: `CANDIDATE B · no gold anywhere on the box. Identical copy, spacing and layout to 1c.
+Title: raised emboss. Fill #6E2733 (board +1 step). Highlight (−1,−1) rgba(255,225,205,.22); shadow (+1,+1) blur 1 rgba(0,0,0,.60); second shadow (+2,+2) blur 3 rgba(0,0,0,.25) for lift at 60 pt.
+Edge: pressed hairline in place of foil — 1 pt rgba(255,225,205,.18) with 1 pt rgba(0,0,0,.55) below.
+${menuSpecCommon}` },
+    ];
+    const tableSpecCommon = `Band: corners 122 pt, centre 104; edge M0 122 Q196.5 86 393 122. Shadow onto felt black .45 blur 3, y +3. Fill #5C1F2A + cloth + lighting.
+Row: score chip SF 17 semibold, New York 22 bold numerals, ivory, left 16 · contract chip New York 22 bold, centred in the space between · menu glyph right 12, 44 × 44.
+Everything below the band is the table and is unchanged: to-act ring 3 pt #E8BF6B on Rue, winning card 2.5 pt #E8BF6B ring, DEALER badge gold. Three gold meanings on felt at once, none on the box.`;
+    const tables = [
+      { id: '1e', foil: true, chipFelt: true, label: 'Artboard 5 · A — foil rule on the band; contract chip is a felt window',
+        spec: `CANDIDATE A over live felt. The band carries the ${foilW} pt foil rule along its curved edge (inset 5 pt from the edge, path M0 117 Q196.5 81 393 117).
+Contract chip: a window cut into the lid — pill radius 12, height 36, padding 14, fill radial #295742 → #1A4030, inset shadow (0,1) blur 3 rgba(0,0,0,.60), 1 pt rim rgba(0,0,0,.35). Signal gold #E8BF6B sits only on that felt. The foil and the chip never share a rectangle; the band frames the chip, it does not hold the gold.
+${tableSpecCommon}` },
+      { id: '1f', foil: false, chipFelt: false, label: 'Artboard 5 · A without foil on the band = candidate B — bare board, chip on board',
+        spec: `Bare band. No foil anywhere on this screen; the contract chip stays as today, signal gold straight on the board (7.1:1). Under A this is the "band carries no foil" reading; under B it is the only reading. If you choose A but want this band, foil then lives on the menu and reading screens only.
+${tableSpecCommon}` },
+    ];
+    const chapters = ['Deal', 'Bid', 'Trump', 'Play', 'Score'].map((label, i) => i === 2
+      ? { label, ink: '#5C1F2A', bg: '#FAF5E3', ring: 'none' }
+      : { label, ink: '#FAF5E3', bg: 'transparent', ring: 'inset 0 0 0 1.5px rgba(250,245,227,.55)' });
+    const review = [
+      { title: 'Trick 1', who: 'RUE', text: 'Otto led K♠. Hazel 9♠, Rue 7♥ trumping, you 6♠. Rue takes it and leads.' },
+      { title: 'Trick 2', who: 'RUE', text: 'Rue led A♥. You 3♥, Otto J♥, Hazel 5♥. Rue catches the five.' },
+      { title: 'Trick 3', who: 'OTTO', text: 'Rue led 10♦. You 4♦, Otto Q♦, Hazel 2♦. Otto takes it.' },
+      { title: 'Trick 4', who: 'YOU', text: 'Otto led 8♣. Hazel J♣, Rue 2♣, you 10♥ trumping. Yours.' },
+      { title: 'Trick 5', who: 'HAZEL', text: 'You led 4♥. Otto 9♥, Hazel Q♥, Rue 6♥. Hazel takes it.' },
+      { title: 'Trick 6', who: 'HAZEL', text: 'Hazel led A♠. Rue 3♠, you K♠, Otto 8♠. Hazel again.' },
+      { title: 'Trick 7', who: 'RUE', text: 'Hazel led 7♦. Rue K♥ trumping, you 4♦, Otto 9♦. Rue.' },
+    ];
+    const s = this.state;
+    return { twill: s.twill || '', leather: s.leather || '', feltTile: s.felt || '', connor: s.connor || [], cr2a: s.cr2a || '', cr2c: s.cr2c || '', crPlate: s.crPlate || '', crLip: s.crLip || '',
+      cloth: this.state.cloth, texOp, foilW, palette, boards, menus, tables, chapters, review, crBoard: this.state.crBoard, crMuted: this.state.crMuted };
+  }
+}
+</script>
+</body>
+</html>

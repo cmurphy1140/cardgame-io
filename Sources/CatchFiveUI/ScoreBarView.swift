@@ -20,12 +20,7 @@ struct ScoreBarView: View {
     let themLabel: String
     let contract: Contract?
     let canUndo: Bool
-    let onUndo: () -> Void
     let onScores: () -> Void
-    let onSettings: () -> Void
-    let onStatistics: () -> Void
-    let onTutorial: () -> Void
-    let onNewGame: () -> Void
     /// Opens the pause card over the table.
     let onPause: () -> Void
 
@@ -52,21 +47,12 @@ struct ScoreBarView: View {
             if let contract { contractChip(contract) }
             Spacer(minLength: 4)
 
-            Menu {
-                Button("Pause game", systemImage: "pause.circle", action: onPause)
-                Button("Undo last action", systemImage: "arrow.uturn.backward", action: onUndo).disabled(!canUndo)
-                Divider()
-                Button("Settings", systemImage: "gearshape", action: onSettings)
-                Button("Statistics", systemImage: "chart.bar", action: onStatistics)
-                Button("How to play", systemImage: "book", action: onTutorial)
-                Divider()
-                Button("Start a new game", systemImage: "arrow.counterclockwise", role: .destructive, action: onNewGame)
-            } label: {
-                Image(systemName: "gearshape").font(.title3).frame(width: 44, height: 44, alignment: .trailing)
+            Button(action: onPause) {
+                Image(systemName: "pause.circle").font(.title3).frame(width: 44, height: 44, alignment: .trailing)
                     .shadow(color: .black.opacity(0.35), radius: 1, y: 1)
             }
-            .tint(.ivory)
-            .accessibilityLabel("Menu")
+            .buttonStyle(.plain)
+            .accessibilityLabel("Pause")
         }
         .foregroundStyle(.ivory)
     }

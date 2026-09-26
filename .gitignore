@@ -11,3 +11,6 @@ work/
 
 # Local task notes are separate from generated work/ output.
 notes/
+
+# generated diagram screenshots
+docs/**/*.visual-check.*

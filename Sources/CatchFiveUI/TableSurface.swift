@@ -14,7 +14,6 @@ struct TableSurface: View {
     let toast: PlayerAction?
     let onReopenTrick: () -> Void
     let onCloseTrick: () -> Void
-    let onReview: () -> Void
     /// The 9-and-out pill asks the table to confirm before the bid is sent.
     let onNineAndOut: () -> Void
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
@@ -376,12 +375,8 @@ struct TableSurface: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 12) {
                 if let winner = model.match.winner { matchOver(winner) }
-                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome)
-                // Side by side when they fit, stacked at accessibility text sizes.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 12) { reviewButton; dealButton }
-                    VStack(spacing: 8) { dealButton; reviewButton }
-                }
+                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: model.settings.beginnerMode)
+                dealButton
             }
             .padding(12)
         }
@@ -393,15 +388,11 @@ struct TableSurface: View {
         .accessibilitySortPriority(40)
     }
 
-    private var reviewButton: some View {
-        Button(action: onReview) { Label("Review", systemImage: "list.bullet.rectangle") }
-            .buttonStyle(.bordered).tint(.ivory.opacity(0.8)).lineLimit(1)
-    }
-
     private var dealButton: some View {
         Button(model.match.winner == nil ? "Deal next hand" : "Play again") {
             if model.match.winner == nil { model.nextHand() } else { model.newGame() }
         }.buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black).lineLimit(1)
+        .frame(minHeight: 56) // From R11: ~56-60pt tall
     }
 
     /// The card shown once a team reaches 25 or a 9-and-out resolves.
