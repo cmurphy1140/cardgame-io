@@ -73,6 +73,6 @@ struct ScoreBarView: View {
         .foregroundStyle(.gold)
         .lineLimit(1).minimumScaleFactor(0.7)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Contract: \(contract.bidder) bid \(contract.isNineAndOut ? "9 and out" : String(contract.bid))\(contract.trump.map { ", \($0.rawValue) trump" } ?? "")")
+        .accessibilityLabel("Bid: \(contract.bidder) bid \(contract.isNineAndOut ? "9 and out" : String(contract.bid))\(contract.trump.map { ", \($0.rawValue) trump" } ?? "")")
     }
 }

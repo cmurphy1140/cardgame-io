@@ -16,7 +16,7 @@ struct LoginView: View {
         ScrollView {
             VStack(spacing: 28) {
                 VStack(spacing: 4) {
-                    Text("CATCH 5").font(.system(.largeTitle, design: .serif).weight(.bold))
+                    Text("Catch 5").font(.system(size: 46, weight: .bold, design: .serif))
                     Text("SET UP YOUR PLAYER").font(.system(.caption2, design: .monospaced).weight(.medium)).tracking(1).opacity(0.7)
                     Text("This stays on your device.").font(.footnote).opacity(0.6).padding(.top, 4)
                 }
@@ -26,7 +26,8 @@ struct LoginView: View {
                     Text("What should we call you?").font(.headline)
                     nameField
                         .padding(12)
-                        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(Theme.Wood.inlay.opacity(0.82), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.ivory.opacity(0.14)))
                         .accessibilityLabel("Your name")
                 }
 
@@ -37,7 +38,7 @@ struct LoginView: View {
                             Button { withAnimation(Theme.Motion.press) { portrait = choice } } label: {
                                 PortraitView(portrait: choice, size: 72)
                                     .opacity(portrait == choice ? 1 : Theme.Card.dimmedOpacity)
-                                    .overlay(Circle().stroke(.gold, lineWidth: portrait == choice ? 3 : 0))
+                                    .overlay(Circle().stroke(Color.suitRed, lineWidth: portrait == choice ? 3 : 0))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Face \(index + 1)")
@@ -59,14 +60,14 @@ struct LoginView: View {
                 Button(action: sitDown) {
                     Text("New match").font(.headline).frame(maxWidth: .infinity).frame(minHeight: 50)
                 }
-                .buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black)
+                .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
                 .disabled(trimmed.isEmpty)
                 .padding(.top, 8)
             }
             .padding(24).frame(maxWidth: 480).frame(maxWidth: .infinity)
         }
         .foregroundStyle(.ivory)
-        .background(LinearGradient(colors: [.felt, .black], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea())
+        .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
         .onAppear { difficulty = model.settings.difficulty; nameFocused = true }
     }

@@ -23,6 +23,8 @@ struct TableSurface: View {
     @State private var showHintDetail = false
     /// The column's own height, measured so the table can tell whether it fits the surface (spec R25).
     @State private var contentHeight = 0.0
+    /// The floating notice's height, so it sits wholly above "Your turn" in play.
+    @State private var floatHeight = 0.0
 
     private var hand: Hand { model.match.hand }
 
@@ -36,8 +38,9 @@ struct TableSurface: View {
     }
 
     private var inAuction: Bool { hand.phase == .bidding || hand.phase == .choosingTrump }
-    /// Coaching shows only in beginner mode (spec R14); rules, refusals and the record of play show in both.
-    private var coaching: Bool { model.settings.beginnerMode }
+    /// Beginner mode is set aside for this milestone (H01, T03): the live table carries no coaching, and the
+    /// teaching lives in How to Play. `Settings.beginnerMode` stays in the file so saves keep loading.
+    private let coaching = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -62,10 +65,23 @@ struct TableSurface: View {
                         SeatView(model: model, seat: 3, width: sideWidth).accessibilitySortPriority(10)
                     }
                     Spacer(minLength: 4)
-                    statusLine.accessibilitySortPriority(4)
-                    if model.isHumanTurn, hand.phase == .bidding { bidding }
-                    if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
-                    commentary
+                    ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
+                        switch row {
+                        case .commentary: commentary
+                        case .status:
+                            statusLine.accessibilitySortPriority(4)
+                                .overlay(alignment: .top) {
+                                    if Self.commentaryFloats(inAuction: inAuction) {
+                                        commentary.padding(.bottom, 4)
+                                            .onGeometryChange(for: Double.self) { $0.size.height } action: { floatHeight = $0 }
+                                            .offset(y: -floatHeight)
+                                    }
+                                }
+                        case .controls:
+                            if model.isHumanTurn, hand.phase == .bidding { bidding }
+                            if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
+                        }
+                    }
                 }
                 .padding(.top, Theme.Table.seatInset)
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { contentHeight = $0 }
@@ -74,14 +90,7 @@ struct TableSurface: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(width: geometry.size.width, height: geometry.size.height)
-            // The stock sits in the top-right corner of the table; refills deal in from here. The discards
-            // mirror it in the top-left, clear of the hand (spec R3), and discards fly there.
-            .overlay(alignment: .topTrailing) { DeckView(remaining: hand.stock.count).padding(.top, 6) }
-            .overlay(alignment: .topLeading) {
-                if !hand.discarded.isEmpty {
-                    DiscardPileView(count: hand.discarded.count).padding(.top, 6).transition(.opacity)
-                }
-            }
+            // No corner deck or discard pile (T12): the deck sits beside the dealer's tile instead.
             // The finished hand's card takes over the table; what is underneath fades back and leaves the
             // accessibility tree, so VoiceOver meets the card and nothing behind it.
             .opacity(hand.phase == .finished ? 0.12 : 1)
@@ -131,9 +140,9 @@ struct TableSurface: View {
     /// Where each seat's card rests on the pile: nudged toward the seat that played it.
     static func pileOffset(for seat: Int) -> CGSize {
         switch seat {
-        case 1: CGSize(width: -Theme.Table.sideNudge, height: 4)
+        case 1: CGSize(width: -Theme.Table.sideNudge, height: 0)
         case 2: CGSize(width: 0, height: -Theme.Table.partnerNudge)
-        case 3: CGSize(width: Theme.Table.sideNudge, height: 4)
+        case 3: CGSize(width: Theme.Table.sideNudge, height: 0)
         default: CGSize(width: 0, height: Theme.Table.ownNudge)
         }
     }
@@ -163,6 +172,23 @@ struct TableSurface: View {
 
     // MARK: Status, hints, explanations
 
+    enum LowerRow: Hashable { case commentary, status, controls }
+
+    /// The rows under the pile, top to bottom. In play the column has no height to spare above the hand, so
+    /// the notice line ("Discarded: …") takes no row: it floats above "Your turn" in the space the pile
+    /// leaves. The auction keeps its call under the controls.
+    nonisolated static func lowerRows(inAuction: Bool) -> [LowerRow] {
+        inAuction ? [.status, .controls, .commentary] : [.controls, .status]
+    }
+
+    nonisolated static func commentaryFloats(inAuction: Bool) -> Bool { !inAuction }
+
+    /// Height the commentary holds even when empty: none in play (it floats), none while your bid controls
+    /// need the space.
+    nonisolated static func commentaryMinHeight(inAuction: Bool, humanTurn: Bool) -> Double {
+        inAuction && !humanTurn ? 36 : 0
+    }
+
     private var statusLine: some View {
         HStack(spacing: 8) {
             if reopenedTrick != nil {
@@ -178,18 +204,20 @@ struct TableSurface: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Back to play")
-                Text("Reviewing last trick").font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                Text("Reviewing last hand").font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .accessibilityFocused(statusFocus)
                 Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
             } else {
                 // Left: reopen the last trick when the pile is clear. Right: the hint on your turn.
                 if pile.plays.isEmpty, hand.completedTricks.last != nil, hand.phase == .playing {
-                    smallButton("rectangle.stack", label: "Show the last trick", action: onReopenTrick)
+                    smallButton("rectangle.stack", label: "Show the last hand", action: onReopenTrick)
                 } else {
                     Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
                 }
-                statusText.font(.title3.weight(.medium)).multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                // Your turn is the loudest line on the table (T05); everything else stays at a calm weight.
+                statusText.font(model.isHumanTurn ? .title2.weight(.bold) : .title3.weight(.medium))
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .accessibilityFocused(statusFocus)
                 if model.isHumanTurn, hand.phase != .finished, coaching {
@@ -222,23 +250,21 @@ struct TableSurface: View {
         switch hand.phase {
         case .bidding:
             let bid = hand.auction.isNineAndOut ? "9 and out" : hand.auction.highestBid.map(String.init) ?? "none"
-            return model.isHumanTurn ? Text("Your bid").foregroundStyle(.gold) + Text(" · high bid \(bid)")
+            // On your bid the auction chips carry the high bid (B04), so the line only says whose turn it is.
+            return model.isHumanTurn ? Text("Your bid").foregroundStyle(.gold)
                 : Text("\(actor) is bidding · high bid \(bid)")
         case .choosingTrump:
             return model.isHumanTurn ? Text("Choose trump").foregroundStyle(.gold) : Text("\(actor) is choosing trump")
         case .playing:
-            if model.isHumanTurn, let suit = model.suitToFollow {
-                // The shaded cards are the ones that cannot follow; say why in the same breath.
-                return Text("Your turn").foregroundStyle(.gold) + Text(" · follow \(suit.rawValue)")
-            }
-            return model.isHumanTurn ? Text("Your turn").foregroundStyle(.gold) : Text("\(actor) is thinking")
+            // No follow-suit line (T06), and no "is thinking": the dots above that seat's tile say it (T04).
+            return model.isHumanTurn ? Text("Your turn").foregroundStyle(.gold) : Text(" ")
         case .finished:
             return Text("Hand complete")
         }
     }
 
-    /// One line under the status: the undo toast after your action (with any discard notice), else a
-    /// hint reason or explanation, else the notice, else your standing call in the auction, else a
+    /// One line under the status: a refusal, else a hint reason or explanation, else the notice (no undo
+    /// toast on the play surface, T07), else your standing call in the auction, else a
     /// placeholder in play. Reserves no space in the auction while the controls need it.
     @ViewBuilder private var commentary: some View {
         ZStack {
@@ -246,15 +272,6 @@ struct TableSurface: View {
                 // A refused tap answers first: it is the freshest thing the player did.
                 Text(refusal).font(.footnote).multilineTextAlignment(.center).foregroundStyle(.ivory.opacity(0.9))
                     .padding(.horizontal, 8)
-            } else if let toast, model.canUndo {
-                HStack(spacing: 12) {
-                    Text([model.describe(toast), model.notice].compactMap { $0 }.joined(separator: " · ")).font(.footnote).lineLimit(1)
-                    Button("Undo") { model.undo() }.font(.footnote.weight(.semibold)).tint(.ivory)
-                        .accessibilityHint("Takes back your last action and the replies after it")
-                }
-                .padding(.horizontal, 14).padding(.vertical, 6)
-                .background(Theme.Wood.inlay.opacity(0.85), in: Capsule())
-                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             } else if let hint = model.hint {
                 // One complete recommendation on one line; the reason waits behind Why?, so a long hint
                 // can never push the controls above it off the screen (spec R22).
@@ -278,7 +295,7 @@ struct TableSurface: View {
                     .padding(.horizontal, 8)
             } else if let notice = model.notice {
                 Text(notice).font(.footnote).opacity(0.85)
-            } else if hand.phase == .bidding, !model.isHumanTurn, let call = model.latestCall(for: 0) {
+            } else if hand.phase == .bidding, !model.isHumanTurn, let seat = model.viewerSeat, let call = model.latestCall(for: seat) {
                 Text("You: \(call)").font(.footnote).opacity(0.85)
             } else if !inAuction {
                 Text(pile.plays.isEmpty || !coaching ? " " : (reopenedTrick != nil ? "Tap a card to see why it was played" : "Tap a card on the table to see why it was played"))
@@ -286,7 +303,7 @@ struct TableSurface: View {
                     .accessibilityHidden(true)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: inAuction && model.isHumanTurn ? 0 : 36, alignment: .top)
+        .frame(maxWidth: .infinity, minHeight: Self.commentaryMinHeight(inAuction: inAuction, humanTurn: model.isHumanTurn), alignment: .top)
         .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: toast)
         .sheet(isPresented: $showHintDetail) {
             if let hint = model.hint {
@@ -307,24 +324,74 @@ struct TableSurface: View {
 
     // MARK: Phase controls
 
+    /// The bids still open to the seat to act, lowest first; bids the auction has passed are not offered (B03).
+    nonisolated static func bidOptions(allows: (Int) -> Bool) -> [Int] {
+        HouseRules.bidRange.filter(allows)
+    }
+
+    /// The auction at a glance (B04, B05): the standing bid and who holds it, the lowest bid left, only the
+    /// bids still legal, Pass as the one wide secondary action, and 9 and out tucked under the 9.
     private var bidding: some View {
-        VStack(spacing: Theme.Table.auctionButtonSpacing) {
+        let options = Self.bidOptions { model.allows(.bid($0)) }
+        let nineAndOut = model.allows(.nineAndOut)
+        return VStack(spacing: Theme.Table.auctionButtonSpacing) {
             if let context = model.auctionContext {
                 Text(context).font(.footnote).opacity(0.85).multilineTextAlignment(.center).padding(.bottom, 2)
             }
+            auctionState(lowest: options.first)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Theme.Table.auctionButtonSpacing), count: 4),
-                      spacing: Theme.Table.auctionButtonSpacing) {
-                ForEach(HouseRules.bidRange, id: \.self) { bid in actionButton(String(bid), action: .bid(bid)) }
+                      alignment: .center, spacing: Theme.Table.auctionButtonSpacing) {
+                ForEach(options, id: \.self) { bid in
+                    actionButton(String(bid), action: .bid(bid), fill: .ivory,
+                                 font: .title2.weight(.bold), labelColor: .suitRed)
+                        // The lowest legal bid wears the one light-brown edge (B05).
+                        .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
+                            .stroke(Theme.Wood.light, lineWidth: bid == options.first ? 3 : 0))
+                        // 9 and out hangs from the 9's lower edge, taking no row of its own.
+                        .overlay(alignment: .bottom) {
+                            if bid == HouseRules.bidRange.upperBound, nineAndOut { nineAndOutButton.offset(y: 11) }
+                        }
+                        .zIndex(bid == HouseRules.bidRange.upperBound ? 1 : 0)
+                }
+                if nineAndOut, !options.contains(HouseRules.bidRange.upperBound) { nineAndOutButton }
             }
-            HStack(spacing: Theme.Table.auctionButtonSpacing) {
-                actionButton("Pass", action: .bid(nil), font: .body.weight(.semibold))
-                Button { onNineAndOut() } label: { Text("9 and out").font(.body.weight(.semibold)) }
-                    .buttonStyle(PillButtonStyle(fill: Theme.Wood.inlay))
-                    .disabled(!model.allows(.nineAndOut))
-                    .accessibilityHint(model.allows(.nineAndOut) ? "Take all nine points or lose the match; asks you to confirm"
-                                       : model.validationMessage(for: .nineAndOut) ?? "")
-            }
+            actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
+                         font: .body.weight(.semibold), labelColor: .ivory)
         }
+        .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: options)
+    }
+
+    /// The rare bid, small and set apart under the 9 it belongs to (B02).
+    private var nineAndOutButton: some View {
+        Button { onNineAndOut() } label: {
+            Text("9 and out").font(.caption.weight(.semibold)).foregroundStyle(.ivory)
+                .lineLimit(1).fixedSize()
+                .padding(.horizontal, 10).padding(.vertical, 3)
+                .background(Theme.Wood.dark, in: Capsule())
+                .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Take all nine points or lose the match; asks you to confirm")
+    }
+
+    /// High bid and its holder, then the lowest bid you can make, in light browns and outlines (B04, B05).
+    private func auctionState(lowest: Int?) -> some View {
+        let auction = hand.auction
+        let high: String = if auction.isNineAndOut { "9 and out" } else { auction.highestBid.map(String.init) ?? "none" }
+        let holder = auction.winner.map { model.seatNames[$0] }
+        return HStack(spacing: 8) {
+            chip(holder.map { "High \(high) · \(String($0))" } ?? "No bid yet", filled: true)
+            if let lowest { chip("Lowest \(lowest)", filled: false) }
+        }
+        .font(.footnote.weight(.semibold))
+        .accessibilityElement(children: .combine)
+    }
+
+    private func chip(_ text: String, filled: Bool) -> some View {
+        Text(text).lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.horizontal, 10).padding(.vertical, 3)
+            .background(filled ? Theme.Wood.dark.opacity(0.8) : .clear, in: Capsule())
+            .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1))
     }
 
     /// Four suit pills, each named for newcomers and captioned with what choosing it keeps and draws.
@@ -337,8 +404,9 @@ struct TableSurface: View {
                 VStack(spacing: 2) {
                     // The glyph carries the suit's colour on the same dark pill as every other choice; a red
                     // fill only hid the glyph (spec R13).
-                    actionButton(suit.glyph, action: .chooseTrump(suit), font: .largeTitle.weight(.bold),
-                                 labelColor: suit.isRed ? Color.suitRed : .ivory)
+                    actionButton(suit.glyph, action: .chooseTrump(suit), fill: .ivory,
+                                 font: .largeTitle.weight(.bold),
+                                 labelColor: suit.isRed ? Color.suitRed : .black)
                         .accessibilityLabel("\(suit.rawValue), \(model.trumpPreview(for: suit) ?? "")")
                     // The suit on one line and, in beginner mode, what it keeps on a second (spec R30), so no
                     // caption is ever shrunk to fit its column; the draw count is implied and VoiceOver reads it all.
@@ -362,8 +430,8 @@ struct TableSurface: View {
                               font: Font = .title3.weight(.semibold), labelColor: Color = .ivory) -> some View {
         // One dry run per pill: the reason, when there is one, is also why the pill is greyed.
         let reason = model.validationMessage(for: action)
-        return Button { model.send(action) } label: { Text(label).font(font).foregroundStyle(labelColor) }
-            .buttonStyle(PillButtonStyle(fill: fill))
+        return Button { model.send(action) } label: { Text(label).font(font) }
+            .buttonStyle(PillButtonStyle(fill: fill, labelColor: labelColor))
             .disabled(reason != nil)
             // A greyed pill still says why it is greyed to assistive technology.
             .accessibilityHint(reason ?? "")
@@ -375,14 +443,14 @@ struct TableSurface: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 12) {
                 if let winner = model.match.winner { matchOver(winner) }
-                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: model.settings.beginnerMode)
+                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
                 dealButton
             }
             .padding(12)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Theme.Wood.inlay, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.15)))
+        .background(.ivory, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.Wood.header.opacity(0.45), lineWidth: 1.5))
         .padding(8)
         .transition(reduceMotion ? .opacity : .offset(y: 12).combined(with: .opacity))
         .accessibilitySortPriority(40)
@@ -391,7 +459,7 @@ struct TableSurface: View {
     private var dealButton: some View {
         Button(model.match.winner == nil ? "Deal next hand" : "Play again") {
             if model.match.winner == nil { model.nextHand() } else { model.newGame() }
-        }.buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black).lineLimit(1)
+        }.buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory).lineLimit(1)
         .frame(minHeight: 56) // From R11: ~56-60pt tall
     }
 
@@ -402,10 +470,10 @@ struct TableSurface: View {
                 .font(.system(.subheadline, design: .monospaced).weight(.bold)).tracking(2)
             Text("\(model.match.scores[0]) – \(model.match.scores[1]) after \(model.match.history.count) hands").font(.title3.weight(.semibold))
             if let performance = model.finalPerformance {
-                Text("You made \(performance.bidsMade) of \(performance.bids) contracts and played the strategy's card \(performance.playsAgreed) of \(performance.plays) times.")
+                Text("You made \(performance.bidsMade) of \(performance.bids) bids and played the strategy's card \(performance.playsAgreed) of \(performance.plays) times.")
                     .font(.footnote).multilineTextAlignment(.center).opacity(0.8)
             }
-        }.foregroundStyle(.gold)
+        }.foregroundStyle(.black)
     }
 }
 
@@ -423,6 +491,7 @@ struct SeatView: View {
 
     private var hand: Hand { model.match.hand }
     private var active: Bool { hand.nextSeat == seat && model.match.winner == nil }
+    private var thinking: Bool { active && !model.isHuman(seat) && hand.phase != .finished }
 
     /// A face over a name over one line of badges: the call in the auction, a hint of a hand in play, and
     /// DEALER or BIDDER when they apply. Everything a seat says sits under its own portrait, so nothing
@@ -445,6 +514,14 @@ struct SeatView: View {
                     }
                 }
                 .padding(.vertical, Theme.Table.activeRingGap)
+                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13).
+                .overlay(alignment: .bottomTrailing) {
+                    if hand.auction.dealer == seat { DealerDeck().offset(x: 16, y: -2) }
+                }
+                // A computer deciding shows calm dots above its tile instead of a status line (T04).
+                .overlay(alignment: .top) {
+                    if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
+                }
             Text(model.seatNames[seat]).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
             badges
         }
@@ -486,24 +563,65 @@ struct SeatView: View {
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
 }
 
+/// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on
+/// the table and not a button (T13).
+struct DealerDeck: View {
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                CardBackView(width: Theme.Table.dealerDeckWidth).offset(x: Double(index) * -1.5, y: Double(index) * -1.5)
+            }
+        }
+        .rotationEffect(.degrees(-8))
+        .dynamicTypeSize(...Theme.Card.maximumTypeSize)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Three dots that brighten in turn: a seat is deciding. Still under Reduce Motion.
+struct ThinkingDots: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { index in
+                if reduceMotion {
+                    dot.opacity(0.8)
+                } else {
+                    dot.phaseAnimator([0, 1, 2]) { view, phase in
+                        view.opacity(phase == index ? 1 : 0.35)
+                    } animation: { _ in .easeInOut(duration: 0.4) }
+                }
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(Theme.Wood.inlay.opacity(0.85), in: Capsule())
+        .accessibilityHidden(true)
+    }
+
+    private var dot: some View { Circle().fill(.ivory).frame(width: 6, height: 6) }
+}
+
 extension Suit {
     var isRed: Bool { self == .hearts || self == .diamonds }
 }
 
 extension Color {
-    /// A playing-card red for suit glyphs on dark panels.
-    static var suitRed: Color { Color(red: 0.86, green: 0.18, blue: 0.22) }
+    /// Catch 5 red: the five, hearts/diamonds, and the one primary action on non-felt surfaces.
+    static var suitRed: Color { Color(red: 0.698, green: 0.122, blue: 0.180) } // #B21F2E
 }
 
 /// The auction's pills: a solid fill, ivory label, a faint edge, dimmed when the rule disallows the
 /// action, and a small press. Fills the column it is given.
 struct PillButtonStyle: ButtonStyle {
     var fill: Color
+    var labelColor: Color = .ivory
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(.ivory)
+            .foregroundStyle(labelColor)
             .frame(maxWidth: .infinity, minHeight: Theme.Table.auctionButtonHeight)
             .background(fill, in: RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)

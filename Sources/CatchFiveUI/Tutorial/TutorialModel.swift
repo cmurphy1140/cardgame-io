@@ -7,7 +7,7 @@ import Foundation
 @MainActor
 public final class TutorialModel: ObservableObject {
     public static let lessonCount = 5
-    public static let titles = ["The deal", "Bidding", "Trump", "Tricks", "Scoring"]
+    public static let titles = ["The deal", "Bidding", "Trump", "Hands", "Scoring"]
 
     @Published public var lesson = 0
     @Published public private(set) var completed: Set<Int>
@@ -100,7 +100,7 @@ public final class TutorialModel: ObservableObject {
     public func pickTrickCard(_ card: Card) {
         trickPick = card
         if TutorialFixtures.trickLegalAnswers.contains(card) {
-            trickFeedback = "Yes. You hold diamonds, so a diamond has to go. Keep the ace of spades for a trick that is worth it."
+            trickFeedback = "Yes. You hold diamonds, so a diamond has to go. Keep the ace of spades for a hand that is worth it."
         } else if card.suit == .spades {
             trickFeedback = "Not yet. Trump only comes in when you cannot follow suit, and you still hold diamonds."
         } else {

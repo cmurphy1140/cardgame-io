@@ -2,9 +2,21 @@ import CatchFive
 import Combine
 import Foundation
 
+/// Solo is one human at seat 0 against three computers; pass and play is four humans sharing one phone.
+public enum PlayMode: String, Codable, Sendable {
+    case solo, passAndPlay
+
+    /// The New match question's explanation of the two choices.
+    public static let choiceMessage = "Solo: you and three computer players. Pass and play: four players share this phone, passing it for each turn."
+}
+
 @MainActor
 public final class GameModel: ObservableObject {
     @Published public private(set) var match: Match
+    /// Saved beside the game, so a pass-and-play match resumes as one.
+    @Published public private(set) var mode: PlayMode
+    /// In pass and play, the seat that pressed Ready and now holds the phone; nil while the curtain is up.
+    @Published public private(set) var revealedSeat: Int?
     @Published public private(set) var revision = 0
     @Published public var errorMessage: String?
     /// A failed write of the game, settings or history. The move it followed was accepted and stands;
@@ -35,9 +47,10 @@ public final class GameModel: ObservableObject {
     /// Supplies the date of a record; injectable for tests.
     public var now: () -> Date = Date.init
 
-    public init(match: Match, saveURL: URL? = nil, settings: Settings = Settings(), settingsURL: URL? = nil,
+    public init(match: Match, mode: PlayMode = .solo, saveURL: URL? = nil, settings: Settings = Settings(), settingsURL: URL? = nil,
                 records: [MatchRecord] = [], historyURL: URL? = nil) {
         self.match = match
+        self.mode = mode
         self.saveURL = saveURL
         self.settings = settings
         self.settingsURL = settingsURL
@@ -83,8 +96,28 @@ public final class GameModel: ObservableObject {
         persistHistory()
     }
 
-    public var isHumanTurn: Bool { match.winner == nil && match.hand.nextSeat == 0 }
-    public var seatNames: [String] { settings.seatNames }
+    /// Whether a person, not the computer, plays `seat`: every seat in pass and play, seat 0 in solo.
+    public func isHuman(_ seat: Int) -> Bool { mode == .passAndPlay || seat == 0 }
+
+    /// The seat whose hand the phone shows: seat 0 in solo; in pass and play only the seat that pressed Ready.
+    public var viewerSeat: Int? { mode == .solo ? 0 : revealedSeat }
+
+    /// In pass and play, the seat the phone must be passed to before anything of theirs is shown.
+    public var curtainSeat: Int? {
+        guard mode == .passAndPlay, match.winner == nil, let next = match.hand.nextSeat, next != revealedSeat else { return nil }
+        return next
+    }
+
+    /// The player the phone was passed to says so; their hand appears.
+    public func ready() { revealedSeat = curtainSeat ?? revealedSeat }
+
+    public var isHumanTurn: Bool { match.winner == nil && match.hand.nextSeat != nil && match.hand.nextSeat == viewerSeat }
+    /// In pass and play every seat is a family member, so seat 0 drops the phone holder's own name.
+    public var seatNames: [String] {
+        var names = settings.seatNames
+        if mode == .passAndPlay, names[0] == settings.playerName { names[0] = Settings.defaultSeatNames[0] }
+        return names
+    }
 
     /// True once something has happened this match and nobody has won yet; drives the menu's Continue button.
     public var matchInProgress: Bool { match.actionCount > 0 && match.winner == nil }
@@ -95,13 +128,13 @@ public final class GameModel: ObservableObject {
         let phase: String = switch match.hand.phase {
         case .bidding: "bidding"
         case .choosingTrump: "choosing trump"
-        case .playing: "trick \(match.hand.completedTricks.count + 1)"
+        case .playing: "playing"
         case .finished: "hand scored"
         }
         return "Hand \(match.handNumber) · Your team \(match.scores[0]), their team \(match.scores[1]) · \(phase)"
     }
 
-    /// The login screen's one write: the trimmed name becomes seat 0's name as well.
+    /// The login screen's one write: the trimmed name becomes seat 0's name unless another seat has it.
     public func signIn(name: String, portrait: Portrait, difficulty: Difficulty) {
         var updated = settings
         updated.setPlayerName(name)
@@ -126,7 +159,8 @@ public final class GameModel: ObservableObject {
     /// The hand as shown: trumps first, highest to lowest, then the other suits in a fixed order.
     public var humanCards: [Card] {
         let trump = match.hand.trump
-        return match.hand.hands[0].sorted { a, b in
+        guard let seat = viewerSeat else { return [] }
+        return match.hand.hands[seat].sorted { a, b in
             if (a.suit == trump) != (b.suit == trump) { return a.suit == trump }
             if a.suit != b.suit { return Suit.allCases.firstIndex(of: a.suit)! < Suit.allCases.firstIndex(of: b.suit)! }
             return a.rank.rawValue > b.rank.rawValue
@@ -134,16 +168,18 @@ public final class GameModel: ObservableObject {
     }
 
     public func send(_ action: PlayerAction) {
-        guard isHumanTurn else { return }
+        guard isHumanTurn, let seat = viewerSeat else { return }
         notice = nil
         let announces = namesTrump(action)
-        if perform({ try match.apply(action, seat: 0) }) {
+        if perform({ try match.apply(action, seat: seat) }) {
             if announces { notice = discardAnnouncement() }
             lastHumanAction = action
+            // The phone passes on: the curtain comes down before the next seat sees anything.
+            if mode == .passAndPlay, match.hand.nextSeat != seat { revealedSeat = nil }
         }
     }
     public func stepComputer() {
-        guard match.winner == nil, let seat = match.hand.nextSeat, seat != 0 else { return }
+        guard match.winner == nil, let seat = match.hand.nextSeat, !isHuman(seat) else { return }
         var announces = false
         perform {
             let view = try PlayerView(match: match, seat: seat)
@@ -166,7 +202,7 @@ public final class GameModel: ObservableObject {
     public func discardAnnouncement() -> String {
         let counts = match.hand.discardCounts
         let spoken = (0..<4).map { seat in
-            let who = seat == 0 ? "You" : seatNames[seat]
+            let who = seat == 0 && mode == .solo ? "You" : seatNames[seat]
             return counts[seat] == 0 ? "\(who) none" : "\(who) \(counts[seat])"
         }
         return "Discarded: " + spoken.joined(separator: " · ")
@@ -193,7 +229,7 @@ public final class GameModel: ObservableObject {
     /// VoiceOver wording for a played card: "West played the ten of hearts".
     public func spokenDescription(of play: Play, winner: Int? = nil) -> String {
         let base = "\(seatNames[play.seat]) played the \(play.card.name)"
-        return winner == play.seat ? base + " and took the trick" : base
+        return winner == play.seat ? base + " and took the hand" : base
     }
 
     /// VoiceOver value for a card in the human's hand.
@@ -208,11 +244,12 @@ public final class GameModel: ObservableObject {
     }
 
     /// Whether the human's latest action in this hand can be taken back.
-    public var canUndo: Bool { match.undoPoint(forSeat: 0) != nil }
+    /// Solo only: in pass and play an undo would reach back across another player's turn.
+    public var canUndo: Bool { mode == .solo && match.undoPoint(forSeat: 0) != nil }
 
     /// Take back the human's latest action in this hand and every computer reply after it.
     public func undo() {
-        guard let point = match.undoPoint(forSeat: 0) else { return }
+        guard canUndo, let point = match.undoPoint(forSeat: 0) else { return }
         perform { match = try match.rewound(toActionCount: point) }
         lastHumanAction = nil
         notice = nil
@@ -240,7 +277,7 @@ public final class GameModel: ObservableObject {
 
     /// Ask the computer strategy what it would do from seat 0 and why.
     public func showHint() {
-        guard isHumanTurn, let view = try? PlayerView(match: match, seat: 0) else { return }
+        guard isHumanTurn, let seat = viewerSeat, let view = try? PlayerView(match: match, seat: seat) else { return }
         refusal = nil   // the player asked for something newer than the last refusal
         hint = ComputerPlayer.advise(view)
     }
@@ -248,6 +285,8 @@ public final class GameModel: ObservableObject {
     /// Plain words for why `play` happened, from the strategy's point of view at that moment.
     /// `trickIndex` names a completed trick; nil means the card is still on the table.
     public func explanation(for play: Play, inLastTrick: Bool, trickIndex: Int? = nil) -> String? {
+        // The reason for another seat's card is drawn from that seat's hand; the next player must not read it.
+        guard mode == .solo || match.hand.phase == .finished else { return nil }
         let index = trickIndex ?? (inLastTrick ? match.hand.completedTricks.count - 1 : nil)
         guard let view = try? PlayerView(match: match, replaying: play, inCompletedTrick: index),
               let advice = ComputerPlayer.advise(view) else { return nil }
@@ -281,21 +320,21 @@ public final class GameModel: ObservableObject {
     }
 
     public func allows(_ action: PlayerAction) -> Bool {
-        guard isHumanTurn else { return false }
+        guard isHumanTurn, let seat = viewerSeat else { return false }
         var copy = match
-        return (try? copy.apply(action, seat: 0)) != nil
+        return (try? copy.apply(action, seat: seat)) != nil
     }
 
     /// Nil when the engine would accept `action` from the human right now; otherwise the reason it would
     /// not, in the player's words. Validates on a copy, so the match and its action count never change.
     public func validationMessage(for action: PlayerAction) -> String? {
         guard match.winner == nil else { return Self.message(for: MatchError.matchFinished) }
-        guard isHumanTurn else {
+        guard isHumanTurn, let seat = viewerSeat else {
             return match.hand.nextSeat.map { "Wait for \(seatNames[$0])." } ?? "This hand is over."
         }
         var copy = match
         do {
-            try copy.apply(action, seat: 0)
+            try copy.apply(action, seat: seat)
             return nil
         } catch HandError.mustFollowSuit {
             guard let led = match.hand.currentTrick.first?.card.suit else { return Self.message(for: HandError.mustFollowSuit) }
@@ -314,22 +353,22 @@ public final class GameModel: ObservableObject {
     /// still hold it. Nil when you lead, when you cannot follow, or when it is not your turn.
     public var suitToFollow: Suit? {
         guard isHumanTurn, match.hand.phase == .playing, let led = match.hand.currentTrick.first?.card.suit,
-              match.hand.hands[0].contains(where: { $0.suit == led }) else { return nil }
+              let seat = viewerSeat, match.hand.hands[seat].contains(where: { $0.suit == led }) else { return nil }
         return led
     }
 
     /// What naming `suit` as trump would do to the hand: "keep 4 · draw 2". Only while the human is
     /// choosing trump; it counts the human's own cards and reveals nothing about the stock.
     public func trumpPreview(for suit: Suit) -> String? {
-        guard match.hand.phase == .choosingTrump, isHumanTurn else { return nil }
-        let kept = match.hand.hands[0].filter { $0.suit == suit }.count
+        guard match.hand.phase == .choosingTrump, isHumanTurn, let seat = viewerSeat else { return nil }
+        let kept = match.hand.hands[seat].filter { $0.suit == suit }.count
         return "keep \(kept) · draw \(min(6 - kept, match.hand.stock.count))"
     }
 
     /// The dealer's special bidding rights, shown only when it is the human's turn to bid as dealer.
     public var auctionContext: String? {
         let auction = match.hand.auction
-        guard match.hand.phase == .bidding, isHumanTurn, auction.dealer == 0 else { return nil }
+        guard match.hand.phase == .bidding, isHumanTurn, auction.dealer == viewerSeat else { return nil }
         if auction.isNineAndOut { return "As dealer you may match 9 and out; matching makes you the bidder." }
         if let high = auction.highestBid { return "As dealer you may match the high bid of \(high)." }
         return "Everyone passed, so as dealer you must bid at least 2."
@@ -337,11 +376,15 @@ public final class GameModel: ObservableObject {
 
     public func nextHand() {
         perform { try match.startNextHand(deck: Self.deck()) }
+        revealedSeat = nil
         lastHumanAction = nil
         notice = nil
     }
-    public func newGame() {
+    /// A fresh match in `mode`, or in the current mode when none is given (Play again keeps it).
+    public func newGame(mode: PlayMode? = nil) {
         let draw = DealerDraw.draw(from: Self.deck())
+        if let mode { self.mode = mode }
+        revealedSeat = nil
         perform { match = try Match(deck: Self.deck(), dealer: draw.dealer) }
         dealerDraw = draw
         recordedCurrentMatch = false
@@ -401,7 +444,10 @@ public final class GameModel: ObservableObject {
 
     public func persist() {
         guard let saveURL else { return }
-        do { try MatchSave.write(match, to: saveURL) }
+        do {
+            try MatchSave.write(match, to: saveURL)
+            try JSONEncoder().encode(mode).write(to: Self.modeURL(beside: saveURL), options: .atomic)
+        }
         catch { saveError = "Could not save this game. Your current game is still open. \(error.localizedDescription)" }
     }
 
@@ -411,6 +457,16 @@ public final class GameModel: ObservableObject {
         persist()
         persistSettings()
         persistHistory()
+    }
+
+    /// The play mode's file sits beside the game's; the rules engine's save format stays as it is.
+    nonisolated static func modeURL(beside saveURL: URL) -> URL {
+        saveURL.deletingLastPathComponent().appendingPathComponent("game-mode.json")
+    }
+
+    /// The saved game's mode; solo when the file is missing (a save from before pass and play) or unreadable.
+    nonisolated static func readMode(beside saveURL: URL) -> PlayMode {
+        (try? JSONDecoder().decode(PlayMode.self, from: Data(contentsOf: modeURL(beside: saveURL)))) ?? .solo
     }
 
     public static func deck() -> [Card] {
@@ -444,7 +500,7 @@ public final class GameModel: ObservableObject {
         fresh.dealerDraw = start.draw
         if FileManager.default.fileExists(atPath: url.path) {
             do {
-                let restored = GameModel(match: try MatchSave.read(from: url), saveURL: url, settings: settings, settingsURL: settingsURL,
+                let restored = GameModel(match: try MatchSave.read(from: url), mode: readMode(beside: url), saveURL: url, settings: settings, settingsURL: settingsURL,
                                          records: records, historyURL: historyURL)
                 restored.errorMessage = notices.first
                 return restored

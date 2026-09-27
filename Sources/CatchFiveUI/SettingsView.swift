@@ -18,18 +18,6 @@ struct SettingsView: View {
                 } header: { Text("Difficulty") } footer: {
                     Text("Easy players use the original strategy and lose about two matches in three to Standard. Hints always use Standard.")
                 }
-                Section {
-                    Toggle("Beginner mode", isOn: $settings.beginnerMode)
-                } header: { Text("Assistance") } footer: {
-                    Text("Hints, tap-to-explain on the table and what each trump would keep. Off is normal mode: the same rules and a clean table.")
-                }
-                Section("Play speed") {
-                    Picker("Computer pace", selection: $settings.playSpeed) {
-                        Text("Relaxed").tag(Settings.PlaySpeed.relaxed)
-                        Text("Normal").tag(Settings.PlaySpeed.normal)
-                        Text("Quick").tag(Settings.PlaySpeed.quick)
-                    }.pickerStyle(.segmented)
-                }
                 Section("You") {
                     // A draft, so spaces and clearing work while typing; each non-blank edit is committed.
                     TextField("Your name", text: $nameDraft)
@@ -40,7 +28,7 @@ struct SettingsView: View {
                             Button { settings.playerPortrait = choice } label: {
                                 PortraitView(portrait: choice, size: 44)
                                     .opacity(settings.playerPortrait == choice ? 1 : Theme.Card.dimmedOpacity)
-                                    .overlay(Circle().stroke(.gold, lineWidth: settings.playerPortrait == choice ? 3 : 0))
+                                    .overlay(Circle().stroke(Color.suitRed, lineWidth: settings.playerPortrait == choice ? 3 : 0))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Face \(index + 1)")
@@ -59,7 +47,7 @@ struct SettingsView: View {
                     }
                 }
                 Section {
-                    Toggle("Haptics on tricks and hands", isOn: $settings.haptics)
+                    Toggle("Haptics on every hand", isOn: $settings.haptics)
                 }
                 Section {
                     Button { showExplainer = true } label: { Label("How Catch 5 is built", systemImage: "doc.text.magnifyingglass") }
@@ -67,6 +55,9 @@ struct SettingsView: View {
                     Text("The engineering explainer: architecture, game flow, every type, the tests and the decision log, readable offline.")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(WoodGrainView().ignoresSafeArea())
+            .tint(Color.suitRed)
             #if canImport(UIKit)
             .sheet(isPresented: $showExplainer) { ExplainerView { showExplainer = false } }
             #endif

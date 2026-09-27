@@ -105,7 +105,7 @@ struct ExplainerView: View {
                 }
             }
             .foregroundStyle(.ivory)
-            .background(LinearGradient(colors: [.felt, .black], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea())
+            .background(WoodGrainView().ignoresSafeArea())
             .navigationTitle("How Catch 5 is built")
             .toolbar { Button("Done", action: onDismiss) }
             .navigationDestination(item: $open) { chapter in
@@ -137,7 +137,7 @@ struct ExplainerView: View {
     private func chapterCard(_ chapter: ExplainerLibrary.Chapter) -> some View {
         let document = ExplainerLibrary.document(for: chapter.file)
         return HStack(alignment: .top, spacing: 14) {
-            Text(String(chapter.number)).font(.system(.title2, design: .serif).weight(.bold)).foregroundStyle(.gold)
+            Text(String(chapter.number)).font(.system(.title2, design: .serif).weight(.bold)).foregroundStyle(Color.suitRed)
                 .frame(width: 28, alignment: .trailing)
             VStack(alignment: .leading, spacing: 4) {
                 Text(document?.title ?? chapter.file).font(.headline)
@@ -199,7 +199,7 @@ struct DocumentReaderView: View {
             }
         }
         .foregroundStyle(.ivory)
-        .background(LinearGradient(colors: [.felt, .black], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea())
+        .background(WoodGrainView().ignoresSafeArea())
         .navigationTitle(document?.title ?? "")
         .environment(\.openURL, OpenURLAction { url in
             // A relative link to a sibling doc opens that chapter; anything else goes to the system.
@@ -225,7 +225,7 @@ struct DocumentReaderView: View {
                         }
                     } label: {
                         HStack(spacing: 8) {
-                            Rectangle().fill(.gold.opacity(0.6)).frame(width: 2, height: 14)
+                            Rectangle().fill(Color.suitRed.opacity(0.6)).frame(width: 2, height: 14)
                             MarkdownText(section.text).font(.footnote).multilineTextAlignment(.leading)
                         }
                     }
@@ -254,7 +254,7 @@ struct DocumentReaderView: View {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("•").foregroundStyle(.gold)
+                        Text("•").foregroundStyle(Color.suitRed)
                         MarkdownText(item).font(.body).opacity(0.92)
                     }
                 }
@@ -263,7 +263,7 @@ struct DocumentReaderView: View {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(index + 1).").font(.body.monospacedDigit()).foregroundStyle(.gold).frame(width: 24, alignment: .trailing)
+                        Text("\(index + 1).").font(.body.monospacedDigit()).foregroundStyle(Color.suitRed).frame(width: 24, alignment: .trailing)
                         MarkdownText(item).font(.body).opacity(0.92)
                     }
                 }
@@ -322,7 +322,7 @@ struct DocumentReaderView: View {
             Spacer()
             if let next {
                 Button { openChapter(next) } label: { Label("Next: \(ExplainerLibrary.document(for: next.file)?.title ?? next.file)", systemImage: "chevron.right") }
-                    .buttonStyle(.borderedProminent).tint(.gold).foregroundStyle(.black).lineLimit(1)
+                    .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory).lineLimit(1)
             }
         }
         .padding(.top, 20)
@@ -377,7 +377,7 @@ struct MarkdownText: View {
     let source: String
     init(_ source: String) { self.source = source }
     var body: some View {
-        Text(Self.styled(source)).tint(.gold)
+        Text(Self.styled(source)).tint(Color.suitRed)
     }
 
     /// Inline Markdown as an attributed string; code spans get their font here, explicitly, so only
@@ -388,7 +388,7 @@ struct MarkdownText: View {
         }
         for run in attributed.runs where run.inlinePresentationIntent?.contains(.code) == true {
             attributed[run.range].font = .system(.body, design: .monospaced).weight(.medium)
-            attributed[run.range].foregroundColor = .gold
+            attributed[run.range].foregroundColor = Color.suitRed
         }
         return attributed
     }

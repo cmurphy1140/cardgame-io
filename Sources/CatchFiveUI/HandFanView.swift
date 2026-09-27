@@ -31,6 +31,10 @@ struct HandFanView: View {
         VStack(spacing: 6) {
             Group {
                 switch arrangement {
+                case .fan where model.match.hand.phase == .bidding && measuredWidth > 0:
+                    // B01: while bidding, the hand lies flat on one baseline, evenly spaced; the fan comes back after.
+                    row(cards, indices: Array(cards.indices), strip: HandLayout.baselineStrip(count: cards.count, cardWidth: scaledWidth,
+                                                                                           available: measuredWidth - 16), fanned: false)
                 case let .fan(strip):
                     row(cards, indices: Array(cards.indices), strip: strip, fanned: true)
                 case let .rows(perRow, strip):
@@ -43,16 +47,13 @@ struct HandFanView: View {
             .frame(maxWidth: .infinity, alignment: .bottom)
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
-            if !cards.isEmpty {
-                HStack(spacing: 8) {
-                    Text("YOUR HAND").opacity(0.7)
-                    if model.match.hand.auction.dealer == 0 {
-                        Text("·").opacity(0.4)
-                        Text("DEALER").foregroundStyle(.gold)
-                    }
+            // No "Your hand" caption (T05); the dealer badge stays when it is yours.
+            if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
+                HStack(spacing: 10) {
+                    DealerDeck()
+                    Text("DEALER").foregroundStyle(.gold)
+                        .font(.caption2.monospaced()).tracking(1)
                 }
-                .font(.caption2.monospaced()).tracking(1)
-                .accessibilityElement(children: .combine)
             }
         }
         .frame(maxWidth: .infinity)

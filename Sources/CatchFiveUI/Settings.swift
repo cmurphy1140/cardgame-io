@@ -8,7 +8,7 @@ public struct Settings: Codable, Equatable, Sendable {
     }
 
     public var playSpeed: PlaySpeed
-    /// Seat 0 is the human; the others default to the cast (Hazel, Otto, Rue).
+    /// Seat 0 is the human; all four default to the family table (T09).
     public var seatNames: [String]
     public var haptics: Bool
     public var difficulty: Difficulty
@@ -23,18 +23,27 @@ public struct Settings: Codable, Equatable, Sendable {
     /// Hints and guided play (spec R14). Off is normal mode: a clean table, no coaching, the same rules.
     public var beginnerMode: Bool
 
-    public static let defaultSeatNames = ["You"] + Cast.opponents.map(\.name)
+    public static let defaultSeatNames = ["Cheryl", "JC", "Connor", "Diane"]
     /// The defaults before the cast existed; files still carrying them migrate on load.
     public static let legacySeatNames = ["You", "West", "Partner", "East"]
+    /// The cast's names before the family table (T09); files still carrying them migrate on load.
+    public static let oldCastSeatNames = ["Hazel", "Otto", "Rue"]
 
     public var hasSignedIn: Bool { playerName != nil }
 
-    /// The one place the player's name is written: trimmed, and mirrored into seat 0. Blank input is ignored.
+    /// The one place the player's name is written: trimmed, and mirrored into seat 0 unless another seat
+    /// already carries it (Connor signing in must not make two Connors). Blank input is ignored.
     public mutating func setPlayerName(_ name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        let previous = playerName
         playerName = trimmed
-        seatNames[0] = trimmed
+        if !seatNames[1...3].contains(trimmed) {
+            seatNames[0] = trimmed
+        } else if let previous, seatNames[0] == previous, !seatNames[1...3].contains(previous) {
+            // Seat 0 was mirroring an earlier (or half-typed) name; it goes back to the family default.
+            seatNames[0] = Settings.defaultSeatNames[0]
+        }
     }
 
     public init(playSpeed: PlaySpeed = .relaxed, seatNames: [String] = Settings.defaultSeatNames,
@@ -71,6 +80,13 @@ public struct Settings: Codable, Equatable, Sendable {
         // accident; after sign-in a typed "West" is a choice and stays.
         let migrated = playerName == nil ? Settings.migrated(names) : names
         seatNames = migrated.count == 4 ? migrated : Settings.defaultSeatNames
+        // A file saved with the old cast in seats 1 to 3 (any order) takes the family table; seat 0 keeps the
+        // player's own name unless a family seat already carries it. Names typed by hand never match and stay.
+        if Set(seatNames[1...3]) == Set(Settings.oldCastSeatNames) {
+            let own = seatNames[0]
+            seatNames = Settings.defaultSeatNames
+            if own == playerName, !seatNames[1...3].contains(own) { seatNames[0] = own }
+        }
     }
 
     /// Seats 1 to 3 that still carry the old direction names take the cast's names; custom names are kept.
@@ -82,25 +98,12 @@ public struct Settings: Codable, Equatable, Sendable {
         return result
     }
 
-    /// How long a finished trick stays on the table, winner ringed, before it collapses. It follows
-    /// the chosen pace: the complaint it answers is that a trick is gone before you have read it.
+    /// How long a finished hand stays on the table, winner ringed, before it is collected: one beat,
+    /// `Theme.Motion.botBeat`, so every hand can be read. The saved pace no longer changes it (T11).
+    public var trickHold: Duration { Theme.Motion.botBeat }
 
-    /// Pause before a computer acts: longer before a lead so the last trick can be read.
-    public var trickHold: Duration {
-        switch playSpeed {
-        case .relaxed: .milliseconds(1400)
-        case .normal: .milliseconds(900)
-        case .quick: .milliseconds(500)
-        }
-    }
-
-    public func delay(leadingTrick: Bool) -> Duration {
-        switch playSpeed {
-        case .relaxed: leadingTrick ? .milliseconds(1800) : .milliseconds(1000)
-        case .normal: leadingTrick ? .milliseconds(1200) : .milliseconds(700)
-        case .quick: leadingTrick ? .milliseconds(500) : .milliseconds(300)
-        }
-    }
+    /// Pause before a computer acts: the same single beat for leads and follows (T11).
+    public func delay(leadingTrick: Bool) -> Duration { Theme.Motion.botBeat }
 }
 
 public enum SettingsStore {

@@ -30,9 +30,9 @@ public enum RulesText {
 
     /// How the screen presents the rules; not part of the rules document.
     public static let readingTheTable: [String] = [
-        "Scores for both partnerships sit at the top, with the trump suit and the current contract between them.",
+        "Scores for both partnerships sit at the top, with the trump suit and the current bid between them.",
         "During the auction each seat's tile shows its bid or pass. After trump is named, the bidder's tile says so and the others show cards left.",
-        "Cards you cannot legally play are dimmed. The last trick stays on the table, with the winning card ringed, until the next lead.",
+        "Cards you cannot legally play are dimmed. The last hand stays on the table, with the winning card ringed, until the next lead.",
         "Tap Hint on your turn to see what the computer strategy would do and why. Tap any played card to see why that seat played it.",
         "The gear opens settings: difficulty, play speed, seat names and haptics.",
     ]

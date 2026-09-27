@@ -11,7 +11,7 @@ Three kinds of surface, and the difference matters:
 |---|---|---|
 | **Screen** | Replaces everything. `RootView` owns exactly four. | login, intro, menu, table |
 | **Sheet** | Slides over, dismissed by the player, the screen beneath continues to exist | settings, statistics, how to play, hand review, scoreboard, hint detail |
-| **Cover** | Blocks play. The table underneath is neither tappable nor reachable by VoiceOver, and the scheduler holds | pause card, hand result, match over |
+| **Cover** | Blocks play. The table underneath is neither tappable nor reachable by VoiceOver, and the scheduler holds | pause card, hand result, match over, pass-and-play curtain |
 
 ## The four screens
 
@@ -102,5 +102,8 @@ flowchart TD
 - **A sheet never resumes a finished hand** and never adds a second entry to history.
 - **Practice is separate from play.** How to play opens the tutorial over whichever screen launched
   it; it never replaces the live match, and its hands never reach statistics.
+- **Pass and play passes the phone.** New match asks Solo or Pass and play. In pass and play, before any seat
+  acts after another seat, a full-screen curtain says Pass the phone to <name>; only Ready shows that seat's hand.
+  Hand results are shared and show without a curtain; hands never do.
 - **Covers hide what is beneath.** The table is `accessibilityHidden` under a cover, so VoiceOver
   cannot reach controls the eye cannot see either.

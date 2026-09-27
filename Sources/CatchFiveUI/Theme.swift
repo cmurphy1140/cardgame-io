@@ -9,7 +9,7 @@ public enum Theme {
         public static func radius(width: Double) -> Double { width * 0.06 }
         public static let handWidth = 58.0
         public static let handWidthWide = 62.0
-        public static let pileWidth = 62.0
+        public static let pileWidth = 66.0
         public static let backWidth = 40.0
         public static let tutorialWidth = 48.0
         /// Spacing between fanned hand cards; negative so they overlap.
@@ -72,10 +72,11 @@ public enum Theme {
     }
 
     public enum Table {
-        /// How far a played card is nudged from the pile's centre toward its seat.
-        public static let sideNudge = 48.0
-        public static let partnerNudge = 42.0
-        public static let ownNudge = 42.0
+        /// How far a played card sits from the pile's centre toward its seat: far enough that no two cards
+        /// touch, even after their toss (T10). Side cards clear each other; top and bottom clear the sides.
+        public static let sideNudge = Card.pileWidth / 2 + 13
+        public static let partnerNudge = Card.pileWidth * Card.ratio + 18
+        public static let ownNudge = Card.pileWidth * Card.ratio + 18
         /// The pile's reserved footprint around a card, so the table does not jump between tricks.
         public static let pileMarginX = 64.0
         public static let pileMarginY = 48.0
@@ -92,7 +93,7 @@ public enum Theme {
         public static let activeRingGap = 3.0
         public static let activePulseScale = 1.05
         /// A played card lands with its own small turn and drift, like a card tossed in by hand.
-        public static let tossRotationDegrees = 11.0
+        public static let tossRotationDegrees = 4.0
         public static let tossDrift = 6.0
         /// Seat tiles share one width; their height follows the phase (call text in the auction, backs in play).
         public static let seatTileWidth = 116.0
@@ -102,6 +103,8 @@ public enum Theme {
         public static let statusButtonHitSize = 44.0
         /// The deck in the table's top-right corner.
         public static let deckWidth = 38.0
+        /// The deck beside the dealer's face (T12).
+        public static let dealerDeckWidth = 24.0
         /// How far above the fan the deck sits, for the deal-in flight.
         public static let deckRise = 520.0
         /// Bid, pass and suit pills: full column width, solid, well above the 44 pt minimum.
@@ -133,6 +136,8 @@ public enum Theme {
         public static let dealHold: Duration = .milliseconds(1400)
         /// How long the draw for dealer stays on the table before it puts itself away.
         public static let dealerDrawHold: Duration = .seconds(4)
+        /// The one beat before a computer plays or a finished hand is collected, so each can be read (T11). Tune here.
+        public static let botBeat: Duration = .seconds(2)
     }
 
     /// Colours for drawn faces, chosen to sit with felt and ivory. No gold here (D33).

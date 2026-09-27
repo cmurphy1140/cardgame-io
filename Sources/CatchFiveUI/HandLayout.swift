@@ -27,6 +27,16 @@ enum HandLayout {
     }
 
     /// Vertical room the hand needs: one card plus the fan's drop, or two cards and a gap.
+    /// The air between cards when the hand lies flat during the auction (B01).
+    static let baselineGap = 6.0
+
+    /// The auction's flat row: every card on one baseline, evenly spaced, overlapping evenly only when the
+    /// row would not otherwise fit (B01).
+    static func baselineStrip(count: Int, cardWidth: Double, available: Double) -> Double {
+        guard count > 1 else { return cardWidth + baselineGap }
+        return min(cardWidth + baselineGap, (available - cardWidth) / Double(count - 1))
+    }
+
     static func height(of arrangement: Arrangement, cardWidth: Double) -> Double {
         let card = cardWidth * Theme.Card.ratio
         switch arrangement {

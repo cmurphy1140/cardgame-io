@@ -61,6 +61,16 @@ public struct TableView: View {
 
     public var body: some View {
         withSheets
+            // Pass and play: nothing of the table shows, to the eye or to VoiceOver, until the next player is ready.
+            .accessibilityHidden(model.curtainSeat != nil)
+            .overlay {
+                if let seat = model.curtainSeat {
+                    PassCurtainView(name: model.seatNames[seat], portrait: portraits[seat]) {
+                        withAnimation(motion(Theme.Motion.overlay)) { model.ready() }
+                    }
+                    .transition(.opacity)
+                }
+            }
             .overlay {
                 if drawShown, let draw = model.dealerDraw {
                     DealerDrawView(draw: draw, names: model.seatNames, portraits: portraits) {
@@ -111,7 +121,7 @@ public struct TableView: View {
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(.ivory)
-        .background(FeltView().equatable().ignoresSafeArea())
+        .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
 
@@ -154,7 +164,7 @@ public struct TableView: View {
         if let picked = TableFeedback.cue(from: seen, to: now) { cue = (revision, picked) }
         let handEnded = now.hands > seen.hands
         if now.tricks > seen.tricks, !handEnded, let winner = now.lastTrickWinner {
-            AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the trick").post()
+            AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the hand").post()
         } else if handEnded, let outcome = model.lastHandOutcome {
             AccessibilityNotification.Announcement("\(outcome.headline). \(outcome.bidderLine)").post()
         }
@@ -183,9 +193,10 @@ public struct TableView: View {
             // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
             // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
             .alert("Start over?", isPresented: $confirmNewGame) {
-                Button("Start new game", role: .destructive) { model.newGame() }
+                Button("Solo", role: .destructive) { model.newGame(mode: .solo) }
+                Button("Pass and play", role: .destructive) { model.newGame(mode: .passAndPlay) }
                 Button("Cancel", role: .cancel) {}
-            } message: { Text("This replaces your saved game.") }
+            } message: { Text("This replaces your saved game. " + PlayMode.choiceMessage) }
     }
 
     /// The header's contract chip: the bid and bidder once the auction has resolved, trump once named.

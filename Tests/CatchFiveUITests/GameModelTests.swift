@@ -101,24 +101,20 @@ import Testing
     #expect(trumps.map(\.rank.rawValue) == trumps.map(\.rank.rawValue).sorted(by: >))
 }
 
-@Test func delayDependsOnPlaySpeedAndLeadPosition() {
-    var settings = Settings()
-    #expect(settings.delay(leadingTrick: true) > settings.delay(leadingTrick: false))
-    settings.playSpeed = .quick
-    let quick = settings.delay(leadingTrick: true)
-    settings.playSpeed = .relaxed
-    #expect(settings.delay(leadingTrick: true) > quick)
+@Test func computersPlayAndCollectOnOneTunableBeat() {
+    // One constant paces every computer play and every collected hand, whatever the saved pace (T11).
+    #expect(Theme.Motion.botBeat == .seconds(2))
+    for speed in Settings.PlaySpeed.allCases {
+        let settings = Settings(playSpeed: speed)
+        #expect(settings.delay(leadingTrick: true) == Theme.Motion.botBeat)
+        #expect(settings.delay(leadingTrick: false) == Theme.Motion.botBeat)
+        #expect(settings.trickHold == Theme.Motion.botBeat)
+    }
 }
 
-@Test func aFinishedTrickStaysLongerAtARelaxedPaceAndTheAppStartsThere() {
-    // A trick gone before it can be read was the complaint; the hold follows the chosen pace.
-    #expect(Settings().playSpeed == .relaxed)
-    var settings = Settings(playSpeed: .quick)
-    let quick = settings.trickHold
-    settings.playSpeed = .normal
-    let normal = settings.trickHold
-    settings.playSpeed = .relaxed
-    #expect(settings.trickHold > normal && normal > quick)
+@Test func familySeatNamesAreTheDefaults() {
+    #expect(Settings.defaultSeatNames == ["Cheryl", "JC", "Connor", "Diane"])
+    #expect(Settings().seatNames == ["Cheryl", "JC", "Connor", "Diane"])
 }
 
 @Test func settingsRoundTripThroughDiskAndTolerateMissingKeys() throws {
@@ -301,8 +297,8 @@ import Testing
     let model = GameModel(match: try Match(deck: deck, dealer: 3))
     model.settings.seatNames[1] = "Mum"
     #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten))) == "Mum played the ten of hearts")
-    #expect(model.spokenDescription(of: Play(seat: 0, card: Card(.spades, .ace))) == "You played the ace of spades")
-    #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten)), winner: 1) == "Mum played the ten of hearts and took the trick")
+    #expect(model.spokenDescription(of: Play(seat: 0, card: Card(.spades, .ace))) == "Cheryl played the ace of spades")
+    #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten)), winner: 1) == "Mum played the ten of hearts and took the hand")
 }
 
 @MainActor @Test func accessibilityValueReflectsLegality() throws {
@@ -463,7 +459,7 @@ import Testing
     let settings = try SettingsStore.read(from: url)
     #expect(settings.playerName == nil && !settings.hasSignedIn)
     #expect(settings.playerPortrait == Cast.defaultPlayerPortrait)
-    #expect(settings.seatNames == ["You", "Hazel", "Otto", "Rue"])
+    #expect(settings.seatNames == ["Cheryl", "JC", "Connor", "Diane"])
 }
 
 @Test func oldSettingsFileMigratesDefaultSeatNamesToCast() throws {
@@ -471,7 +467,7 @@ import Testing
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("{\"seatNames\":[\"You\",\"West\",\"Mum\",\"East\"]}".utf8).write(to: url)
     let settings = try SettingsStore.read(from: url)
-    #expect(settings.seatNames == ["You", "Hazel", "Mum", "Rue"])
+    #expect(settings.seatNames == ["You", "JC", "Mum", "Diane"])
 }
 
 @MainActor @Test func matchInProgressIsFalseForFreshAndFinishedMatches() throws {
@@ -489,9 +485,9 @@ import Testing
 @MainActor @Test func signInTrimsNameAndSetsSeatZero() throws {
     let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
     #expect(!model.settings.hasSignedIn)
-    model.signIn(name: "  Connor ", portrait: Cast.playerChoices[3], difficulty: .easy)
-    #expect(model.settings.playerName == "Connor")
-    #expect(model.seatNames[0] == "Connor")
+    model.signIn(name: "  Mum ", portrait: Cast.playerChoices[3], difficulty: .easy)
+    #expect(model.settings.playerName == "Mum")
+    #expect(model.seatNames[0] == "Mum")
     #expect(model.settings.playerPortrait == Cast.playerChoices[3])
     #expect(model.settings.difficulty == .easy)
     #expect(model.settings.hasSignedIn)
@@ -499,9 +495,9 @@ import Testing
 
 @MainActor @Test func seatSummaryIncludesSeatWord() throws {
     let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
-    #expect(model.seatSummary(for: 1).hasPrefix("Hazel, West, "))
+    #expect(model.seatSummary(for: 1).hasPrefix("JC, West, "))
     #expect(model.seatSummary(for: 3).hasSuffix("dealer"))
-    #expect(model.seatSummary(for: 0).hasPrefix("You, "))
+    #expect(model.seatSummary(for: 0).hasPrefix("Cheryl, "))
     #expect(model.seatSummary(for: 0).hasSuffix("to act"))
 }
 
@@ -523,7 +519,7 @@ import Testing
     // The frown's middle sits `dip` above its corners.
     let band = HeaderBandShape(dip: 20).path(in: CGRect(x: 0, y: 0, width: 300, height: 100)).boundingRect
     #expect(band.maxY == 100 && band.minY == 0)
-    #expect(Theme.Motion.dealHold > Settings(playSpeed: .normal).trickHold)
+    #expect(Theme.Motion.dealHold > .zero)
 }
 
 @MainActor @Test func rootOpensOnLoginUntilSignedInThenOnTheTable() {
@@ -638,9 +634,9 @@ import Testing
     model.send(.bid(nil))
     let count = model.match.actionCount
     // Hazel is bidding now: anything you try waits for her, and nothing is recorded.
-    #expect(model.validationMessage(for: .bid(3)) == "Wait for Hazel.")
+    #expect(model.validationMessage(for: .bid(3)) == "Wait for JC.")
     model.refuse(.bid(3))
-    #expect(model.refusal == "Wait for Hazel.")
+    #expect(model.refusal == "Wait for JC.")
     #expect(model.match.actionCount == count)
     // Play until it is your turn to follow a computer's lead.
     var followed = false
@@ -701,7 +697,7 @@ import Testing
     // Made: you bid 4 and took 6, so 2 becomes 8; the defenders took 3, so 5 becomes 8.
     let made = HandOutcome(bidderTeam: 0, bid: 4, isNineAndOut: false, points: [6, 3], gameValues: [30, 20],
                            gameTeam: 0, fiveTeam: 0, jackTeam: 1, before: [2, 5], after: [8, 8], names: names)
-    #expect(made.headline == "Contract made")
+    #expect(made.headline == "Bid made")
     #expect(made.bidderLine == "Connor + Otto bid 4 · captured 6 · score 2 → 8")
     #expect(made.defenderLine == "Hazel + Rue captured 3 · score 5 → 8")
     // Game is named on every hand, won or tied, because that is the rule this table argues about.
@@ -709,7 +705,7 @@ import Testing
     // Set: they bid 5 and took 3, so they lose the 5; you add your 6 as defenders.
     let set = HandOutcome(bidderTeam: 1, bid: 5, isNineAndOut: false, points: [6, 3], gameValues: [30, 20],
                           gameTeam: 0, fiveTeam: 0, jackTeam: 0, before: [4, 10], after: [10, 5], names: names)
-    #expect(set.headline == "Contract set")
+    #expect(set.headline == "Bid not made")
     #expect(set.bidderLine == "Hazel + Rue bid 5 · captured 3 · score 10 → 5")
     #expect(set.defenderLine == "Connor + Otto captured 6 · score 4 → 10")
     #expect(set.notes == ["Game 30–20: Connor + Otto took the point."])
@@ -744,8 +740,8 @@ import Testing
     try finishMatch(model)
     let outcome = try #require(model.lastHandOutcome)
     let last = try #require(model.match.history.last)
-    #expect(outcome.headline == (last.contractMade ? (last.isNineAndOut ? "9 and out made" : "Contract made")
-                                                   : (last.isNineAndOut ? "9 and out failed" : "Contract set")))
+    #expect(outcome.headline == (last.contractMade ? (last.isNineAndOut ? "9 and out made" : "Bid made")
+                                                   : (last.isNineAndOut ? "9 and out failed" : "Bid not made")))
     let before = model.match.history.count > 1 ? model.match.history[model.match.history.count - 2].scores : [0, 0]
     #expect(outcome.bidderLine.contains("score \(before[last.bidder % 2]) → \(last.scores[last.bidder % 2])") || last.isNineAndOut)
 }
@@ -846,7 +842,7 @@ import Testing
     try Data(#"{"playerName":"Connor","seatNames":["Connor","West","Otto","Rue"]}"#.utf8).write(to: url)
     #expect(try SettingsStore.read(from: url).seatNames == ["Connor", "West", "Otto", "Rue"])
     try Data(#"{"seatNames":["You","West","Partner","East"]}"#.utf8).write(to: url)
-    #expect(try SettingsStore.read(from: url).seatNames == ["You", "Hazel", "Otto", "Rue"])
+    #expect(try SettingsStore.read(from: url).seatNames == ["You", "JC", "Connor", "Diane"])
     // One place writes the player's name, with one trim rule.
     var settings = Settings()
     settings.setPlayerName("  Mum ")
@@ -1063,7 +1059,7 @@ import Testing
     #expect(follow.attempt(.play(offSuit)) == .refused("Follow hearts; you still have hearts."))
     #expect(follow.attempt(.play(trump)) == .refused("Follow hearts; you still have hearts."))
     guard case let .accepted(text) = follow.attempt(.play(heart)) else { Issue.record("a heart is legal"); return }
-    #expect(text.contains("the trick with the"))
+    #expect(text.contains("the hand with the"))
     // Refusals never moved the position; an acceptance plays the trick out; reset brings it back.
     #expect(follow.match.hand.completedTricks.count == 1)
     follow.reset()
@@ -1078,7 +1074,7 @@ import Testing
     #expect(matched.contains("match"))
     dealer.reset()
     guard case let .accepted(passed) = dealer.attempt(.bid(nil)) else { Issue.record("passing is legal"); return }
-    #expect(passed.contains("Hazel"))
+    #expect(passed.contains("JC"))
 
     // 9 and out below zero: a failed 9 last hand left you at -9.
     var nine = RuleTrial.make(.nineAndOutBelowZero)
@@ -1124,4 +1120,130 @@ import Testing
     let order = TableSurface.trumpOrder
     #expect(Set(order) == Set(Suit.allCases) && order.count == 4)
     for pair in zip(order, order.dropFirst()) { #expect(pair.0.isRed != pair.1.isRed) }
+}
+
+// MARK: Pass and play
+
+/// Plays a whole pass-and-play match through the curtain: every turn is a Ready tap and then the hint's
+/// action from the seat now holding the phone. Asking the computer to step must never move anything.
+@MainActor @Test func passAndPlayNeverGeneratesAComputerMove() throws {
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay)
+    var turns = 0
+    while model.match.winner == nil, turns < 2_000 {
+        guard let seat = model.match.hand.nextSeat else { model.nextHand(); continue }
+        let before = model.match.actionCount
+        model.stepComputer()
+        #expect(model.match.actionCount == before, "a computer moved for seat \(seat)")
+        // The same player keeps the phone when they act twice running (winning the bid then naming trump,
+        // taking a trick then leading); otherwise the curtain is up and nothing of theirs shows yet.
+        if model.revealedSeat != seat {
+            #expect(model.curtainSeat == seat && !model.isHumanTurn && model.humanCards.isEmpty)
+            model.ready()
+        }
+        #expect(model.isHumanTurn && model.curtainSeat == nil)
+        let view = try PlayerView(match: model.match, seat: seat)
+        model.send(try #require(ComputerPlayer.decide(view, difficulty: .standard)))
+        #expect(model.match.actionCount == before + 1)
+        turns += 1
+    }
+    #expect(model.match.winner != nil)
+}
+
+@MainActor @Test func passAndPlayShowsOnlyTheSeatThatPressedReady() throws {
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    let model = GameModel(match: try Match(deck: deck, dealer: 3), mode: .passAndPlay)
+    #expect(model.curtainSeat == 0 && model.humanCards.isEmpty)
+    model.ready()
+    #expect(Set(model.humanCards) == Set(model.match.hand.hands[0]))
+    model.send(.bid(nil))
+    // The phone passes: seat 0's cards are gone before seat 1 says Ready.
+    #expect(model.curtainSeat == 1 && model.humanCards.isEmpty && !model.isHumanTurn)
+    model.ready()
+    #expect(Set(model.humanCards) == Set(model.match.hand.hands[1]))
+    #expect(model.allows(.bid(nil)) && !model.canUndo)
+}
+
+@MainActor @Test func passAndPlayModeIsSavedWithTheGame() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let model = GameModel.loadDefault(in: directory)
+    model.newGame(mode: .passAndPlay)
+    model.dismissDealerDraw()
+    model.ready()
+    model.send(.bid(nil))
+    let restored = GameModel.loadDefault(in: directory)
+    #expect(restored.mode == .passAndPlay && restored.match.actionCount == 1)
+    #expect(restored.curtainSeat == restored.match.hand.nextSeat && restored.humanCards.isEmpty)
+    restored.newGame(mode: .solo)
+    #expect(GameModel.loadDefault(in: directory).mode == .solo)
+}
+
+@MainActor @Test func playedCardsAreLargerAndNeverOverlap() {
+    // The pile is the heart of the table (T10): bigger cards, each clear of the others even after its toss.
+    #expect(Theme.Card.pileWidth > 62)
+    let width = Theme.Card.pileWidth, height = width * Theme.Card.ratio
+    let margin = 2 * Theme.Table.tossDrift
+    for a in 0..<4 {
+        for b in (a + 1)..<4 {
+            let p = TableSurface.pileOffset(for: a), q = TableSurface.pileOffset(for: b)
+            let apart = abs(p.width - q.width) >= width + margin || abs(p.height - q.height) >= height + margin
+            #expect(apart, "seats \(a) and \(b) overlap")
+        }
+    }
+}
+
+@Test func biddingHandSitsOnOneEvenBaseline() {
+    // B01: in the auction the hand lies flat in one row, evenly spaced, never wider than the space it has.
+    #expect(HandLayout.baselineStrip(count: 6, cardWidth: 58, available: 500) == 58 + HandLayout.baselineGap)
+    let tight = HandLayout.baselineStrip(count: 6, cardWidth: 58, available: 345)
+    #expect(5 * tight + 58 <= 345 && tight > 0)
+}
+
+@Test func biddingOffersOnlyLegalBidsAndNamesTheLowest() {
+    // B03: bids the auction has passed leave the grid; B04: the lowest one left is the one to name.
+    let options = TableSurface.bidOptions(allows: { $0 >= 6 })
+    #expect(options == [6, 7, 8, 9])
+    #expect(TableSurface.bidOptions(allows: { _ in false }).isEmpty)
+}
+
+@Test func discardNoticeSitsAboveYourTurnInPlay() {
+    // The hand's fan leaves no room for another row, so in play the notice ("Discarded: …") takes no row of
+    // its own: it floats above "Your turn", in the empty space the pile leaves, and reserves no height.
+    #expect(TableSurface.lowerRows(inAuction: false) == [.controls, .status])
+    #expect(TableSurface.commentaryFloats(inAuction: false))
+    #expect(TableSurface.commentaryMinHeight(inAuction: false, humanTurn: true) == 0)
+    #expect(TableSurface.commentaryMinHeight(inAuction: false, humanTurn: false) == 0)
+    // The auction keeps its order: status, then the bid controls, then "You: call" under them.
+    #expect(TableSurface.lowerRows(inAuction: true) == [.status, .controls, .commentary])
+    #expect(!TableSurface.commentaryFloats(inAuction: true))
+    #expect(TableSurface.commentaryMinHeight(inAuction: true, humanTurn: false) == 36)
+}
+
+@MainActor @Test func signingInAsAFamilyNameKeepsTheSeats() throws {
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    model.signIn(name: "Connor", portrait: Cast.playerChoices[0], difficulty: .standard)
+    #expect(model.settings.playerName == "Connor")
+    #expect(model.seatNames == ["Cheryl", "JC", "Connor", "Diane"])
+    // A name nobody else has becomes the phone holder's seat in solo play; pass and play keeps the family.
+    var settings = Settings()
+    settings.setPlayerName("Mum")
+    #expect(settings.seatNames == ["Mum", "JC", "Connor", "Diane"])
+    let passed = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay, settings: settings)
+    #expect(passed.seatNames == Settings.defaultSeatNames)
+    // Typing on into a family name puts seat 0 back rather than leaving the half-typed name there.
+    settings.setPlayerName("Conno")
+    settings.setPlayerName("Connor")
+    #expect(settings.seatNames == Settings.defaultSeatNames)
+}
+
+@Test func oldCastSeatNamesBecomeTheFamilyOnLoad() throws {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: url) }
+    try Data(#"{"playerName":"Connor","seatNames":["Connor","Hazel","Otto","Rue"]}"#.utf8).write(to: url)
+    #expect(try SettingsStore.read(from: url).seatNames == ["Cheryl", "JC", "Connor", "Diane"])
+    try Data(#"{"playerName":"Mum","seatNames":["Mum","Rue","Hazel","Otto"]}"#.utf8).write(to: url)
+    #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "JC", "Connor", "Diane"])
+    // Names the player typed stay.
+    try Data(#"{"playerName":"Mum","seatNames":["Mum","Hazel","Dad","Rue"]}"#.utf8).write(to: url)
+    #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "Hazel", "Dad", "Rue"])
 }
