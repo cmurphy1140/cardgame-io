@@ -45,8 +45,11 @@ struct HandFanView: View {
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
             // No "Your hand" caption (T05); the dealer badge stays when it is yours.
             if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
-                Text("DEALER").foregroundStyle(.gold)
-                    .font(.caption2.monospaced()).tracking(1)
+                HStack(spacing: 10) {
+                    DealerDeck()
+                    Text("DEALER").foregroundStyle(.gold)
+                        .font(.caption2.monospaced()).tracking(1)
+                }
             }
         }
         .frame(maxWidth: .infinity)

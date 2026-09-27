@@ -103,6 +103,8 @@ public enum Theme {
         public static let statusButtonHitSize = 44.0
         /// The deck in the table's top-right corner.
         public static let deckWidth = 38.0
+        /// The deck beside the dealer's face (T12).
+        public static let dealerDeckWidth = 24.0
         /// How far above the fan the deck sits, for the deal-in flight.
         public static let deckRise = 520.0
         /// Bid, pass and suit pills: full column width, solid, well above the 44 pt minimum.

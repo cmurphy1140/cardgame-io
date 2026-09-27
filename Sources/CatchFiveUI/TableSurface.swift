@@ -75,14 +75,7 @@ struct TableSurface: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(width: geometry.size.width, height: geometry.size.height)
-            // The stock sits in the top-right corner of the table; refills deal in from here. The discards
-            // mirror it in the top-left, clear of the hand (spec R3), and discards fly there.
-            .overlay(alignment: .topTrailing) { DeckView(remaining: hand.stock.count).padding(.top, 6) }
-            .overlay(alignment: .topLeading) {
-                if !hand.discarded.isEmpty {
-                    DiscardPileView(count: hand.discarded.count).padding(.top, 6).transition(.opacity)
-                }
-            }
+            // No corner deck or discard pile (T12): the deck sits beside the dealer's tile instead.
             // The finished hand's card takes over the table; what is underneath fades back and leaves the
             // accessibility tree, so VoiceOver meets the card and nothing behind it.
             .opacity(hand.phase == .finished ? 0.12 : 1)
@@ -442,6 +435,10 @@ struct SeatView: View {
                     }
                 }
                 .padding(.vertical, Theme.Table.activeRingGap)
+                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13).
+                .overlay(alignment: .bottomTrailing) {
+                    if hand.auction.dealer == seat { DealerDeck().offset(x: 16, y: -2) }
+                }
                 // A computer deciding shows calm dots above its tile instead of a status line (T04).
                 .overlay(alignment: .top) {
                     if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
@@ -485,6 +482,22 @@ struct SeatView: View {
     }
 
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
+}
+
+/// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on
+/// the table and not a button (T13).
+struct DealerDeck: View {
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                CardBackView(width: Theme.Table.dealerDeckWidth).offset(x: Double(index) * -1.5, y: Double(index) * -1.5)
+            }
+        }
+        .rotationEffect(.degrees(-8))
+        .dynamicTypeSize(...Theme.Card.maximumTypeSize)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
 }
 
 /// Three dots that brighten in turn: a seat is deciding. Still under Reduce Motion.
