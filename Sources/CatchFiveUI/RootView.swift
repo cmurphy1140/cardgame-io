@@ -1,3 +1,4 @@
+import CatchFive
 import SwiftUI
 
 /// Owns the one `GameModel`. A new player sees login, then the tutorial as an intro they may skip, then the
@@ -17,22 +18,46 @@ public struct RootView: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     /// `stage` opens a named state directly, for headless screenshots: `picker` (the New match question),
-    /// `curtain` (a fresh pass-and-play match waiting for its first player) or `seat` (that player's table).
+    /// `curtain` (a fresh pass-and-play match waiting for its first player) or `seat` (that player's table);
+    /// solo `bidding` (your bid), `table` (your play, cards on the pile) or `result` (the hand's result).
     public init(model: GameModel, stage: String? = nil) {
         if stage == "curtain" || stage == "seat" {
             model.newGame(mode: .passAndPlay)
             model.dismissDealerDraw()
             if stage == "seat" { model.ready() }
         }
+        if stage == "bidding" || stage == "table" || stage == "result" {
+            model.newGame(mode: .solo)
+            model.dismissDealerDraw()
+            Self.play(model) { hand, humanTurn in
+                switch stage {
+                case "bidding": humanTurn && hand.phase == .bidding
+                case "table": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
+                default: hand.phase == .finished
+                }
+            }
+        }
         _model = StateObject(wrappedValue: model)
         _tutorial = StateObject(wrappedValue: model.makeTutorial())
         let screen: Screen = switch stage {
         case "picker": .menu
-        case "curtain", "seat": .table
+        case "curtain", "seat", "bidding", "table", "result": .table
         default: Self.initialScreen(for: model.settings)
         }
         _screen = State(initialValue: screen)
         choosingMode = stage == "picker"
+    }
+
+    /// Plays every seat with the computer strategy until `stop` holds, for the screenshot stages only.
+    private static func play(_ model: GameModel, until stop: (Hand, Bool) -> Bool) {
+        for _ in 0..<200 where !stop(model.match.hand, model.isHumanTurn) && model.match.hand.phase != .finished {
+            if model.isHumanTurn, let view = try? PlayerView(match: model.match, seat: 0),
+               let action = ComputerPlayer.decide(view, difficulty: .standard) {
+                model.send(action)
+            } else {
+                model.stepComputer()
+            }
+        }
     }
 
     /// Login until a name is saved; the intro until it has been seen or skipped; then the main menu, never
