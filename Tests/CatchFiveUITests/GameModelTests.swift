@@ -297,7 +297,7 @@ import Testing
     let model = GameModel(match: try Match(deck: deck, dealer: 3))
     model.settings.seatNames[1] = "Mum"
     #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten))) == "Mum played the ten of hearts")
-    #expect(model.spokenDescription(of: Play(seat: 0, card: Card(.spades, .ace))) == "You played the ace of spades")
+    #expect(model.spokenDescription(of: Play(seat: 0, card: Card(.spades, .ace))) == "Cheryl played the ace of spades")
     #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten)), winner: 1) == "Mum played the ten of hearts and took the hand")
 }
 
@@ -497,7 +497,7 @@ import Testing
     let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
     #expect(model.seatSummary(for: 1).hasPrefix("JC, West, "))
     #expect(model.seatSummary(for: 3).hasSuffix("dealer"))
-    #expect(model.seatSummary(for: 0).hasPrefix("You, "))
+    #expect(model.seatSummary(for: 0).hasPrefix("Cheryl, "))
     #expect(model.seatSummary(for: 0).hasSuffix("to act"))
 }
 
@@ -740,8 +740,8 @@ import Testing
     try finishMatch(model)
     let outcome = try #require(model.lastHandOutcome)
     let last = try #require(model.match.history.last)
-    #expect(outcome.headline == (last.contractMade ? (last.isNineAndOut ? "9 and out made" : "Contract made")
-                                                   : (last.isNineAndOut ? "9 and out failed" : "Contract set")))
+    #expect(outcome.headline == (last.contractMade ? (last.isNineAndOut ? "9 and out made" : "Bid made")
+                                                   : (last.isNineAndOut ? "9 and out failed" : "Bid not made")))
     let before = model.match.history.count > 1 ? model.match.history[model.match.history.count - 2].scores : [0, 0]
     #expect(outcome.bidderLine.contains("score \(before[last.bidder % 2]) → \(last.scores[last.bidder % 2])") || last.isNineAndOut)
 }
@@ -842,7 +842,7 @@ import Testing
     try Data(#"{"playerName":"Connor","seatNames":["Connor","West","Otto","Rue"]}"#.utf8).write(to: url)
     #expect(try SettingsStore.read(from: url).seatNames == ["Connor", "West", "Otto", "Rue"])
     try Data(#"{"seatNames":["You","West","Partner","East"]}"#.utf8).write(to: url)
-    #expect(try SettingsStore.read(from: url).seatNames == ["You", "Hazel", "Otto", "Rue"])
+    #expect(try SettingsStore.read(from: url).seatNames == ["You", "JC", "Connor", "Diane"])
     // One place writes the player's name, with one trim rule.
     var settings = Settings()
     settings.setPlayerName("  Mum ")
@@ -1074,7 +1074,7 @@ import Testing
     #expect(matched.contains("match"))
     dealer.reset()
     guard case let .accepted(passed) = dealer.attempt(.bid(nil)) else { Issue.record("passing is legal"); return }
-    #expect(passed.contains("Hazel"))
+    #expect(passed.contains("JC"))
 
     // 9 and out below zero: a failed 9 last hand left you at -9.
     var nine = RuleTrial.make(.nineAndOutBelowZero)
