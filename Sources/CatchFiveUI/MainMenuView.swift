@@ -56,18 +56,6 @@ struct MainMenuView: View {
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.14)))
                 .accessibilityElement(children: .combine)
 
-                // One setting for guidance (spec R14): on adds hints and explanations, off is a clean table.
-                Toggle(isOn: $model.settings.beginnerMode) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Beginner mode").font(.headline)
-                        Text("Hints and guided play").font(.footnote).opacity(0.75)
-                    }
-                }
-                .tint(Color.suitRed)
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(Theme.Wood.inlay.opacity(0.82), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.14)))
-
                 VStack(spacing: 10) {
                     // New match always asks Solo or Pass and play; the same question warns when a match is in progress.
                     if model.match.winner == nil {

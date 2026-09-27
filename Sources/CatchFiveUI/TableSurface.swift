@@ -36,8 +36,9 @@ struct TableSurface: View {
     }
 
     private var inAuction: Bool { hand.phase == .bidding || hand.phase == .choosingTrump }
-    /// Coaching shows only in beginner mode (spec R14); rules, refusals and the record of play show in both.
-    private var coaching: Bool { model.settings.beginnerMode }
+    /// Beginner mode is set aside for this milestone (H01, T03): the live table carries no coaching, and the
+    /// teaching lives in How to Play. `Settings.beginnerMode` stays in the file so saves keep loading.
+    private let coaching = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -380,7 +381,7 @@ struct TableSurface: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 12) {
                 if let winner = model.match.winner { matchOver(winner) }
-                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: model.settings.beginnerMode)
+                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
                 dealButton
             }
             .padding(12)
