@@ -23,6 +23,8 @@ struct TableSurface: View {
     @State private var showHintDetail = false
     /// The column's own height, measured so the table can tell whether it fits the surface (spec R25).
     @State private var contentHeight = 0.0
+    /// The floating notice's height, so it sits wholly above "Your turn" in play.
+    @State private var floatHeight = 0.0
 
     private var hand: Hand { model.match.hand }
 
@@ -66,7 +68,15 @@ struct TableSurface: View {
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
                         switch row {
                         case .commentary: commentary
-                        case .status: statusLine.accessibilitySortPriority(4)
+                        case .status:
+                            statusLine.accessibilitySortPriority(4)
+                                .overlay(alignment: .top) {
+                                    if Self.commentaryFloats(inAuction: inAuction) {
+                                        commentary.padding(.bottom, 4)
+                                            .onGeometryChange(for: Double.self) { $0.size.height } action: { floatHeight = $0 }
+                                            .offset(y: -floatHeight)
+                                    }
+                                }
                         case .controls:
                             if model.isHumanTurn, hand.phase == .bidding { bidding }
                             if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
@@ -164,10 +174,19 @@ struct TableSurface: View {
 
     enum LowerRow: Hashable { case commentary, status, controls }
 
-    /// The rows under the pile, top to bottom. In play the hand's fan rises into the row just above it, so
-    /// the notice line ("Discarded: …") sits above "Your turn"; the auction keeps its call under the controls.
+    /// The rows under the pile, top to bottom. In play the column has no height to spare above the hand, so
+    /// the notice line ("Discarded: …") takes no row: it floats above "Your turn" in the space the pile
+    /// leaves. The auction keeps its call under the controls.
     nonisolated static func lowerRows(inAuction: Bool) -> [LowerRow] {
-        inAuction ? [.status, .controls, .commentary] : [.commentary, .controls, .status]
+        inAuction ? [.status, .controls, .commentary] : [.controls, .status]
+    }
+
+    nonisolated static func commentaryFloats(inAuction: Bool) -> Bool { !inAuction }
+
+    /// Height the commentary holds even when empty: none in play (it floats), none while your bid controls
+    /// need the space.
+    nonisolated static func commentaryMinHeight(inAuction: Bool, humanTurn: Bool) -> Double {
+        inAuction && !humanTurn ? 36 : 0
     }
 
     private var statusLine: some View {
@@ -284,7 +303,7 @@ struct TableSurface: View {
                     .accessibilityHidden(true)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: inAuction && model.isHumanTurn ? 0 : 36, alignment: .top)
+        .frame(maxWidth: .infinity, minHeight: Self.commentaryMinHeight(inAuction: inAuction, humanTurn: model.isHumanTurn), alignment: .top)
         .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: toast)
         .sheet(isPresented: $showHintDetail) {
             if let hint = model.hint {

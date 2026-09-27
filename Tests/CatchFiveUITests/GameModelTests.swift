@@ -1206,13 +1206,17 @@ import Testing
     #expect(TableSurface.bidOptions(allows: { _ in false }).isEmpty)
 }
 
-@Test func discardNoticeSitsAboveYourTurnInPlay() throws {
-    // The hand's fan rises into the row just above it, so in play the notice line goes above the status.
-    let play = TableSurface.lowerRows(inAuction: false)
-    #expect(play.last == .status)
-    #expect(try #require(play.firstIndex(of: .commentary)) < (play.firstIndex(of: .status) ?? 0))
+@Test func discardNoticeSitsAboveYourTurnInPlay() {
+    // The hand's fan leaves no room for another row, so in play the notice ("Discarded: …") takes no row of
+    // its own: it floats above "Your turn", in the empty space the pile leaves, and reserves no height.
+    #expect(TableSurface.lowerRows(inAuction: false) == [.controls, .status])
+    #expect(TableSurface.commentaryFloats(inAuction: false))
+    #expect(TableSurface.commentaryMinHeight(inAuction: false, humanTurn: true) == 0)
+    #expect(TableSurface.commentaryMinHeight(inAuction: false, humanTurn: false) == 0)
     // The auction keeps its order: status, then the bid controls, then "You: call" under them.
     #expect(TableSurface.lowerRows(inAuction: true) == [.status, .controls, .commentary])
+    #expect(!TableSurface.commentaryFloats(inAuction: true))
+    #expect(TableSurface.commentaryMinHeight(inAuction: true, humanTurn: false) == 36)
 }
 
 @MainActor @Test func signingInAsAFamilyNameKeepsTheSeats() throws {
