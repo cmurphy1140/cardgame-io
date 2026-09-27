@@ -526,3 +526,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Fixed seats with only the hand changing (the first pass-and-play build), which put a player's own tile across the table from them.
 
 **Why:** Each player should see the table as they would sit at it: their partner opposite, and play passing to their left.
+
+## D63. Pass-and-play matches stay out of Statistics (2026-09-26)
+
+**Chosen:** Only solo matches are recorded in the match history, so Statistics stay the phone owner's own record. A finished pass-and-play match writes nothing to `history.json` and shows no personal line on the match-over card (`finalPerformance` stays nil).
+
+**Over:** Recording every match with seat 0's performance, which credited the phone owner with a match four people played.
+
+**Why:** In pass and play seat 0 is whoever sat there, not the owner.

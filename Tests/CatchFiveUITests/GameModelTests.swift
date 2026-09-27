@@ -1305,3 +1305,25 @@ import Testing
     }
     #expect(seen == [0, 1, 2, 3])
 }
+
+@MainActor @Test func passAndPlayMatchesStayOutOfStatistics() throws {
+    // Statistics are the phone owner's solo record: a pass-and-play match leaves them and the history file alone.
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: url) }
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay, historyURL: url)
+    for _ in 0..<2_000 where model.match.winner == nil {
+        guard model.match.hand.nextSeat != nil else { model.nextHand(); continue }
+        model.ready()
+        let view = try PlayerView(match: model.match, seat: try #require(model.viewerSeat))
+        model.send(try #require(ComputerPlayer.decide(view, difficulty: .standard)))
+    }
+    #expect(model.match.winner != nil)
+    #expect(model.records.isEmpty && model.finalPerformance == nil && model.statistics == Statistics([]))
+    #expect(!FileManager.default.fileExists(atPath: url.path))
+    // A pass-and-play match restored after it was won stays out too.
+    #expect(GameModel(match: model.match, mode: .passAndPlay).finalPerformance == nil)
+    // The next solo match counts as before.
+    model.newGame(mode: .solo)
+    try finishMatch(model)
+    #expect(model.records.count == 1 && model.finalPerformance != nil)
+}

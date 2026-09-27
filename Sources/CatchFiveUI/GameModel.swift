@@ -37,7 +37,7 @@ public final class GameModel: ObservableObject {
     @Published public var settings: Settings { didSet { persistSettings() } }
     /// Every finished match, oldest first.
     @Published public private(set) var records: [MatchRecord]
-    /// The human's record for a finished match, computed once when it is recorded or restored.
+    /// The human's record for a finished solo match, computed once when it is recorded or restored.
     @Published public private(set) var finalPerformance: SeatPerformance?
     private let saveURL: URL?
     private let settingsURL: URL?
@@ -57,7 +57,7 @@ public final class GameModel: ObservableObject {
         self.records = records
         self.historyURL = historyURL
         recordedCurrentMatch = match.winner != nil
-        if match.winner != nil { finalPerformance = try? match.performance(forSeat: 0) }
+        if match.winner != nil, mode == .solo { finalPerformance = try? match.performance(forSeat: 0) }
     }
 
     public var statistics: Statistics { Statistics(records) }
@@ -85,9 +85,11 @@ public final class GameModel: ObservableObject {
         return try? HandReview(match: match)
     }
 
+    /// Statistics are the phone owner's solo record, so a pass-and-play match is never recorded.
     private func recordMatchIfFinished() {
         guard match.winner != nil, !recordedCurrentMatch else { return }
         recordedCurrentMatch = true
+        guard mode == .solo else { return }
         let performance = (try? match.performance(forSeat: 0)) ?? SeatPerformance(plays: 0, playsAgreed: 0, bids: 0, bidsMade: 0)
         finalPerformance = performance
         records.append(MatchRecord(date: now(), scores: match.scores, winner: match.winner ?? 0, hands: match.history.count,
