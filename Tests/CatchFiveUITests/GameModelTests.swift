@@ -485,9 +485,9 @@ import Testing
 @MainActor @Test func signInTrimsNameAndSetsSeatZero() throws {
     let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
     #expect(!model.settings.hasSignedIn)
-    model.signIn(name: "  Connor ", portrait: Cast.playerChoices[3], difficulty: .easy)
-    #expect(model.settings.playerName == "Connor")
-    #expect(model.seatNames[0] == "Connor")
+    model.signIn(name: "  Mum ", portrait: Cast.playerChoices[3], difficulty: .easy)
+    #expect(model.settings.playerName == "Mum")
+    #expect(model.seatNames[0] == "Mum")
     #expect(model.settings.playerPortrait == Cast.playerChoices[3])
     #expect(model.settings.difficulty == .easy)
     #expect(model.settings.hasSignedIn)
@@ -1215,3 +1215,19 @@ import Testing
     #expect(TableSurface.lowerRows(inAuction: true) == [.status, .controls, .commentary])
 }
 
+@MainActor @Test func signingInAsAFamilyNameKeepsTheSeats() throws {
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    model.signIn(name: "Connor", portrait: Cast.playerChoices[0], difficulty: .standard)
+    #expect(model.settings.playerName == "Connor")
+    #expect(model.seatNames == ["Cheryl", "JC", "Connor", "Diane"])
+    // A name nobody else has becomes the phone holder's seat in solo play; pass and play keeps the family.
+    var settings = Settings()
+    settings.setPlayerName("Mum")
+    #expect(settings.seatNames == ["Mum", "JC", "Connor", "Diane"])
+    let passed = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay, settings: settings)
+    #expect(passed.seatNames == Settings.defaultSeatNames)
+    // Typing on into a family name puts seat 0 back rather than leaving the half-typed name there.
+    settings.setPlayerName("Conno")
+    settings.setPlayerName("Connor")
+    #expect(settings.seatNames == Settings.defaultSeatNames)
+}

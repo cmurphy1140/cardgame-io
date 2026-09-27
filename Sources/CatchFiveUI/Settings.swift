@@ -29,12 +29,19 @@ public struct Settings: Codable, Equatable, Sendable {
 
     public var hasSignedIn: Bool { playerName != nil }
 
-    /// The one place the player's name is written: trimmed, and mirrored into seat 0. Blank input is ignored.
+    /// The one place the player's name is written: trimmed, and mirrored into seat 0 unless another seat
+    /// already carries it (Connor signing in must not make two Connors). Blank input is ignored.
     public mutating func setPlayerName(_ name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        let previous = playerName
         playerName = trimmed
-        seatNames[0] = trimmed
+        if !seatNames[1...3].contains(trimmed) {
+            seatNames[0] = trimmed
+        } else if let previous, seatNames[0] == previous, !seatNames[1...3].contains(previous) {
+            // Seat 0 was mirroring an earlier (or half-typed) name; it goes back to the family default.
+            seatNames[0] = Settings.defaultSeatNames[0]
+        }
     }
 
     public init(playSpeed: PlaySpeed = .relaxed, seatNames: [String] = Settings.defaultSeatNames,

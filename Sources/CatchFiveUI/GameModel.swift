@@ -112,7 +112,12 @@ public final class GameModel: ObservableObject {
     public func ready() { revealedSeat = curtainSeat ?? revealedSeat }
 
     public var isHumanTurn: Bool { match.winner == nil && match.hand.nextSeat != nil && match.hand.nextSeat == viewerSeat }
-    public var seatNames: [String] { settings.seatNames }
+    /// In pass and play every seat is a family member, so seat 0 drops the phone holder's own name.
+    public var seatNames: [String] {
+        var names = settings.seatNames
+        if mode == .passAndPlay, names[0] == settings.playerName { names[0] = Settings.defaultSeatNames[0] }
+        return names
+    }
 
     /// True once something has happened this match and nobody has won yet; drives the menu's Continue button.
     public var matchInProgress: Bool { match.actionCount > 0 && match.winner == nil }
@@ -129,7 +134,7 @@ public final class GameModel: ObservableObject {
         return "Hand \(match.handNumber) · Your team \(match.scores[0]), their team \(match.scores[1]) · \(phase)"
     }
 
-    /// The login screen's one write: the trimmed name becomes seat 0's name as well.
+    /// The login screen's one write: the trimmed name becomes seat 0's name unless another seat has it.
     public func signIn(name: String, portrait: Portrait, difficulty: Difficulty) {
         var updated = settings
         updated.setPlayerName(name)
