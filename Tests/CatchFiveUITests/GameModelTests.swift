@@ -101,24 +101,20 @@ import Testing
     #expect(trumps.map(\.rank.rawValue) == trumps.map(\.rank.rawValue).sorted(by: >))
 }
 
-@Test func delayDependsOnPlaySpeedAndLeadPosition() {
-    var settings = Settings()
-    #expect(settings.delay(leadingTrick: true) > settings.delay(leadingTrick: false))
-    settings.playSpeed = .quick
-    let quick = settings.delay(leadingTrick: true)
-    settings.playSpeed = .relaxed
-    #expect(settings.delay(leadingTrick: true) > quick)
+@Test func computersPlayAndCollectOnOneTunableBeat() {
+    // One constant paces every computer play and every collected hand, whatever the saved pace (T11).
+    #expect(Theme.Motion.botBeat == .seconds(2))
+    for speed in Settings.PlaySpeed.allCases {
+        let settings = Settings(playSpeed: speed)
+        #expect(settings.delay(leadingTrick: true) == Theme.Motion.botBeat)
+        #expect(settings.delay(leadingTrick: false) == Theme.Motion.botBeat)
+        #expect(settings.trickHold == Theme.Motion.botBeat)
+    }
 }
 
-@Test func aFinishedTrickStaysLongerAtARelaxedPaceAndTheAppStartsThere() {
-    // A trick gone before it can be read was the complaint; the hold follows the chosen pace.
-    #expect(Settings().playSpeed == .relaxed)
-    var settings = Settings(playSpeed: .quick)
-    let quick = settings.trickHold
-    settings.playSpeed = .normal
-    let normal = settings.trickHold
-    settings.playSpeed = .relaxed
-    #expect(settings.trickHold > normal && normal > quick)
+@Test func familySeatNamesAreTheDefaults() {
+    #expect(Settings.defaultSeatNames == ["Cheryl", "JC", "Connor", "Diane"])
+    #expect(Settings().seatNames == ["Cheryl", "JC", "Connor", "Diane"])
 }
 
 @Test func settingsRoundTripThroughDiskAndTolerateMissingKeys() throws {
@@ -302,7 +298,7 @@ import Testing
     model.settings.seatNames[1] = "Mum"
     #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten))) == "Mum played the ten of hearts")
     #expect(model.spokenDescription(of: Play(seat: 0, card: Card(.spades, .ace))) == "You played the ace of spades")
-    #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten)), winner: 1) == "Mum played the ten of hearts and took the trick")
+    #expect(model.spokenDescription(of: Play(seat: 1, card: Card(.hearts, .ten)), winner: 1) == "Mum played the ten of hearts and took the hand")
 }
 
 @MainActor @Test func accessibilityValueReflectsLegality() throws {
@@ -463,7 +459,7 @@ import Testing
     let settings = try SettingsStore.read(from: url)
     #expect(settings.playerName == nil && !settings.hasSignedIn)
     #expect(settings.playerPortrait == Cast.defaultPlayerPortrait)
-    #expect(settings.seatNames == ["You", "Hazel", "Otto", "Rue"])
+    #expect(settings.seatNames == ["Cheryl", "JC", "Connor", "Diane"])
 }
 
 @Test func oldSettingsFileMigratesDefaultSeatNamesToCast() throws {
@@ -471,7 +467,7 @@ import Testing
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("{\"seatNames\":[\"You\",\"West\",\"Mum\",\"East\"]}".utf8).write(to: url)
     let settings = try SettingsStore.read(from: url)
-    #expect(settings.seatNames == ["You", "Hazel", "Mum", "Rue"])
+    #expect(settings.seatNames == ["You", "JC", "Mum", "Diane"])
 }
 
 @MainActor @Test func matchInProgressIsFalseForFreshAndFinishedMatches() throws {
@@ -499,7 +495,7 @@ import Testing
 
 @MainActor @Test func seatSummaryIncludesSeatWord() throws {
     let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
-    #expect(model.seatSummary(for: 1).hasPrefix("Hazel, West, "))
+    #expect(model.seatSummary(for: 1).hasPrefix("JC, West, "))
     #expect(model.seatSummary(for: 3).hasSuffix("dealer"))
     #expect(model.seatSummary(for: 0).hasPrefix("You, "))
     #expect(model.seatSummary(for: 0).hasSuffix("to act"))
@@ -523,7 +519,7 @@ import Testing
     // The frown's middle sits `dip` above its corners.
     let band = HeaderBandShape(dip: 20).path(in: CGRect(x: 0, y: 0, width: 300, height: 100)).boundingRect
     #expect(band.maxY == 100 && band.minY == 0)
-    #expect(Theme.Motion.dealHold > Settings(playSpeed: .normal).trickHold)
+    #expect(Theme.Motion.dealHold > .zero)
 }
 
 @MainActor @Test func rootOpensOnLoginUntilSignedInThenOnTheTable() {
@@ -638,9 +634,9 @@ import Testing
     model.send(.bid(nil))
     let count = model.match.actionCount
     // Hazel is bidding now: anything you try waits for her, and nothing is recorded.
-    #expect(model.validationMessage(for: .bid(3)) == "Wait for Hazel.")
+    #expect(model.validationMessage(for: .bid(3)) == "Wait for JC.")
     model.refuse(.bid(3))
-    #expect(model.refusal == "Wait for Hazel.")
+    #expect(model.refusal == "Wait for JC.")
     #expect(model.match.actionCount == count)
     // Play until it is your turn to follow a computer's lead.
     var followed = false
@@ -701,7 +697,7 @@ import Testing
     // Made: you bid 4 and took 6, so 2 becomes 8; the defenders took 3, so 5 becomes 8.
     let made = HandOutcome(bidderTeam: 0, bid: 4, isNineAndOut: false, points: [6, 3], gameValues: [30, 20],
                            gameTeam: 0, fiveTeam: 0, jackTeam: 1, before: [2, 5], after: [8, 8], names: names)
-    #expect(made.headline == "Contract made")
+    #expect(made.headline == "Bid made")
     #expect(made.bidderLine == "Connor + Otto bid 4 · captured 6 · score 2 → 8")
     #expect(made.defenderLine == "Hazel + Rue captured 3 · score 5 → 8")
     // Game is named on every hand, won or tied, because that is the rule this table argues about.
@@ -709,7 +705,7 @@ import Testing
     // Set: they bid 5 and took 3, so they lose the 5; you add your 6 as defenders.
     let set = HandOutcome(bidderTeam: 1, bid: 5, isNineAndOut: false, points: [6, 3], gameValues: [30, 20],
                           gameTeam: 0, fiveTeam: 0, jackTeam: 0, before: [4, 10], after: [10, 5], names: names)
-    #expect(set.headline == "Contract set")
+    #expect(set.headline == "Bid not made")
     #expect(set.bidderLine == "Hazel + Rue bid 5 · captured 3 · score 10 → 5")
     #expect(set.defenderLine == "Connor + Otto captured 6 · score 4 → 10")
     #expect(set.notes == ["Game 30–20: Connor + Otto took the point."])

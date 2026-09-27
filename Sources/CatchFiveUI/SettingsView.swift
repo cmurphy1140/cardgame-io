@@ -23,13 +23,6 @@ struct SettingsView: View {
                 } header: { Text("Assistance") } footer: {
                     Text("Hints, tap-to-explain on the table and what each trump would keep. Off is normal mode: the same rules and a clean table.")
                 }
-                Section("Play speed") {
-                    Picker("Computer pace", selection: $settings.playSpeed) {
-                        Text("Relaxed").tag(Settings.PlaySpeed.relaxed)
-                        Text("Normal").tag(Settings.PlaySpeed.normal)
-                        Text("Quick").tag(Settings.PlaySpeed.quick)
-                    }.pickerStyle(.segmented)
-                }
                 Section("You") {
                     // A draft, so spaces and clearing work while typing; each non-blank edit is committed.
                     TextField("Your name", text: $nameDraft)

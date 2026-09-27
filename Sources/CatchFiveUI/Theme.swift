@@ -133,6 +133,8 @@ public enum Theme {
         public static let dealHold: Duration = .milliseconds(1400)
         /// How long the draw for dealer stays on the table before it puts itself away.
         public static let dealerDrawHold: Duration = .seconds(4)
+        /// The one beat before a computer plays or a finished hand is collected, so each can be read (T11). Tune here.
+        public static let botBeat: Duration = .seconds(2)
     }
 
     /// Colours for drawn faces, chosen to sit with felt and ivory. No gold here (D33).

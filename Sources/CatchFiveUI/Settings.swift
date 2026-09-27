@@ -8,7 +8,7 @@ public struct Settings: Codable, Equatable, Sendable {
     }
 
     public var playSpeed: PlaySpeed
-    /// Seat 0 is the human; the others default to the cast (Hazel, Otto, Rue).
+    /// Seat 0 is the human; all four default to the family table (T09).
     public var seatNames: [String]
     public var haptics: Bool
     public var difficulty: Difficulty
@@ -23,7 +23,7 @@ public struct Settings: Codable, Equatable, Sendable {
     /// Hints and guided play (spec R14). Off is normal mode: a clean table, no coaching, the same rules.
     public var beginnerMode: Bool
 
-    public static let defaultSeatNames = ["You"] + Cast.opponents.map(\.name)
+    public static let defaultSeatNames = ["Cheryl", "JC", "Connor", "Diane"]
     /// The defaults before the cast existed; files still carrying them migrate on load.
     public static let legacySeatNames = ["You", "West", "Partner", "East"]
 
@@ -82,25 +82,12 @@ public struct Settings: Codable, Equatable, Sendable {
         return result
     }
 
-    /// How long a finished trick stays on the table, winner ringed, before it collapses. It follows
-    /// the chosen pace: the complaint it answers is that a trick is gone before you have read it.
+    /// How long a finished hand stays on the table, winner ringed, before it is collected: one beat,
+    /// `Theme.Motion.botBeat`, so every hand can be read. The saved pace no longer changes it (T11).
+    public var trickHold: Duration { Theme.Motion.botBeat }
 
-    /// Pause before a computer acts: longer before a lead so the last trick can be read.
-    public var trickHold: Duration {
-        switch playSpeed {
-        case .relaxed: .milliseconds(1400)
-        case .normal: .milliseconds(900)
-        case .quick: .milliseconds(500)
-        }
-    }
-
-    public func delay(leadingTrick: Bool) -> Duration {
-        switch playSpeed {
-        case .relaxed: leadingTrick ? .milliseconds(1800) : .milliseconds(1000)
-        case .normal: leadingTrick ? .milliseconds(1200) : .milliseconds(700)
-        case .quick: leadingTrick ? .milliseconds(500) : .milliseconds(300)
-        }
-    }
+    /// Pause before a computer acts: the same single beat for leads and follows (T11).
+    public func delay(leadingTrick: Bool) -> Duration { Theme.Motion.botBeat }
 }
 
 public enum SettingsStore {
