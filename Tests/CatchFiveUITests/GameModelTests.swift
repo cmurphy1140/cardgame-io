@@ -1282,3 +1282,26 @@ import Testing
     #expect(word("DEALER") * SeatView.roleShrink <= room && word("BIDDER") * SeatView.roleShrink <= room)
     #expect(word("DEALER") + SeatView.badgeSpacing + word("BIDDER") > room / SeatView.roleShrink)
 }
+
+@MainActor @Test func passAndPlayTurnsTheTableToThePhoneHolder() throws {
+    // Solo: you are always at the bottom, West on the left, your partner across, East on the right.
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect((0..<4).map(solo.seat(at:)) == [0, 1, 2, 3])
+    // Pass and play: whoever holds the phone sits at the bottom, and play goes round to their left, so the
+    // next seat sits on the left, their partner across and the seat before them on the right.
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay)
+    var seen = Set<Int>()
+    for _ in 0..<12 {
+        let seat = try #require(model.match.hand.nextSeat)
+        // The table is already turned for the next holder while the curtain is up.
+        #expect(model.curtainSeat == nil || model.seat(at: 0) == seat)
+        model.ready()
+        #expect((0..<4).map(model.seat(at:)) == (0..<4).map { (seat + $0) % 4 })
+        #expect((0..<4).allSatisfy { model.place(of: model.seat(at: $0)) == $0 })
+        #expect(model.seatSummary(for: (seat + 2) % 4).contains("Partner"))
+        seen.insert(seat)
+        let view = try PlayerView(match: model.match, seat: seat)
+        model.send(try #require(ComputerPlayer.decide(view, difficulty: .standard)))
+    }
+    #expect(seen == [0, 1, 2, 3])
+}

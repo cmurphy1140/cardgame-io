@@ -54,17 +54,18 @@ struct TableSurface: View {
             let fits = contentHeight <= geometry.size.height + 0.5
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 6) {
-                    SeatView(model: model, seat: 2, onDeck: onDeck).accessibilitySortPriority(20)
+                    // The phone holder sits at the bottom; in pass and play the table turns with the phone.
+                    SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
                     // each beside the card its seat played.
                     let sideWidth = inAuction ? Theme.Table.seatTileWidth : TableLayout.sideSeatWidth(available: geometry.size.width)
                     HStack(alignment: .center) {
-                        SeatView(model: model, seat: 1, width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
+                        SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
                         Spacer(minLength: TableLayout.seatGap)
                         if !inAuction { centre(reach: reach) }
                         Spacer(minLength: TableLayout.seatGap)
-                        SeatView(model: model, seat: 3, width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
+                        SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
                     }
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
@@ -121,7 +122,7 @@ struct TableSurface: View {
                 .accessibilityLabel(model.spokenDescription(of: play, winner: pile.winner))
                 .accessibilityHint(coaching ? "Explains why this card was played" : "")
                 .rotationEffect(.degrees(toss(for: play).rotation))
-                .offset(Self.pileOffset(for: play.seat) + toss(for: play).offset)
+                .offset(Self.pileOffset(for: model.place(of: play.seat)) + toss(for: play).offset)
                 .matchedGeometryEffect(id: play.card, in: namespace)
                 .transition(transition(for: play, winner: pile.winner, reach: reach))
                 .zIndex(Double(pile.plays.firstIndex(where: { $0.card == play.card }) ?? 0))
@@ -139,9 +140,10 @@ struct TableSurface: View {
         CardToss.pose(for: play.card, hand: model.match.handNumber, trick: hand.completedTricks.count)
     }
 
-    /// Where each seat's card rests on the pile: nudged toward the seat that played it.
-    static func pileOffset(for seat: Int) -> CGSize {
-        switch seat {
+    /// Where each card rests on the pile: nudged toward the place (0 bottom, 1 left, 2 across, 3 right) of the
+    /// seat that played it.
+    static func pileOffset(for place: Int) -> CGSize {
+        switch place {
         case 1: CGSize(width: -Theme.Table.sideNudge, height: 0)
         case 2: CGSize(width: 0, height: -Theme.Table.partnerNudge)
         case 3: CGSize(width: Theme.Table.sideNudge, height: 0)
@@ -149,9 +151,9 @@ struct TableSurface: View {
         }
     }
 
-    /// Unit direction from the pile toward a seat.
-    static func direction(for seat: Int) -> CGSize {
-        switch seat {
+    /// Unit direction from the pile toward a place round the table.
+    static func direction(for place: Int) -> CGSize {
+        switch place {
         case 1: CGSize(width: -1, height: 0)
         case 2: CGSize(width: 0, height: -1)
         case 3: CGSize(width: 1, height: 0)
@@ -159,13 +161,13 @@ struct TableSurface: View {
         }
     }
 
-    /// A computer's card arrives from its seat; a finished trick leaves toward the winner's seat.
-    /// The human's own card is moved by `matchedGeometryEffect` from the hand instead.
+    /// Another seat's card arrives from its place; a finished trick leaves toward the winner's place.
+    /// The phone holder's own card is moved by `matchedGeometryEffect` from the hand instead.
     private func transition(for play: Play, winner: Int?, reach: CGSize) -> AnyTransition {
         if reduceMotion { return .opacity }
-        let from = Self.direction(for: play.seat)
-        let to = Self.direction(for: winner ?? play.seat)
-        let insertion: AnyTransition = play.seat == 0 ? .identity
+        let from = Self.direction(for: model.place(of: play.seat))
+        let to = Self.direction(for: model.place(of: winner ?? play.seat))
+        let insertion: AnyTransition = model.place(of: play.seat) == 0 ? .identity
             : .offset(x: from.width * reach.width, y: from.height * reach.height).combined(with: .opacity)
         let removal: AnyTransition = .offset(x: to.width * reach.width, y: to.height * reach.height)
             .combined(with: .scale(scale: 0.5)).combined(with: .opacity)

@@ -518,3 +518,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Why:** The bots' valuations were never the problem. They bid the cheapest raise that cleared the auction, so ace-king opened at 2 and handed the hand to anyone willing to say 3. A floor is a statement about the *shape*, independent of what the auction currently costs, and no per-hand point estimate contains that.
 
 **Measured, two independent seed ranges.** Win rate 0.647 → 0.675 and 0.625 → 0.653; margin 5.050 → 5.727 and 4.785 → 5.357. Underbids against the table's floors fell 481 → 84. The cost is real and recorded in the ratchets: badly-missed contracts 71 → 88, surrendered counters 14 → 19, because winning more auctions means playing more contracts.
+
+## D62. In pass and play the table turns to the phone holder (2026-09-26)
+
+**Chosen:** The seat holding the phone is drawn at the bottom, with the next seat in turn on the left, their partner across and the seat before them on the right (`GameModel.bottomSeat`, `seat(at:)`, `place(of:)`). While the curtain is up the table has already turned to the next holder; between hands it stays with the last one. Cards on the pile, their flights and the VoiceOver direction words follow the place, not the seat number. Solo is unchanged: seat 0 is always at the bottom.
+
+**Over:** Fixed seats with only the hand changing (the first pass-and-play build), which put a player's own tile across the table from them.
+
+**Why:** Each player should see the table as they would sit at it: their partner opposite, and play passing to their left.

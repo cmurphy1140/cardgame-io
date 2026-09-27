@@ -109,7 +109,22 @@ public final class GameModel: ObservableObject {
     }
 
     /// The player the phone was passed to says so; their hand appears.
-    public func ready() { revealedSeat = curtainSeat ?? revealedSeat }
+    public func ready() {
+        revealedSeat = curtainSeat ?? revealedSeat
+        if let revealedSeat { lastRevealedSeat = revealedSeat }
+    }
+
+    /// The seat drawn at the bottom of the table: the phone holder's. In pass and play the table turns to the
+    /// next holder while their curtain is up, and stays with the last one between hands.
+    public var bottomSeat: Int { viewerSeat ?? curtainSeat ?? lastRevealedSeat }
+    private var lastRevealedSeat = 0
+
+    /// The seat at a place round the table, counted from the bottom: 1 on the left, 2 across, 3 on the right.
+    /// Play passes to the left, so the seat after the phone holder sits on their left.
+    public func seat(at place: Int) -> Int { (bottomSeat + place) % 4 }
+
+    /// Where `seat` sits round the table as the phone holder sees it: 0 at the bottom, 1 left, 2 across, 3 right.
+    public func place(of seat: Int) -> Int { (seat - bottomSeat + 4) % 4 }
 
     public var isHumanTurn: Bool { match.winner == nil && match.hand.nextSeat != nil && match.hand.nextSeat == viewerSeat }
     /// In pass and play every seat is a family member, so seat 0 drops the phone holder's own name.
@@ -148,7 +163,7 @@ public final class GameModel: ObservableObject {
     public func seatSummary(for seat: Int) -> String {
         let hand = match.hand
         var parts = [seatNames[seat]]
-        if seat != 0 { parts.append(Cast.seatWords[seat]) }
+        if place(of: seat) != 0 { parts.append(Cast.seatWords[place(of: seat)]) }
         if hand.phase == .bidding { parts.append(latestCall(for: seat) ?? "waiting") }
         else if hand.auction.winner == seat { parts.append("bidder") }
         if hand.auction.dealer == seat { parts.append("dealer") }
