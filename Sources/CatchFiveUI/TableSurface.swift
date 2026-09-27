@@ -529,15 +529,28 @@ struct SeatView: View {
             Text(model.seatNames[seat]).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
             badges
         }
-        .padding(.horizontal, 4).padding(.vertical, 1)
+        .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.seatSummary(for: seat))
     }
 
-    /// One line, always the same height, so the tiles do not jump when a call lands or the phase turns.
+    /// Room the tile keeps on each side, the stack of backs with its trailing air, and the gap between badges.
+    nonisolated static let tilePadding = 4.0
+    nonisolated static let backsWidth = Theme.Table.seatBackWidth + 2 * 3 + 6
+    nonisolated static let badgeSpacing = 6.0
+    /// The most the badge text may shrink to fit the narrowest tile.
+    nonisolated static let roleShrink = 0.6
+
+    /// The seat's roles, one per line: DEALER, and BIDDER once the auction is over. A seat that deals and wins
+    /// the bid stacks the two, since side by side they clip to "DEA… BIDD…" on the narrowest tile.
+    nonisolated static func roles(seat: Int, dealer: Int, bidder: Int?, bidding: Bool) -> [String] {
+        (dealer == seat ? ["DEALER"] : []) + (bidder == seat && !bidding ? ["BIDDER"] : [])
+    }
+
+    /// One band, always the same height, so the tiles do not jump when a call lands or the phase turns.
     private var badges: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Self.badgeSpacing) {
             if hand.phase == .bidding {
                 // The call as a badge on the same dark pill as the auction's own buttons; a pass is muted
                 // so the bids stand out. No badge until the seat has spoken: the halo says who is deciding.
@@ -557,10 +570,16 @@ struct SeatView: View {
                 .padding(.trailing, 6)
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
             }
-            if hand.auction.dealer == seat { Text("DEALER").foregroundStyle(.gold) }
-            if hand.auction.winner == seat, hand.phase != .bidding { Text("BIDDER").opacity(0.7) }
+            let roles = Self.roles(seat: seat, dealer: hand.auction.dealer, bidder: hand.auction.winner, bidding: hand.phase == .bidding)
+            if !roles.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(roles, id: \.self) { role in
+                        if role == "DEALER" { Text(role).foregroundStyle(.gold) } else { Text(role).opacity(0.7) }
+                    }
+                }
+            }
         }
-        .font(.system(.caption2, design: .monospaced)).lineLimit(1).minimumScaleFactor(0.6)
+        .font(.system(.caption2, design: .monospaced)).lineLimit(1).minimumScaleFactor(Self.roleShrink)
         .frame(height: backWidth * Theme.Card.ratio + 2)
     }
 

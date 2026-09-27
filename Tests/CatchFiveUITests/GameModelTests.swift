@@ -1,5 +1,6 @@
 import CatchFive
 @testable import CatchFiveUI
+import CoreText
 import Foundation
 import SwiftUI
 import Testing
@@ -1260,4 +1261,24 @@ import Testing
     // Names the player typed stay.
     try Data(#"{"playerName":"Mum","seatNames":["Mum","Hazel","Dad","Rue"]}"#.utf8).write(to: url)
     #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "Hazel", "Dad", "Rue"])
+}
+
+@Test func aSeatThatDealsAndBidsReadsBothRolesInFull() {
+    // DEALER and BIDDER stack, one per line, rather than sharing one line that the narrowest tile clips.
+    #expect(SeatView.roles(seat: 1, dealer: 1, bidder: 1, bidding: false) == ["DEALER", "BIDDER"])
+    #expect(SeatView.roles(seat: 1, dealer: 1, bidder: 1, bidding: true) == ["DEALER"])
+    #expect(SeatView.roles(seat: 2, dealer: 1, bidder: 2, bidding: false) == ["BIDDER"])
+    #expect(SeatView.roles(seat: 3, dealer: 1, bidder: 2, bidding: false).isEmpty)
+    // The widest role, in the tile's caption (caption2 two steps up: 15 pt monospaced), beside the stack of
+    // backs, fits the side tile on iPhone SE (375 − 32) within the text's allowed shrink; both roles on one
+    // line would not.
+    // Menlo stands in for SF Mono: both advance 0.6 em a character.
+    let font = CTFontCreateWithName("Menlo" as CFString, 15, nil)
+    let word = { (text: String) -> Double in
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [.init(kCTFontAttributeName as String): font]))
+        return CTLineGetTypographicBounds(line, nil, nil, nil)
+    }
+    let room = TableLayout.sideSeatWidth(available: 343) - 2 * SeatView.tilePadding - SeatView.backsWidth - SeatView.badgeSpacing
+    #expect(word("DEALER") * SeatView.roleShrink <= room && word("BIDDER") * SeatView.roleShrink <= room)
+    #expect(word("DEALER") + SeatView.badgeSpacing + word("BIDDER") > room / SeatView.roleShrink)
 }
