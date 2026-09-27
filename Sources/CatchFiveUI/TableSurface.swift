@@ -248,7 +248,7 @@ struct TableSurface: View {
 
     private var statusText: Text {
         if let winner = model.match.winner {
-            return Text(winner == 0 ? "Your team wins the match" : "\(model.seatNames[1]) + \(model.seatNames[3]) win the match")
+            return Text(model.winnerHeadline(winner))
         }
         let actor = hand.nextSeat.map { model.seatNames[$0] } ?? ""
         switch hand.phase {
@@ -470,7 +470,7 @@ struct TableSurface: View {
     /// The card shown once a team reaches 25 or a 9-and-out resolves.
     private func matchOver(_ winner: Int) -> some View {
         VStack(spacing: 6) {
-            Text(winner == 0 ? "YOU WIN THE MATCH" : "\(model.seatNames[1]) + \(model.seatNames[3]) WIN")
+            Text(model.mode == .solo && winner == 0 ? "YOU WIN THE MATCH" : "\(model.teamNames(winner)) WIN")
                 .font(.system(.subheadline, design: .monospaced).weight(.bold)).tracking(2)
             Text("\(model.match.scores[0]) – \(model.match.scores[1]) after \(model.match.history.count) hands").font(.title3.weight(.semibold))
             if let performance = model.finalPerformance {

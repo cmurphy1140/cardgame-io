@@ -75,7 +75,7 @@ public struct TableView: View {
             }
             .overlay {
                 if drawShown, let draw = model.dealerDraw {
-                    DealerDrawView(draw: draw, names: model.seatNames, portraits: portraits) {
+                    DealerDrawView(draw: draw, names: model.seatNames, portraits: portraits, saysYou: model.mode == .solo) {
                         withAnimation(motion(Theme.Motion.overlay)) { model.dismissDealerDraw() }
                     }
                     .transition(.opacity)
@@ -91,8 +91,9 @@ public struct TableView: View {
     /// Score bar, table and hand in one non-scrolling column.
     private var layout: some View {
         VStack(spacing: 6) {
-            ScoreBarView(us: model.match.scores[0], them: model.match.scores[1],
-                         usLabel: teamLabel(0), themLabel: teamLabel(1),
+            // "Us" is the phone holder's team; in pass and play that turns with the phone, as the table does.
+            ScoreBarView(us: model.match.scores[model.ourTeam], them: model.match.scores[1 - model.ourTeam],
+                         usLabel: teamLabel(model.ourTeam), themLabel: teamLabel(1 - model.ourTeam),
                          contract: contractChip,
                          canUndo: model.canUndo,
                          onScores: { showScoreboard = true }, onPause: onLeave)
@@ -212,9 +213,7 @@ public struct TableView: View {
                                      bidder: model.seatNames[bidder])
     }
 
-    private func teamLabel(_ team: Int) -> String {
-        "\(model.seatNames[team]) + \(model.seatNames[team + 2])".uppercased()
-    }
+    private func teamLabel(_ team: Int) -> String { model.teamNames(team).uppercased() }
 
     private func motion(_ animation: Animation) -> Animation { reduceMotion ? Theme.Motion.reduced : animation }
 

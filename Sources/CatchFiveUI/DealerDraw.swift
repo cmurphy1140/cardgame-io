@@ -19,9 +19,10 @@ struct DealerDraw: Equatable {
         card.rank.rawValue * 4 + (Suit.allCases.firstIndex(of: card.suit) ?? 0)
     }
 
-    /// "Rue draws the king of spades and deals."
-    func sentence(names: [String]) -> String {
-        let who = dealer == 0 ? "You draw" : "\(names[dealer]) draws"
-        return "\(who) the \(cards[dealer].name) and deal\(dealer == 0 ? "" : "s")."
+    /// "Rue draws the king of spades and deals." Seat 0 is "You" unless `you` is false (pass and play).
+    func sentence(names: [String], you: Bool = true) -> String {
+        let yours = you && dealer == 0
+        let who = yours ? "You draw" : "\(names[dealer]) draws"
+        return "\(who) the \(cards[dealer].name) and deal\(yours ? "" : "s")."
     }
 }

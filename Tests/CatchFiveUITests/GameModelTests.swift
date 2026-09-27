@@ -1327,3 +1327,26 @@ import Testing
     try finishMatch(model)
     #expect(model.records.count == 1 && model.finalPerformance != nil)
 }
+
+@MainActor @Test func passAndPlayNamesTeamsInsteadOfYou() throws {
+    // Solo speaks to you; pass and play has no single "you", so the score bar leads with the phone holder's
+    // team, and the menu line and the match's winner are named.
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect(solo.ourTeam == 0 && solo.teamNames(1) == "JC + Diane")
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay)
+    model.ready()
+    model.send(.bid(nil))
+    #expect(model.ourTeam == 1)   // seat 1 is about to take the phone
+    model.ready()
+    #expect(model.ourTeam == 1)
+    let context = try #require(model.resumeContext)
+    #expect(!context.contains("Your team") && context.contains("Cheryl + Connor 0") && context.contains("JC + Diane 0"))
+    solo.send(.bid(nil))
+    #expect(try #require(solo.resumeContext).contains("Your team 0, their team 0"))
+    #expect(model.winnerHeadline(0) == "Cheryl + Connor win the match" && model.winnerHeadline(1) == "JC + Diane win the match")
+    #expect(solo.winnerHeadline(0) == "Your team wins the match" && solo.winnerHeadline(1) == "JC + Diane win the match")
+    // The draw for dealer names seat 0 too.
+    let draw = DealerDraw(cards: [Card(.spades, .ace), Card(.clubs, .two), Card(.clubs, .three), Card(.clubs, .four)], dealer: 0)
+    #expect(draw.sentence(names: Settings.defaultSeatNames) == "You draw the ace of spades and deal.")
+    #expect(draw.sentence(names: Settings.defaultSeatNames, you: false) == "Cheryl draws the ace of spades and deals.")
+}

@@ -148,7 +148,20 @@ public final class GameModel: ObservableObject {
         case .playing: "playing"
         case .finished: "hand scored"
         }
-        return "Hand \(match.handNumber) · Your team \(match.scores[0]), their team \(match.scores[1]) · \(phase)"
+        let scores = mode == .solo ? "Your team \(match.scores[0]), their team \(match.scores[1])"
+            : "\(teamNames(0)) \(match.scores[0]), \(teamNames(1)) \(match.scores[1])"
+        return "Hand \(match.handNumber) · \(scores) · \(phase)"
+    }
+
+    /// The pair sitting as `team`: "Cheryl + Connor".
+    public func teamNames(_ team: Int) -> String { "\(seatNames[team]) + \(seatNames[team + 2])" }
+
+    /// The team the score bar leads with as "Us": the phone holder's.
+    public var ourTeam: Int { bottomSeat % 2 }
+
+    /// The status line once `team` has won: yours in solo, and by name otherwise.
+    public func winnerHeadline(_ team: Int) -> String {
+        mode == .solo && team == 0 ? "Your team wins the match" : "\(teamNames(team)) win the match"
     }
 
     /// The login screen's one write: the trimmed name becomes seat 0's name unless another seat has it.
