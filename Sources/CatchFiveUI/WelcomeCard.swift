@@ -1,16 +1,14 @@
 import CatchFive
 import SwiftUI
 
-/// The pause card, shown over the dimmed table from the table's menu: exactly three actions (spec R32).
-/// Continue game (until the match is won) is primary, New match asks first, and Main menu keeps the match
-/// and goes to the menu, where Settings, the lessons, statistics and the build explainer live. No greeting
-/// and no summary: the main menu carries those.
+/// The pause card, shown over the dimmed table from the table's menu: Continue game (until the match is
+/// won) and Main menu, which keeps the match and goes to the menu, where New match, Settings, the lessons,
+/// statistics and the build explainer live (P02, P03). No greeting and no summary: the main menu carries those.
 struct WelcomeCard: View {
     @ObservedObject var model: GameModel
     let onPlay: () -> Void
     /// Leaves the table for the main menu with the match preserved.
     let onMenu: () -> Void
-    @State private var confirmNewMatch = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -24,13 +22,10 @@ struct WelcomeCard: View {
                 if model.match.winner == nil {
                     // A dealt hand is a game to return to even before the first bid.
                     prominent("Continue game", action: onPlay)
-                    plain("New match") {
-                        if model.matchInProgress { confirmNewMatch = true } else { model.newGame(); onPlay() }
-                    }
+                    plain("Main menu", action: onMenu)
                 } else {
-                    prominent("New match") { model.newGame(); onPlay() }
+                    prominent("Main menu", action: onMenu)
                 }
-                plain("Main menu", action: onMenu)
             }
         }
         .padding(22)
@@ -40,12 +35,6 @@ struct WelcomeCard: View {
         .shadow(color: .black.opacity(0.5), radius: 24, y: 12)
         .foregroundStyle(.ivory)
         .padding(24)
-        // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
-        // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
-        .alert("Start over?", isPresented: $confirmNewMatch) {
-            Button("Start new match", role: .destructive) { model.newGame(); onPlay() }
-            Button("Cancel", role: .cancel) {}
-        } message: { Text("This replaces your saved game.") }
     }
 
     private func prominent(_ label: String, action: @escaping () -> Void) -> some View {
@@ -57,12 +46,12 @@ struct WelcomeCard: View {
     }
 }
 
-/// The menu's two buttons, shared by the pause card and the main menu: one Catch 5 red primary per screen,
-/// and bordered ivory for the rest. On the main actor because the button styles are (CI's Swift 6.1 checks this).
+/// The menu's two buttons, shared by the pause card and the main menu: one warm oak primary per screen
+/// (P01: red read as leaving), and bordered ivory for the rest. On the main actor because the button styles are (CI's Swift 6.1 checks this).
 @MainActor enum MenuButtons {
     static func prominent(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(label).font(.headline).frame(maxWidth: .infinity).frame(minHeight: 48) }
-            .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
+            .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
     }
 
     static func plain(_ label: String, action: @escaping () -> Void) -> some View {

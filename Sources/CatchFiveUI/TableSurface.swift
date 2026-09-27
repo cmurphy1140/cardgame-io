@@ -396,7 +396,7 @@ struct TableSurface: View {
     private var dealButton: some View {
         Button(model.match.winner == nil ? "Deal next hand" : "Play again") {
             if model.match.winner == nil { model.nextHand() } else { model.newGame() }
-        }.buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory).lineLimit(1)
+        }.buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory).lineLimit(1)
         .frame(minHeight: 56) // From R11: ~56-60pt tall
     }
 
@@ -410,7 +410,7 @@ struct TableSurface: View {
                 Text("You made \(performance.bidsMade) of \(performance.bids) bids and played the strategy's card \(performance.playsAgreed) of \(performance.plays) times.")
                     .font(.footnote).multilineTextAlignment(.center).opacity(0.8)
             }
-        }.foregroundStyle(Color.suitRed)
+        }.foregroundStyle(.black)
     }
 }
 
