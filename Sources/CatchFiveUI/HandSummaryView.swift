@@ -14,15 +14,15 @@ struct HandSummaryView: View {
     var body: some View {
         if let summary = match.history.last, let outcome {
             VStack(spacing: 8) {
-                // The verdict first, in gold as a key result, then what it did to the score.
-                Text(outcome.headline).font(.system(.title3, design: .serif).weight(.semibold)).foregroundStyle(.gold)
+                // The verdict reads like a stamped result on the score card.
+                Text(outcome.headline).font(.system(.title3, design: .serif).weight(.semibold)).foregroundStyle(Color.suitRed)
                 VStack(spacing: 2) {
                     Text(outcome.bidderLine)
                     Text(outcome.defenderLine)
                 }
                 .font(.footnote).multilineTextAlignment(.center).opacity(0.9)
                 .accessibilityElement(children: .combine)
-                Divider().overlay(.ivory.opacity(0.15)).padding(.vertical, 2)
+                Divider().overlay(.black.opacity(0.15)).padding(.vertical, 2)
                 
                 DisclosureGroup("Points and scoring") {
                     VStack(spacing: 8) {
@@ -39,7 +39,7 @@ struct HandSummaryView: View {
                 }.tint(.gold)
                 
                 if let review {
-                    Divider().overlay(.ivory.opacity(0.15)).padding(.vertical, 2)
+                    Divider().overlay(.black.opacity(0.15)).padding(.vertical, 2)
                     DisclosureGroup("What happened in the tricks (\(review.tricks.count))") {
                         if coaching {
                             let (agreed, total) = review.agreement(forSeat: 0)
@@ -57,12 +57,14 @@ struct HandSummaryView: View {
                                     }
                                     .padding(.vertical, 4)
                                     .padding(.leading, 8)
-                                }.tint(.ivory.opacity(0.7)).font(.subheadline)
+                                }.tint(.black.opacity(0.7)).font(.subheadline)
                             }
                         }
                     }.tint(.gold)
                 }
-            }.padding(16).background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+            }
+            .padding(16)
+            .foregroundStyle(.black)
         }
     }
     
@@ -82,7 +84,7 @@ struct HandSummaryView: View {
                 Text(reviewPlay.play.card.name).font(.caption)
                 if coaching {
                     Image(systemName: reviewPlay.agreed ? "checkmark" : "arrow.triangle.branch")
-                        .foregroundStyle(reviewPlay.agreed ? Color.secondary : Color.primary)
+                        .foregroundStyle(reviewPlay.agreed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                 }
             }
             if coaching && !reviewPlay.agreed {

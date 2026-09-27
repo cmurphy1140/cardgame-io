@@ -10,7 +10,7 @@ extension Suit {
         case .spades: "♠"
         }
     }
-    var ink: Color { self == .hearts || self == .diamonds ? Color(red: 0.7, green: 0.12, blue: 0.18) : .black }
+    var ink: Color { self == .hearts || self == .diamonds ? .suitRed : .black }
 }
 
 extension Rank {
