@@ -132,9 +132,9 @@ struct TableSurface: View {
     /// Where each seat's card rests on the pile: nudged toward the seat that played it.
     static func pileOffset(for seat: Int) -> CGSize {
         switch seat {
-        case 1: CGSize(width: -Theme.Table.sideNudge, height: 4)
+        case 1: CGSize(width: -Theme.Table.sideNudge, height: 0)
         case 2: CGSize(width: 0, height: -Theme.Table.partnerNudge)
-        case 3: CGSize(width: Theme.Table.sideNudge, height: 4)
+        case 3: CGSize(width: Theme.Table.sideNudge, height: 0)
         default: CGSize(width: 0, height: Theme.Table.ownNudge)
         }
     }

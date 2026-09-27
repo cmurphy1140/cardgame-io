@@ -1177,3 +1177,17 @@ import Testing
     restored.newGame(mode: .solo)
     #expect(GameModel.loadDefault(in: directory).mode == .solo)
 }
+
+@Test func playedCardsAreLargerAndNeverOverlap() {
+    // The pile is the heart of the table (T10): bigger cards, each clear of the others even after its toss.
+    #expect(Theme.Card.pileWidth > 62)
+    let width = Theme.Card.pileWidth, height = width * Theme.Card.ratio
+    let margin = 2 * Theme.Table.tossDrift
+    for a in 0..<4 {
+        for b in (a + 1)..<4 {
+            let p = TableSurface.pileOffset(for: a), q = TableSurface.pileOffset(for: b)
+            let apart = abs(p.width - q.width) >= width + margin || abs(p.height - q.height) >= height + margin
+            #expect(apart, "seats \(a) and \(b) overlap")
+        }
+    }
+}
