@@ -510,12 +510,28 @@ import Testing
     #expect(DynamicTypeSize.xLarge.boosted(by: Theme.textBoostSteps) == Theme.Card.maximumTypeSize)
 }
 
-@Test func dealtCardsComeFromTheDeckInTheCornerAndTheBandFrowns() {
-    // The leftmost card has the longest flight from the top-right deck; the rightmost the shortest, still upward.
-    let left = HandFanView.dealOrigin(index: 0, count: 6, width: 360)
-    let right = HandFanView.dealOrigin(index: 5, count: 6, width: 360)
-    #expect(left.width > right.width && right.width > 0)
-    #expect(left.height < 0 && left.height == right.height)
+@Test func dealtCardsStartAtTheDealersDeckAndTheBandFrowns() {
+    // Every refill card starts on the deck beside the dealer (T12), wherever that dealer sits, and lands
+    // on its own place in the fan: the flight is the deck's centre less the card's resting centre.
+    let fan = CGRect(x: 16, y: 600, width: 360, height: 110)
+    let strip = 48.0, width = 58.0
+    let west = CGPoint(x: 70, y: 250), north = CGPoint(x: 196, y: 90), mine = CGPoint(x: 150, y: 740)
+    for deck in [west, north, mine] {
+        for slot in 0..<6 {
+            let centre = HandFanView.cardCentre(slot: slot, count: 6, strip: strip, cardWidth: width, in: fan)
+            let origin = HandFanView.dealOrigin(slot: slot, count: 6, strip: strip, cardWidth: width, in: fan, deck: deck)
+            #expect(abs(centre.x + origin.width - deck.x) < 0.001 && abs(centre.y + origin.height - deck.y) < 0.001)
+        }
+    }
+    // The cards spread one strip apart around the fan's middle and rest on its bottom edge.
+    let first = HandFanView.cardCentre(slot: 0, count: 6, strip: strip, cardWidth: width, in: fan)
+    let last = HandFanView.cardCentre(slot: 5, count: 6, strip: strip, cardWidth: width, in: fan)
+    #expect(abs((first.x + last.x) / 2 - fan.midX) < 0.001 && abs(last.x - first.x - 5 * strip) < 0.001)
+    #expect(abs(first.y - (fan.maxY - width * Theme.Card.ratio / 2)) < 0.001)
+    // A dealer on the left deals in from the left and above; your own deck, under the fan, deals up into it.
+    #expect(HandFanView.dealOrigin(slot: 0, count: 6, strip: strip, cardWidth: width, in: fan, deck: west).width < 0)
+    #expect(HandFanView.dealOrigin(slot: 5, count: 6, strip: strip, cardWidth: width, in: fan, deck: north).height < 0)
+    #expect(HandFanView.dealOrigin(slot: 2, count: 6, strip: strip, cardWidth: width, in: fan, deck: mine).height > 0)
     // The frown's middle sits `dip` above its corners.
     let band = HeaderBandShape(dip: 20).path(in: CGRect(x: 0, y: 0, width: 300, height: 100)).boundingRect
     #expect(band.maxY == 100 && band.minY == 0)
@@ -964,12 +980,10 @@ import Testing
 }
 
 @Test func discardsFlyToThePileOnTheLeft() {
-    // Discards head for the top-left corner, level with the deck in the top-right; the two never share a corner.
+    // Discards head for the top-left corner of the table, every one to the same height.
     for index in 0..<6 {
-        let deal = HandFanView.dealOrigin(index: index, count: 6, width: 360)
         let discard = HandFanView.discardTarget(index: index, count: 6, width: 360)
-        #expect(discard.width < deal.width)              // the other side of the table
-        #expect(discard.height == deal.height)           // the same height, the top of the table
+        #expect(discard.height < 0 && discard.height == HandFanView.discardTarget(index: 0, count: 6, width: 360).height)
     }
     // The leftmost card barely moves sideways; the rightmost crosses most of the table.
     #expect(HandFanView.discardTarget(index: 0, count: 6, width: 360).width > -40)

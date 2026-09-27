@@ -16,6 +16,8 @@ struct TableSurface: View {
     let onCloseTrick: () -> Void
     /// The 9-and-out pill asks the table to confirm before the bid is sent.
     let onNineAndOut: () -> Void
+    /// The deck beside the dealer's tile says where it rests, so the deal can start there.
+    var onDeck: (CGPoint) -> Void = { _ in }
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
     let statusFocus: AccessibilityFocusState<Bool>.Binding
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -52,17 +54,17 @@ struct TableSurface: View {
             let fits = contentHeight <= geometry.size.height + 0.5
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 6) {
-                    SeatView(model: model, seat: 2).accessibilitySortPriority(20)
+                    SeatView(model: model, seat: 2, onDeck: onDeck).accessibilitySortPriority(20)
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
                     // each beside the card its seat played.
                     let sideWidth = inAuction ? Theme.Table.seatTileWidth : TableLayout.sideSeatWidth(available: geometry.size.width)
                     HStack(alignment: .center) {
-                        SeatView(model: model, seat: 1, width: sideWidth).accessibilitySortPriority(30)
+                        SeatView(model: model, seat: 1, width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
                         Spacer(minLength: TableLayout.seatGap)
                         if !inAuction { centre(reach: reach) }
                         Spacer(minLength: TableLayout.seatGap)
-                        SeatView(model: model, seat: 3, width: sideWidth).accessibilitySortPriority(10)
+                        SeatView(model: model, seat: 3, width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
                     }
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
@@ -484,6 +486,8 @@ struct SeatView: View {
     let seat: Int
     /// Side tiles take the width the row can spare; the partner's tile keeps the full width.
     var width: Double = Theme.Table.seatTileWidth
+    /// The dealer's deck says where it rests.
+    var onDeck: (CGPoint) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The halo's breathing, driven by a repeating animation while this seat is deciding.
     @State private var pulsing = false
@@ -516,7 +520,7 @@ struct SeatView: View {
                 .padding(.vertical, Theme.Table.activeRingGap)
                 // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13).
                 .overlay(alignment: .bottomTrailing) {
-                    if hand.auction.dealer == seat { DealerDeck().offset(x: 16, y: -2) }
+                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 16, y: -2) }
                 }
                 // A computer deciding shows calm dots above its tile instead of a status line (T04).
                 .overlay(alignment: .top) {
@@ -566,12 +570,19 @@ struct SeatView: View {
 /// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on
 /// the table and not a button (T13).
 struct DealerDeck: View {
+    /// Told the deck's centre in the table's coordinate space whenever it moves; the deal starts there.
+    var onPlaced: (CGPoint) -> Void = { _ in }
+
     var body: some View {
         ZStack {
             ForEach(0..<3, id: \.self) { index in
                 CardBackView(width: Theme.Table.dealerDeckWidth).offset(x: Double(index) * -1.5, y: Double(index) * -1.5)
             }
         }
+        .onGeometryChange(for: CGPoint.self) { proxy in
+            let frame = proxy.frame(in: .named(TableLayout.space))
+            return CGPoint(x: frame.midX, y: frame.midY)
+        } action: { onPlaced($0) }
         .rotationEffect(.degrees(-8))
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
         .allowsHitTesting(false)

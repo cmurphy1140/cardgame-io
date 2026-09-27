@@ -51,6 +51,8 @@ enum HandLayout {
 /// The seat row: two side tiles and the pile between them share the table's width. The tiles give
 /// way first, down to a floor that still fits a portrait and a short name.
 enum TableLayout {
+    /// The table's coordinate space, shared by the dealer's deck and the hand so a deal can fly between them.
+    static let space = "table"
     /// A pile card nudged toward either side seat, plus 4 pt of air on each side.
     static let pileReservation = Theme.Card.pileWidth + 2 * Theme.Table.sideNudge + 8
     /// The spacer between a tile and the pile.
