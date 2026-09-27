@@ -26,6 +26,8 @@ public struct Settings: Codable, Equatable, Sendable {
     public static let defaultSeatNames = ["Cheryl", "JC", "Connor", "Diane"]
     /// The defaults before the cast existed; files still carrying them migrate on load.
     public static let legacySeatNames = ["You", "West", "Partner", "East"]
+    /// The cast's names before the family table (T09); files still carrying them migrate on load.
+    public static let oldCastSeatNames = ["Hazel", "Otto", "Rue"]
 
     public var hasSignedIn: Bool { playerName != nil }
 
@@ -78,6 +80,13 @@ public struct Settings: Codable, Equatable, Sendable {
         // accident; after sign-in a typed "West" is a choice and stays.
         let migrated = playerName == nil ? Settings.migrated(names) : names
         seatNames = migrated.count == 4 ? migrated : Settings.defaultSeatNames
+        // A file saved with the old cast in seats 1 to 3 (any order) takes the family table; seat 0 keeps the
+        // player's own name unless a family seat already carries it. Names typed by hand never match and stay.
+        if Set(seatNames[1...3]) == Set(Settings.oldCastSeatNames) {
+            let own = seatNames[0]
+            seatNames = Settings.defaultSeatNames
+            if own == playerName, !seatNames[1...3].contains(own) { seatNames[0] = own }
+        }
     }
 
     /// Seats 1 to 3 that still carry the old direction names take the cast's names; custom names are kept.

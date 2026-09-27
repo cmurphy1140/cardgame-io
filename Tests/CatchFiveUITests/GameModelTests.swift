@@ -1231,3 +1231,15 @@ import Testing
     settings.setPlayerName("Connor")
     #expect(settings.seatNames == Settings.defaultSeatNames)
 }
+
+@Test func oldCastSeatNamesBecomeTheFamilyOnLoad() throws {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: url) }
+    try Data(#"{"playerName":"Connor","seatNames":["Connor","Hazel","Otto","Rue"]}"#.utf8).write(to: url)
+    #expect(try SettingsStore.read(from: url).seatNames == ["Cheryl", "JC", "Connor", "Diane"])
+    try Data(#"{"playerName":"Mum","seatNames":["Mum","Rue","Hazel","Otto"]}"#.utf8).write(to: url)
+    #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "JC", "Connor", "Diane"])
+    // Names the player typed stay.
+    try Data(#"{"playerName":"Mum","seatNames":["Mum","Hazel","Dad","Rue"]}"#.utf8).write(to: url)
+    #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "Hazel", "Dad", "Rue"])
+}
