@@ -225,6 +225,7 @@ When useful, capture one before/after and a short explanation of why the change 
 | Touch/continuity | Partially covered by existing behavior; remaining verification pending | Resolve commitment mismatch only when this task starts |
 | Accessibility/feedback | Existing facilities; full current validation pending | Larger text, VoiceOver, actual phone feedback |
 | Family observation | Not performed | A willing player and available phone, when convenient |
+| Oak family redesign | Done September 26: `ui/oak-family-redesign` merged onto `main` after PR #88 (conflicts in `HandSummaryView` and `TableSurface` resolved to #88 structure with oak colours); `swift test` 77 rules + 82 UI tests passed, `scripts/build-simulator.py` and `xcodebuild` simulator build succeeded | Install on Connor's phone |
 
 **Engine track, outside this table.** The bot bank (D58) is underway on its own branches: PRs #45, #46, #47, #49, #63, #67 and #79 merged September 14. Remaining engine work is tracked as issues #51, #54, #55 and #72–#78, not as rows here. Other UI work that merged September 14 but belongs to the counting ideas rather than to an increment: every seat announcing what it discarded (PR #69).
 
