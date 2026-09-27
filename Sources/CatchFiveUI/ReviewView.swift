@@ -162,7 +162,8 @@ struct ScoreboardView: View {
     }
 }
 
-/// Totals across recorded matches, newest first.
+/// Totals across recorded matches, kept to the simple outcomes (S05): matches, wins and losses, bids made.
+/// No recent-match list, margin or strategy score for this milestone (S01, S02, S04).
 struct StatisticsView: View {
     let stats: Statistics
     let records: [MatchRecord]
@@ -174,23 +175,8 @@ struct StatisticsView: View {
                 Section("All matches") {
                     line("Matches", "\(stats.matches)")
                     line("Won", stats.matches == 0 ? "–" : "\(stats.wins) (\(percent(Double(stats.wins) / Double(stats.matches))))")
-                    line("Average margin", stats.matches == 0 ? "–" : String(format: "%+.1f", stats.averageMargin))
+                    line("Lost", stats.matches == 0 ? "–" : "\(stats.matches - stats.wins)")
                     line("Bids made", stats.contractRate.map(percent) ?? "–")
-                    line("Played the strategy's card", stats.agreementRate.map(percent) ?? "–")
-                }
-                Section("Recent") {
-                    if records.isEmpty { Text("Finish a match to see it here.").foregroundStyle(.secondary) }
-                    ForEach(records.reversed()) { record in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(record.humanWon ? "Won" : "Lost").font(.subheadline.weight(.semibold))
-                                Text("\(record.date.formatted(date: .abbreviated, time: .shortened)) · \(record.hands) hands · \(record.difficulty.rawValue)")
-                                    .font(.footnote).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Text("\(record.scores[0]) – \(record.scores[1])").font(.headline.monospacedDigit())
-                        }
-                    }
                 }
             }
             .scrollContentBackground(.hidden).background(WoodGrainView().ignoresSafeArea())
