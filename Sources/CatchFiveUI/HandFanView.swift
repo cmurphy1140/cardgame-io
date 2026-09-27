@@ -31,6 +31,10 @@ struct HandFanView: View {
         VStack(spacing: 6) {
             Group {
                 switch arrangement {
+                case .fan where model.match.hand.phase == .bidding && measuredWidth > 0:
+                    // B01: while bidding, the hand lies flat on one baseline, evenly spaced; the fan comes back after.
+                    row(cards, indices: Array(cards.indices), strip: HandLayout.baselineStrip(count: cards.count, cardWidth: scaledWidth,
+                                                                                           available: measuredWidth - 16), fanned: false)
                 case let .fan(strip):
                     row(cards, indices: Array(cards.indices), strip: strip, fanned: true)
                 case let .rows(perRow, strip):

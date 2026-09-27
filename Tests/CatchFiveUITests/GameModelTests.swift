@@ -1191,3 +1191,10 @@ import Testing
         }
     }
 }
+
+@Test func biddingHandSitsOnOneEvenBaseline() {
+    // B01: in the auction the hand lies flat in one row, evenly spaced, never wider than the space it has.
+    #expect(HandLayout.baselineStrip(count: 6, cardWidth: 58, available: 500) == 58 + HandLayout.baselineGap)
+    let tight = HandLayout.baselineStrip(count: 6, cardWidth: 58, available: 345)
+    #expect(5 * tight + 58 <= 345 && tight > 0)
+}
