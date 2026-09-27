@@ -1205,3 +1205,13 @@ import Testing
     #expect(options == [6, 7, 8, 9])
     #expect(TableSurface.bidOptions(allows: { _ in false }).isEmpty)
 }
+
+@Test func discardNoticeSitsAboveYourTurnInPlay() throws {
+    // The hand's fan rises into the row just above it, so in play the notice line goes above the status.
+    let play = TableSurface.lowerRows(inAuction: false)
+    #expect(play.last == .status)
+    #expect(try #require(play.firstIndex(of: .commentary)) < (play.firstIndex(of: .status) ?? 0))
+    // The auction keeps its order: status, then the bid controls, then "You: call" under them.
+    #expect(TableSurface.lowerRows(inAuction: true) == [.status, .controls, .commentary])
+}
+

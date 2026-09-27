@@ -63,10 +63,15 @@ struct TableSurface: View {
                         SeatView(model: model, seat: 3, width: sideWidth).accessibilitySortPriority(10)
                     }
                     Spacer(minLength: 4)
-                    statusLine.accessibilitySortPriority(4)
-                    if model.isHumanTurn, hand.phase == .bidding { bidding }
-                    if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
-                    commentary
+                    ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
+                        switch row {
+                        case .commentary: commentary
+                        case .status: statusLine.accessibilitySortPriority(4)
+                        case .controls:
+                            if model.isHumanTurn, hand.phase == .bidding { bidding }
+                            if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
+                        }
+                    }
                 }
                 .padding(.top, Theme.Table.seatInset)
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { contentHeight = $0 }
@@ -156,6 +161,14 @@ struct TableSurface: View {
     }
 
     // MARK: Status, hints, explanations
+
+    enum LowerRow: Hashable { case commentary, status, controls }
+
+    /// The rows under the pile, top to bottom. In play the hand's fan rises into the row just above it, so
+    /// the notice line ("Discarded: …") sits above "Your turn"; the auction keeps its call under the controls.
+    nonisolated static func lowerRows(inAuction: Bool) -> [LowerRow] {
+        inAuction ? [.status, .controls, .commentary] : [.commentary, .controls, .status]
+    }
 
     private var statusLine: some View {
         HStack(spacing: 8) {
