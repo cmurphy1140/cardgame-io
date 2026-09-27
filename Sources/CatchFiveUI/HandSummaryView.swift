@@ -10,6 +10,7 @@ struct HandSummaryView: View {
     let difficulty: Difficulty
     let describe: (PlayReview) -> String
     let coaching: Bool
+    @State private var reviewOpen = false
 
     var body: some View {
         if let summary = match.history.last, let outcome {
@@ -35,7 +36,7 @@ struct HandSummaryView: View {
                 }
                 Divider().overlay(.black.opacity(0.15)).padding(.vertical, 2)
                 // Everything else waits in Review hand (R03, R04).
-                DisclosureGroup("Review hand") {
+                DisclosureGroup("Review hand", isExpanded: $reviewOpen) {
                     VStack(spacing: 8) {
                         Text(outcome.bidderLine).font(.caption)
                         Text(outcome.defenderLine).font(.caption)
@@ -66,6 +67,7 @@ struct HandSummaryView: View {
             }
             .padding(16)
             .foregroundStyle(.black)
+            .onAppear { if ScreenshotStage.name == "review" { reviewOpen = true } }
         }
     }
 
