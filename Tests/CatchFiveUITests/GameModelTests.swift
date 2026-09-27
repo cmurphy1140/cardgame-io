@@ -1178,7 +1178,7 @@ import Testing
     #expect(GameModel.loadDefault(in: directory).mode == .solo)
 }
 
-@Test func playedCardsAreLargerAndNeverOverlap() {
+@MainActor @Test func playedCardsAreLargerAndNeverOverlap() {
     // The pile is the heart of the table (T10): bigger cards, each clear of the others even after its toss.
     #expect(Theme.Card.pileWidth > 62)
     let width = Theme.Card.pileWidth, height = width * Theme.Card.ratio
