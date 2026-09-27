@@ -164,7 +164,7 @@ public struct TableView: View {
         if let picked = TableFeedback.cue(from: seen, to: now) { cue = (revision, picked) }
         let handEnded = now.hands > seen.hands
         if now.tricks > seen.tricks, !handEnded, let winner = now.lastTrickWinner {
-            AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the trick").post()
+            AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the hand").post()
         } else if handEnded, let outcome = model.lastHandOutcome {
             AccessibilityNotification.Announcement("\(outcome.headline). \(outcome.bidderLine)").post()
         }

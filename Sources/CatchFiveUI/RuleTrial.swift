@@ -90,7 +90,7 @@ struct RuleTrial {
             guard let trick = match.hand.completedTricks.last,
                   let winning = trick.plays.first(where: { $0.seat == trick.winner }) else { return "Accepted." }
             let who = trick.winner == 0 ? "You take" : "\(Self.names[trick.winner]) takes"
-            return "Accepted. \(who) the trick with the \(winning.card.name)."
+            return "Accepted. \(who) the hand with the \(winning.card.name)."
         case .dealerMatch:
             switch action {
             case .bid(nil): return "Passed. \(Self.names[1]) wins the auction with 3 and names trump."

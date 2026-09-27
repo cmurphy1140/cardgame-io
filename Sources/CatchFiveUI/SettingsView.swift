@@ -52,7 +52,7 @@ struct SettingsView: View {
                     }
                 }
                 Section {
-                    Toggle("Haptics on tricks and hands", isOn: $settings.haptics)
+                    Toggle("Haptics on every hand", isOn: $settings.haptics)
                 }
                 Section {
                     Button { showExplainer = true } label: { Label("How Catch 5 is built", systemImage: "doc.text.magnifyingglass") }

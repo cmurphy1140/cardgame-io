@@ -178,14 +178,14 @@ struct TableSurface: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Back to play")
-                Text("Reviewing last trick").font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                Text("Reviewing last hand").font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .accessibilityFocused(statusFocus)
                 Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
             } else {
                 // Left: reopen the last trick when the pile is clear. Right: the hint on your turn.
                 if pile.plays.isEmpty, hand.completedTricks.last != nil, hand.phase == .playing {
-                    smallButton("rectangle.stack", label: "Show the last trick", action: onReopenTrick)
+                    smallButton("rectangle.stack", label: "Show the last hand", action: onReopenTrick)
                 } else {
                     Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
                 }
@@ -407,7 +407,7 @@ struct TableSurface: View {
                 .font(.system(.subheadline, design: .monospaced).weight(.bold)).tracking(2)
             Text("\(model.match.scores[0]) – \(model.match.scores[1]) after \(model.match.history.count) hands").font(.title3.weight(.semibold))
             if let performance = model.finalPerformance {
-                Text("You made \(performance.bidsMade) of \(performance.bids) contracts and played the strategy's card \(performance.playsAgreed) of \(performance.plays) times.")
+                Text("You made \(performance.bidsMade) of \(performance.bids) bids and played the strategy's card \(performance.playsAgreed) of \(performance.plays) times.")
                     .font(.footnote).multilineTextAlignment(.center).opacity(0.8)
             }
         }.foregroundStyle(Color.suitRed)

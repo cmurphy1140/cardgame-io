@@ -19,7 +19,7 @@ struct ReviewView: View {
                         .font(.footnote)
                 }
                 ForEach(review.tricks, id: \.number) { trick in
-                    Section("Trick \(trick.number) · \(names[trick.winner]) took it") {
+                    Section("Hand \(trick.number) · \(names[trick.winner]) took it") {
                         ForEach(trick.plays, id: \.play.card) { row($0) }
                     }
                 }
@@ -175,7 +175,7 @@ struct StatisticsView: View {
                     line("Matches", "\(stats.matches)")
                     line("Won", stats.matches == 0 ? "–" : "\(stats.wins) (\(percent(Double(stats.wins) / Double(stats.matches))))")
                     line("Average margin", stats.matches == 0 ? "–" : String(format: "%+.1f", stats.averageMargin))
-                    line("Contracts made", stats.contractRate.map(percent) ?? "–")
+                    line("Bids made", stats.contractRate.map(percent) ?? "–")
                     line("Played the strategy's card", stats.agreementRate.map(percent) ?? "–")
                 }
                 Section("Recent") {

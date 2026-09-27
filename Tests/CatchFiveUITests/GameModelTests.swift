@@ -1059,7 +1059,7 @@ import Testing
     #expect(follow.attempt(.play(offSuit)) == .refused("Follow hearts; you still have hearts."))
     #expect(follow.attempt(.play(trump)) == .refused("Follow hearts; you still have hearts."))
     guard case let .accepted(text) = follow.attempt(.play(heart)) else { Issue.record("a heart is legal"); return }
-    #expect(text.contains("the trick with the"))
+    #expect(text.contains("the hand with the"))
     // Refusals never moved the position; an acceptance plays the trick out; reset brings it back.
     #expect(follow.match.hand.completedTricks.count == 1)
     follow.reset()

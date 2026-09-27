@@ -13,19 +13,32 @@ struct HandSummaryView: View {
 
     var body: some View {
         if let summary = match.history.last, let outcome {
-            VStack(spacing: 8) {
-                // The verdict reads like a stamped result on the score card.
-                Text(outcome.headline).font(.system(.title3, design: .serif).weight(.semibold)).foregroundStyle(Color.suitRed)
-                VStack(spacing: 2) {
-                    Text(outcome.bidderLine)
-                    Text(outcome.defenderLine)
+            VStack(spacing: 10) {
+                // The calm result (R01, R02): made or not, who bid, trump, and what it did to the score.
+                HStack(spacing: 14) {
+                    if let trump = match.hand.trump {
+                        Text(trump.glyph).font(.system(size: 56))
+                            .foregroundStyle(trump.isRed ? Color.suitRed : .black)
+                            .accessibilityLabel("\(trump.rawValue) trump")
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(outcome.headline).font(.system(.title2, design: .serif).weight(.semibold))
+                        Text("\(names[summary.bidder]) bid \(summary.isNineAndOut ? "9 and out" : String(summary.bid))")
+                            .font(.subheadline).opacity(0.75)
+                    }
+                    Spacer(minLength: 0)
                 }
-                .font(.footnote).multilineTextAlignment(.center).opacity(0.9)
                 .accessibilityElement(children: .combine)
+                HStack(spacing: 12) {
+                    score(team: 0, summary: summary)
+                    score(team: 1, summary: summary)
+                }
                 Divider().overlay(.black.opacity(0.15)).padding(.vertical, 2)
-                
-                DisclosureGroup("Points and scoring") {
+                // Everything else waits in Review hand (R03, R04).
+                DisclosureGroup("Review hand") {
                     VStack(spacing: 8) {
+                        Text(outcome.bidderLine).font(.caption)
+                        Text(outcome.defenderLine).font(.caption)
                         Text("HAND POINTS  \(summary.result.points[0]) – \(summary.result.points[1])").font(.headline)
                         row("High", team: summary.result.highTeam)
                         row("Low", team: summary.result.lowTeam)
@@ -35,21 +48,9 @@ struct HandSummaryView: View {
                         ForEach(outcome.notes, id: \.self) { note in
                             Text(note).font(.caption).opacity(0.75).multilineTextAlignment(.center)
                         }
-                    }.padding(.top, 4)
-                }.tint(.gold)
-                
-                if let review {
-                    Divider().overlay(.black.opacity(0.15)).padding(.vertical, 2)
-                    DisclosureGroup("What happened in the tricks (\(review.tricks.count))") {
-                        if coaching {
-                            let (agreed, total) = review.agreement(forSeat: 0)
-                            Text("Matched suggested plays: \(agreed) of \(total). Standard's choice is a recommendation, not proof that another legal play was wrong.")
-                                .font(.caption).opacity(0.8).multilineTextAlignment(.leading)
-                                .padding(.bottom, 4)
-                        }
-                        VStack(spacing: 4) {
+                        if let review {
                             ForEach(review.tricks, id: \.number) { trick in
-                                DisclosureGroup("Trick \(trick.number) · \(names[trick.winner]) took it") {
+                                DisclosureGroup("Hand \(trick.number) · \(names[trick.winner]) took it") {
                                     VStack(alignment: .leading, spacing: 8) {
                                         ForEach(trick.plays, id: \.play.card) { reviewPlay in
                                             playRow(reviewPlay)
@@ -60,19 +61,34 @@ struct HandSummaryView: View {
                                 }.tint(.black.opacity(0.7)).font(.subheadline)
                             }
                         }
-                    }.tint(.gold)
-                }
+                    }.padding(.top, 4)
+                }.tint(Theme.Wood.dark)
             }
             .padding(16)
             .foregroundStyle(.black)
         }
+    }
+
+    /// One team's score change and where it now stands.
+    private func score(team: Int, summary: HandSummary) -> some View {
+        let before = match.history.dropLast().last?.scores[team] ?? 0
+        let change = summary.scores[team] - before
+        return VStack(spacing: 2) {
+            Text("\(names[team]) + \(names[team + 2])").font(.caption).lineLimit(1).minimumScaleFactor(0.7).opacity(0.75)
+            Text(summary.scores[team], format: .number).font(.system(.title, design: .serif).weight(.semibold)).monospacedDigit()
+            Text(change >= 0 ? "+\(change)" : "\(change)").font(.subheadline.weight(.semibold)).monospacedDigit().opacity(0.75)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.Wood.dark.opacity(0.35), lineWidth: 1))
+        .accessibilityElement(children: .combine)
     }
     
     private func row(_ name: String, team: Int?) -> some View {
         HStack {
             Text(name)
             Spacer()
-            Text(team.map { $0 == 0 ? "Your team" : "\(names[1]) + \(names[3])" } ?? "Out of play")
+            Text(team.map { "\(names[$0]) + \(names[$0 + 2])" } ?? "Out of play")
         }.font(.caption)
     }
     

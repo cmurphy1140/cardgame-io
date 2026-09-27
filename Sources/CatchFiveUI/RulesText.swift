@@ -15,7 +15,7 @@ public enum RulesText {
             "Deal six cards each. Bidding starts left of dealer and ends with dealer. Minimum 2, maximum normal bid 9. Non-dealers must raise; dealer may match the highest bid and must bid 2 if everyone passes. Bid winner chooses trump. Discard all non-trumps and replenish each hand to six. Undealt cards remain out of play, including scoring cards.",
         ]),
         Section(title: "Play", paragraphs: [
-            "Bid winner leads any suit. Players must follow suit if able; otherwise any card is legal. Highest trump wins, otherwise highest card of the led suit. Trick winner leads next.",
+            "Bid winner leads any suit. Players must follow suit if able; otherwise any card is legal. Highest trump wins, otherwise highest card of the led suit. Hand winner leads next.",
         ]),
         Section(title: "Scoring", paragraphs: [
             "Points are awarded to capturing teams: highest trump played (1), lowest trump played (1), trump Jack (1), trump Five (5). High/Low are relative to cards actually played, not necessarily Ace/2. Missing Jack/Five contribute no points.",
@@ -30,9 +30,9 @@ public enum RulesText {
 
     /// How the screen presents the rules; not part of the rules document.
     public static let readingTheTable: [String] = [
-        "Scores for both partnerships sit at the top, with the trump suit and the current contract between them.",
+        "Scores for both partnerships sit at the top, with the trump suit and the current bid between them.",
         "During the auction each seat's tile shows its bid or pass. After trump is named, the bidder's tile says so and the others show cards left.",
-        "Cards you cannot legally play are dimmed. The last trick stays on the table, with the winning card ringed, until the next lead.",
+        "Cards you cannot legally play are dimmed. The last hand stays on the table, with the winning card ringed, until the next lead.",
         "Tap Hint on your turn to see what the computer strategy would do and why. Tap any played card to see why that seat played it.",
         "The gear opens settings: difficulty, play speed, seat names and haptics.",
     ]

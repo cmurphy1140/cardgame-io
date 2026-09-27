@@ -13,7 +13,7 @@ struct IntroView: View {
         ("Deal", "Six cards each. You and the player across from you are partners.", "rectangle.stack"),
         ("Bid", "Promise how many of the nine points your team will take, 2 to 9. Highest bid names trump.", "hand.raised"),
         ("Trump", "Non-trumps go back and you draw up to six. Trump beats every other suit.", "suit.heart.fill"),
-        ("Tricks", "Follow suit if you can. Highest trump wins, otherwise the highest card of the suit led.", "square.stack.3d.up"),
+        ("Hands", "Follow suit if you can. Highest trump wins, otherwise the highest card of the suit led.", "square.stack.3d.up"),
         ("Score", "High, Low, Jack and Game are a point each; the trump Five is worth five. First team to 25 wins.", "star"),
     ]
 

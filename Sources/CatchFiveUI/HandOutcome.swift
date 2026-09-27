@@ -24,7 +24,7 @@ struct HandOutcome: Equatable {
             bidderLine = "\(team(bidderTeam)) bid 9 and out · captured \(made ? "all 9" : "\(captured) of 9") · match \(made ? "won" : "lost")"
             defenderLine = "\(team(defenders)) captured \(points[defenders]) · scores unchanged"
         } else {
-            headline = captured >= bid ? "Contract made" : "Contract set"
+            headline = captured >= bid ? "Bid made" : "Bid not made"
             bidderLine = "\(team(bidderTeam)) bid \(bid) · captured \(captured) · score \(before[bidderTeam]) → \(after[bidderTeam])"
             defenderLine = "\(team(defenders)) captured \(points[defenders]) · score \(before[defenders]) → \(after[defenders])"
         }

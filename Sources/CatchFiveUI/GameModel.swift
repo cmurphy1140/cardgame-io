@@ -123,7 +123,7 @@ public final class GameModel: ObservableObject {
         let phase: String = switch match.hand.phase {
         case .bidding: "bidding"
         case .choosingTrump: "choosing trump"
-        case .playing: "trick \(match.hand.completedTricks.count + 1)"
+        case .playing: "playing"
         case .finished: "hand scored"
         }
         return "Hand \(match.handNumber) · Your team \(match.scores[0]), their team \(match.scores[1]) · \(phase)"
@@ -224,7 +224,7 @@ public final class GameModel: ObservableObject {
     /// VoiceOver wording for a played card: "West played the ten of hearts".
     public func spokenDescription(of play: Play, winner: Int? = nil) -> String {
         let base = "\(seatNames[play.seat]) played the \(play.card.name)"
-        return winner == play.seat ? base + " and took the trick" : base
+        return winner == play.seat ? base + " and took the hand" : base
     }
 
     /// VoiceOver value for a card in the human's hand.
