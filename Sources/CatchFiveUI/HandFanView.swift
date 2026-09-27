@@ -43,16 +43,10 @@ struct HandFanView: View {
             .frame(maxWidth: .infinity, alignment: .bottom)
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
-            if !cards.isEmpty {
-                HStack(spacing: 8) {
-                    Text("YOUR HAND").opacity(0.7)
-                    if model.match.hand.auction.dealer == model.viewerSeat {
-                        Text("·").opacity(0.4)
-                        Text("DEALER").foregroundStyle(.gold)
-                    }
-                }
-                .font(.caption2.monospaced()).tracking(1)
-                .accessibilityElement(children: .combine)
+            // No "Your hand" caption (T05); the dealer badge stays when it is yours.
+            if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
+                Text("DEALER").foregroundStyle(.gold)
+                    .font(.caption2.monospaced()).tracking(1)
             }
         }
         .frame(maxWidth: .infinity)

@@ -190,7 +190,9 @@ struct TableSurface: View {
                 } else {
                     Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
                 }
-                statusText.font(.title3.weight(.medium)).multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                // Your turn is the loudest line on the table (T05); everything else stays at a calm weight.
+                statusText.font(model.isHumanTurn ? .title2.weight(.bold) : .title3.weight(.medium))
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .accessibilityFocused(statusFocus)
                 if model.isHumanTurn, hand.phase != .finished, coaching {
@@ -228,18 +230,15 @@ struct TableSurface: View {
         case .choosingTrump:
             return model.isHumanTurn ? Text("Choose trump").foregroundStyle(.gold) : Text("\(actor) is choosing trump")
         case .playing:
-            if model.isHumanTurn, let suit = model.suitToFollow {
-                // The shaded cards are the ones that cannot follow; say why in the same breath.
-                return Text("Your turn").foregroundStyle(.gold) + Text(" · follow \(suit.rawValue)")
-            }
-            return model.isHumanTurn ? Text("Your turn").foregroundStyle(.gold) : Text("\(actor) is thinking")
+            // No follow-suit line (T06), and no "is thinking": the dots above that seat's tile say it (T04).
+            return model.isHumanTurn ? Text("Your turn").foregroundStyle(.gold) : Text(" ")
         case .finished:
             return Text("Hand complete")
         }
     }
 
-    /// One line under the status: the undo toast after your action (with any discard notice), else a
-    /// hint reason or explanation, else the notice, else your standing call in the auction, else a
+    /// One line under the status: a refusal, else a hint reason or explanation, else the notice (no undo
+    /// toast on the play surface, T07), else your standing call in the auction, else a
     /// placeholder in play. Reserves no space in the auction while the controls need it.
     @ViewBuilder private var commentary: some View {
         ZStack {
@@ -247,15 +246,6 @@ struct TableSurface: View {
                 // A refused tap answers first: it is the freshest thing the player did.
                 Text(refusal).font(.footnote).multilineTextAlignment(.center).foregroundStyle(.ivory.opacity(0.9))
                     .padding(.horizontal, 8)
-            } else if let toast, model.canUndo {
-                HStack(spacing: 12) {
-                    Text([model.describe(toast), model.notice].compactMap { $0 }.joined(separator: " · ")).font(.footnote).lineLimit(1)
-                    Button("Undo") { model.undo() }.font(.footnote.weight(.semibold)).tint(.ivory)
-                        .accessibilityHint("Takes back your last action and the replies after it")
-                }
-                .padding(.horizontal, 14).padding(.vertical, 6)
-                .background(Theme.Wood.inlay.opacity(0.85), in: Capsule())
-                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             } else if let hint = model.hint {
                 // One complete recommendation on one line; the reason waits behind Why?, so a long hint
                 // can never push the controls above it off the screen (spec R22).
@@ -429,6 +419,7 @@ struct SeatView: View {
 
     private var hand: Hand { model.match.hand }
     private var active: Bool { hand.nextSeat == seat && model.match.winner == nil }
+    private var thinking: Bool { active && !model.isHuman(seat) && hand.phase != .finished }
 
     /// A face over a name over one line of badges: the call in the auction, a hint of a hand in play, and
     /// DEALER or BIDDER when they apply. Everything a seat says sits under its own portrait, so nothing
@@ -451,6 +442,10 @@ struct SeatView: View {
                     }
                 }
                 .padding(.vertical, Theme.Table.activeRingGap)
+                // A computer deciding shows calm dots above its tile instead of a status line (T04).
+                .overlay(alignment: .top) {
+                    if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
+                }
             Text(model.seatNames[seat]).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
             badges
         }
@@ -490,6 +485,30 @@ struct SeatView: View {
     }
 
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
+}
+
+/// Three dots that brighten in turn: a seat is deciding. Still under Reduce Motion.
+struct ThinkingDots: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { index in
+                if reduceMotion {
+                    dot.opacity(0.8)
+                } else {
+                    dot.phaseAnimator([0, 1, 2]) { view, phase in
+                        view.opacity(phase == index ? 1 : 0.35)
+                    } animation: { _ in .easeInOut(duration: 0.4) }
+                }
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(Theme.Wood.inlay.opacity(0.85), in: Capsule())
+        .accessibilityHidden(true)
+    }
+
+    private var dot: some View { Circle().fill(.ivory).frame(width: 6, height: 6) }
 }
 
 extension Suit {
