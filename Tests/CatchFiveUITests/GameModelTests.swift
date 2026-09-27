@@ -1198,3 +1198,10 @@ import Testing
     let tight = HandLayout.baselineStrip(count: 6, cardWidth: 58, available: 345)
     #expect(5 * tight + 58 <= 345 && tight > 0)
 }
+
+@Test func biddingOffersOnlyLegalBidsAndNamesTheLowest() {
+    // B03: bids the auction has passed leave the grid; B04: the lowest one left is the one to name.
+    let options = TableSurface.bidOptions(allows: { $0 >= 6 })
+    #expect(options == [6, 7, 8, 9])
+    #expect(TableSurface.bidOptions(allows: { _ in false }).isEmpty)
+}

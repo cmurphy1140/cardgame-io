@@ -218,7 +218,8 @@ struct TableSurface: View {
         switch hand.phase {
         case .bidding:
             let bid = hand.auction.isNineAndOut ? "9 and out" : hand.auction.highestBid.map(String.init) ?? "none"
-            return model.isHumanTurn ? Text("Your bid").foregroundStyle(.gold) + Text(" · high bid \(bid)")
+            // On your bid the auction chips carry the high bid (B04), so the line only says whose turn it is.
+            return model.isHumanTurn ? Text("Your bid").foregroundStyle(.gold)
                 : Text("\(actor) is bidding · high bid \(bid)")
         case .choosingTrump:
             return model.isHumanTurn ? Text("Choose trump").foregroundStyle(.gold) : Text("\(actor) is choosing trump")
@@ -291,28 +292,74 @@ struct TableSurface: View {
 
     // MARK: Phase controls
 
+    /// The bids still open to the seat to act, lowest first; bids the auction has passed are not offered (B03).
+    nonisolated static func bidOptions(allows: (Int) -> Bool) -> [Int] {
+        HouseRules.bidRange.filter(allows)
+    }
+
+    /// The auction at a glance (B04, B05): the standing bid and who holds it, the lowest bid left, only the
+    /// bids still legal, Pass as the one wide secondary action, and 9 and out tucked under the 9.
     private var bidding: some View {
-        VStack(spacing: Theme.Table.auctionButtonSpacing) {
+        let options = Self.bidOptions { model.allows(.bid($0)) }
+        let nineAndOut = model.allows(.nineAndOut)
+        return VStack(spacing: Theme.Table.auctionButtonSpacing) {
             if let context = model.auctionContext {
                 Text(context).font(.footnote).opacity(0.85).multilineTextAlignment(.center).padding(.bottom, 2)
             }
+            auctionState(lowest: options.first)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Theme.Table.auctionButtonSpacing), count: 4),
-                      spacing: Theme.Table.auctionButtonSpacing) {
-                ForEach(HouseRules.bidRange, id: \.self) { bid in
+                      alignment: .center, spacing: Theme.Table.auctionButtonSpacing) {
+                ForEach(options, id: \.self) { bid in
                     actionButton(String(bid), action: .bid(bid), fill: .ivory,
                                  font: .title2.weight(.bold), labelColor: .suitRed)
+                        // The lowest legal bid wears the one light-brown edge (B05).
+                        .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
+                            .stroke(Theme.Wood.light, lineWidth: bid == options.first ? 3 : 0))
+                        // 9 and out hangs from the 9's lower edge, taking no row of its own.
+                        .overlay(alignment: .bottom) {
+                            if bid == HouseRules.bidRange.upperBound, nineAndOut { nineAndOutButton.offset(y: 11) }
+                        }
+                        .zIndex(bid == HouseRules.bidRange.upperBound ? 1 : 0)
                 }
+                if nineAndOut, !options.contains(HouseRules.bidRange.upperBound) { nineAndOutButton }
             }
-            HStack(spacing: Theme.Table.auctionButtonSpacing) {
-                actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
-                             font: .body.weight(.semibold), labelColor: .ivory)
-                Button { onNineAndOut() } label: { Text("9 and out").font(.body.weight(.semibold)) }
-                    .buttonStyle(PillButtonStyle(fill: Theme.Wood.inlay, labelColor: .ivory))
-                    .disabled(!model.allows(.nineAndOut))
-                    .accessibilityHint(model.allows(.nineAndOut) ? "Take all nine points or lose the match; asks you to confirm"
-                                       : model.validationMessage(for: .nineAndOut) ?? "")
-            }
+            actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
+                         font: .body.weight(.semibold), labelColor: .ivory)
         }
+        .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: options)
+    }
+
+    /// The rare bid, small and set apart under the 9 it belongs to (B02).
+    private var nineAndOutButton: some View {
+        Button { onNineAndOut() } label: {
+            Text("9 and out").font(.caption.weight(.semibold)).foregroundStyle(.ivory)
+                .lineLimit(1).fixedSize()
+                .padding(.horizontal, 10).padding(.vertical, 3)
+                .background(Theme.Wood.dark, in: Capsule())
+                .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Take all nine points or lose the match; asks you to confirm")
+    }
+
+    /// High bid and its holder, then the lowest bid you can make, in light browns and outlines (B04, B05).
+    private func auctionState(lowest: Int?) -> some View {
+        let auction = hand.auction
+        let high: String = if auction.isNineAndOut { "9 and out" } else { auction.highestBid.map(String.init) ?? "none" }
+        let holder = auction.winner.map { model.seatNames[$0] }
+        return HStack(spacing: 8) {
+            chip(holder.map { "High \(high) · \(String($0))" } ?? "No bid yet", filled: true)
+            if let lowest { chip("Lowest \(lowest)", filled: false) }
+        }
+        .font(.footnote.weight(.semibold))
+        .accessibilityElement(children: .combine)
+    }
+
+    private func chip(_ text: String, filled: Bool) -> some View {
+        Text(text).lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.horizontal, 10).padding(.vertical, 3)
+            .background(filled ? Theme.Wood.dark.opacity(0.8) : .clear, in: Capsule())
+            .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1))
     }
 
     /// Four suit pills, each named for newcomers and captioned with what choosing it keeps and draws.
