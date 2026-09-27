@@ -11,13 +11,28 @@ public struct RootView: View {
     @State private var screen: Screen
     /// The pause card over the table, opened from the table's menu.
     @State private var showWelcome = false
+    /// The menu opens with the Solo or Pass and play question up (the `picker` launch stage).
+    private let choosingMode: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
 
-    public init(model: GameModel) {
+    /// `stage` opens a named state directly, for headless screenshots: `picker` (the New match question),
+    /// `curtain` (a fresh pass-and-play match waiting for its first player) or `seat` (that player's table).
+    public init(model: GameModel, stage: String? = nil) {
+        if stage == "curtain" || stage == "seat" {
+            model.newGame(mode: .passAndPlay)
+            model.dismissDealerDraw()
+            if stage == "seat" { model.ready() }
+        }
         _model = StateObject(wrappedValue: model)
         _tutorial = StateObject(wrappedValue: model.makeTutorial())
-        _screen = State(initialValue: Self.initialScreen(for: model.settings))
+        let screen: Screen = switch stage {
+        case "picker": .menu
+        case "curtain", "seat": .table
+        default: Self.initialScreen(for: model.settings)
+        }
+        _screen = State(initialValue: screen)
+        choosingMode = stage == "picker"
     }
 
     /// Login until a name is saved; the intro until it has been seen or skipped; then the main menu, never
@@ -45,7 +60,8 @@ public struct RootView: View {
             case .intro:
                 IntroView(model: model, tutorial: tutorial) { model.markRulesSeen(); show(.table) }.transition(.opacity)
             case .menu:
-                MainMenuView(model: model, tutorial: tutorial) { showWelcome = false; show(.table) }.transition(.opacity)
+                MainMenuView(model: model, tutorial: tutorial, onPlay: { showWelcome = false; show(.table) }, choosingMode: choosingMode)
+                    .transition(.opacity)
             case .table:
                 TableView(model: model, tutorial: tutorial, covered: showWelcome) { withAnimation(motion) { showWelcome = true } }
                     .transition(.opacity)

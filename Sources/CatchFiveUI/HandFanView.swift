@@ -46,7 +46,7 @@ struct HandFanView: View {
             if !cards.isEmpty {
                 HStack(spacing: 8) {
                     Text("YOUR HAND").opacity(0.7)
-                    if model.match.hand.auction.dealer == 0 {
+                    if model.match.hand.auction.dealer == model.viewerSeat {
                         Text("·").opacity(0.4)
                         Text("DEALER").foregroundStyle(.gold)
                     }

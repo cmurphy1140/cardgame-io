@@ -278,7 +278,7 @@ struct TableSurface: View {
                     .padding(.horizontal, 8)
             } else if let notice = model.notice {
                 Text(notice).font(.footnote).opacity(0.85)
-            } else if hand.phase == .bidding, !model.isHumanTurn, let call = model.latestCall(for: 0) {
+            } else if hand.phase == .bidding, !model.isHumanTurn, let seat = model.viewerSeat, let call = model.latestCall(for: seat) {
                 Text("You: \(call)").font(.footnote).opacity(0.85)
             } else if !inAuction {
                 Text(pile.plays.isEmpty || !coaching ? " " : (reopenedTrick != nil ? "Tap a card to see why it was played" : "Tap a card on the table to see why it was played"))

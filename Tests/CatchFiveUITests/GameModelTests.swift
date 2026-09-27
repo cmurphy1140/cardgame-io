@@ -1125,3 +1125,59 @@ import Testing
     #expect(Set(order) == Set(Suit.allCases) && order.count == 4)
     for pair in zip(order, order.dropFirst()) { #expect(pair.0.isRed != pair.1.isRed) }
 }
+
+// MARK: Pass and play
+
+/// Plays a whole pass-and-play match through the curtain: every turn is a Ready tap and then the hint's
+/// action from the seat now holding the phone. Asking the computer to step must never move anything.
+@MainActor @Test func passAndPlayNeverGeneratesAComputerMove() throws {
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay)
+    var turns = 0
+    while model.match.winner == nil, turns < 2_000 {
+        guard let seat = model.match.hand.nextSeat else { model.nextHand(); continue }
+        let before = model.match.actionCount
+        model.stepComputer()
+        #expect(model.match.actionCount == before, "a computer moved for seat \(seat)")
+        // The same player keeps the phone when they act twice running (winning the bid then naming trump,
+        // taking a trick then leading); otherwise the curtain is up and nothing of theirs shows yet.
+        if model.revealedSeat != seat {
+            #expect(model.curtainSeat == seat && !model.isHumanTurn && model.humanCards.isEmpty)
+            model.ready()
+        }
+        #expect(model.isHumanTurn && model.curtainSeat == nil)
+        let view = try PlayerView(match: model.match, seat: seat)
+        model.send(try #require(ComputerPlayer.decide(view, difficulty: .standard)))
+        #expect(model.match.actionCount == before + 1)
+        turns += 1
+    }
+    #expect(model.match.winner != nil)
+}
+
+@MainActor @Test func passAndPlayShowsOnlyTheSeatThatPressedReady() throws {
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    let model = GameModel(match: try Match(deck: deck, dealer: 3), mode: .passAndPlay)
+    #expect(model.curtainSeat == 0 && model.humanCards.isEmpty)
+    model.ready()
+    #expect(Set(model.humanCards) == Set(model.match.hand.hands[0]))
+    model.send(.bid(nil))
+    // The phone passes: seat 0's cards are gone before seat 1 says Ready.
+    #expect(model.curtainSeat == 1 && model.humanCards.isEmpty && !model.isHumanTurn)
+    model.ready()
+    #expect(Set(model.humanCards) == Set(model.match.hand.hands[1]))
+    #expect(model.allows(.bid(nil)) && !model.canUndo)
+}
+
+@MainActor @Test func passAndPlayModeIsSavedWithTheGame() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let model = GameModel.loadDefault(in: directory)
+    model.newGame(mode: .passAndPlay)
+    model.dismissDealerDraw()
+    model.ready()
+    model.send(.bid(nil))
+    let restored = GameModel.loadDefault(in: directory)
+    #expect(restored.mode == .passAndPlay && restored.match.actionCount == 1)
+    #expect(restored.curtainSeat == restored.match.hand.nextSeat && restored.humanCards.isEmpty)
+    restored.newGame(mode: .solo)
+    #expect(GameModel.loadDefault(in: directory).mode == .solo)
+}

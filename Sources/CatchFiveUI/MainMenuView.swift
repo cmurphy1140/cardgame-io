@@ -11,6 +11,8 @@ struct MainMenuView: View {
     @ObservedObject var tutorial: TutorialModel
     /// Continue or a fresh deal: the table takes over.
     let onPlay: () -> Void
+    /// Opens with the Solo or Pass and play question already up (the screenshot launch stage).
+    var choosingMode = false
     @State private var confirmNewMatch = false
     @State private var showSettings = false
     @State private var showTutorial = false
@@ -67,13 +69,12 @@ struct MainMenuView: View {
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.ivory.opacity(0.14)))
 
                 VStack(spacing: 10) {
+                    // New match always asks Solo or Pass and play; the same question warns when a match is in progress.
                     if model.match.winner == nil {
                         MenuButtons.prominent("Continue game", action: onPlay)
-                        MenuButtons.plain("New match") {
-                            if model.matchInProgress { confirmNewMatch = true } else { model.newGame(); onPlay() }
-                        }
+                        MenuButtons.plain("New match") { confirmNewMatch = true }
                     } else {
-                        MenuButtons.prominent("New match") { model.newGame(); onPlay() }
+                        MenuButtons.prominent("New match") { confirmNewMatch = true }
                     }
                     MenuButtons.plain("How to play") { showTutorial = true }
                 }
@@ -104,10 +105,12 @@ struct MainMenuView: View {
         .fullScreenCoverOrSheet(isPresented: $showExplainer) { ExplainerView { showExplainer = false } }
         // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
         // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
-        .alert("Start over?", isPresented: $confirmNewMatch) {
-            Button("Start new match", role: .destructive) { model.newGame(); onPlay() }
+        .alert(model.matchInProgress ? "Start over?" : "New match", isPresented: $confirmNewMatch) {
+            Button("Solo", role: model.matchInProgress ? .destructive : nil) { model.newGame(mode: .solo); onPlay() }
+            Button("Pass and play", role: model.matchInProgress ? .destructive : nil) { model.newGame(mode: .passAndPlay); onPlay() }
             Button("Cancel", role: .cancel) {}
-        } message: { Text("This replaces your saved game.") }
+        } message: { Text((model.matchInProgress ? "This replaces your saved game. " : "") + PlayMode.choiceMessage) }
+        .onAppear { if choosingMode { confirmNewMatch = true } }
     }
 }
 
