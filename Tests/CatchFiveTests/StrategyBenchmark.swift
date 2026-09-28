@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import CatchFive
 
@@ -87,11 +88,15 @@ struct TrailingContracts {
 
 /// D71 is a character rule, not a strength tune: this records what bidding one step bolder when down 10
 /// does against the same strategy without it, and holds nothing to a bar beyond the harness being whole.
+/// By default it plays a 40-match sample so `swift test` stays quick; `CATCH5_FULL_BENCHMARK=1` plays the
+/// 2400 matches D71 reports.
 @Test func boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt() throws {
+    let full = ProcessInfo.processInfo.environment["CATCH5_FULL_BENCHMARK"] == "1"
+    let ranges = full ? [1..<601, 601..<1201] : [1..<21]
     let off: Strategy = { ComputerPlayer.decide(withoutScores($0)) }
     var lines = ["D71, rule on vs off, mirrored:"]
     var total = BenchmarkResult(), onTrailing = TrailingContracts(), offTrailing = TrailingContracts()
-    for seeds in [1..<601, 601..<1201] {
+    for seeds in ranges {
         var result = BenchmarkResult(), on = TrailingContracts(), without = TrailingContracts()
         for seed in seeds {
             let first = try playSeededMatch(seed: seed, teamZero: ComputerPlayer.decide, teamOne: off)
@@ -109,6 +114,6 @@ struct TrailingContracts {
     }
     lines.append("  all: \(total.matches) matches, on wins \(total.candidateWinRate), margin \(total.marginPerMatch); down 10+ made: on \(onTrailing.rate) of \(onTrailing.bid), off \(offTrailing.rate) of \(offTrailing.bid)")
     print(lines.joined(separator: "\n"))
-    #expect(total.matches == 2400)
+    #expect(total.matches == ranges.reduce(0) { $0 + 2 * $1.count })
     #expect(onTrailing.bid > 0 && offTrailing.bid > 0)
 }
