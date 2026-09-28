@@ -87,11 +87,21 @@ public struct TableView: View {
                     .transition(.opacity)
                 }
             }
+            // The one bid that can end the match on its own: the partner asks, then the engine judges it at that moment (D70).
+            .overlay {
+                if confirmNineAndOut {
+                    NineAndOutConfirm(name: NineAndOutConfirm.partnerName(model), portrait: portraits[model.partnerSeat],
+                                      onSure: { confirmNineAndOut = false; model.send(.nineAndOut) },
+                                      onCancel: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = false } })
+                        .transition(.opacity)
+                }
+            }
             .overlay { celebration }
             .transformEnvironment(\.dynamicTypeSize) { $0 = $0.boosted(by: Theme.textBoostSteps) }
             .onAppear {
                 // The screenshot stages open on a match already won, so nothing announced the win.
                 if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
+                if ScreenshotStage.name == "confirm9" { confirmNineAndOut = true }
             }
     }
 
@@ -149,7 +159,7 @@ public struct TableView: View {
             TableSurface(model: model, namespace: cards, collapsedTricks: collapsedTricks, reopenedTrick: reopenedTrick, toast: toast,
                          onReopenTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = model.match.hand.completedTricks.count } },
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
-                         onNineAndOut: { confirmNineAndOut = true },
+                         onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
                          holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
@@ -241,11 +251,6 @@ public struct TableView: View {
                 Button("Retry") { model.retrySave() }
                 Button("Not now", role: .cancel) { model.saveError = nil }
             } message: { Text(model.saveError ?? "") }
-            // The one bid that can end the match on its own: confirm it, then let the engine judge it at that moment.
-            .confirmationDialog("Bid 9 and out?", isPresented: $confirmNineAndOut, titleVisibility: .visible) {
-                Button("Bid 9 and out", role: .destructive) { model.send(.nineAndOut) }
-                Button("Cancel", role: .cancel) {}
-            } message: { Text("Take all nine points to win the match. Take fewer and you lose it, whatever the score.") }
             // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
             // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
             .alert("Start over?", isPresented: $confirmNewGame) {

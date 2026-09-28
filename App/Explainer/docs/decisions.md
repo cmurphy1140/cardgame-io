@@ -583,3 +583,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Going straight to the match-over card, as before.
 
 **Why:** Winning a match, and above all making 9 and out, is the moment the family talks about afterwards; the table should mark it. The existing match-won cue (D-series haptics, `TableFeedback`) still fires when the match is won, so a win that cascades straight away feels two success taps close together.
+
+## D70. The partner asks before 9 and out (2026-09-27)
+
+**Chosen:** The 9-and-out pill opens `NineAndOutConfirm`, a card over the dimmed table in the partner's voice: the portrait and name of the phone holder's partner (`GameModel.partnerSeat`, across from the bottom seat, so in pass and play it is that seat's partner), the line "Are you sure? Take all nine and we win the match. Miss one and we lose it.", a gold "I'm sure" that sends the bid, and "Not this time", always present; a tap on the dim also backs out. The card keeps `confirmNineAndOut`, so the table stays paused while it is up, and the engine still judges the bid when it is sent. The label on the gold button is the header's dark brown, not black, under the palette rule. It replaces the system `confirmationDialog` with its red destructive button.
+
+**Over:** The confirmation dialog, which on iOS 26 anchors to its button as a popover and drops its Cancel button (D57), and whose red button put the suit colour on a control.
+
+**Why:** At a real table it is the partner who says "are you sure?"; the card makes that the voice of the check and keeps an explicit way out on every system.

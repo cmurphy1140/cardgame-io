@@ -108,3 +108,16 @@ import Testing
     }
     #expect(model.match.hand.phase == .finished)
 }
+
+@MainActor @Test func thePartnerAsksBeforeNineAndOutInTheirOwnName() throws {
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect(solo.partnerSeat == 2)
+    #expect(NineAndOutConfirm.partnerName(solo) == solo.seatNames[2])
+    #expect(NineAndOutConfirm.line == "Are you sure? Take all nine and we win the match. Miss one and we lose it.")
+    // Pass and play: the partner of whoever holds the phone.
+    let shared = GameModel(match: try Match(deck: GameModel.deck(), dealer: 0), mode: .passAndPlay)
+    shared.ready()
+    #expect(shared.viewerSeat == 1)
+    #expect(shared.partnerSeat == 3)
+    #expect(NineAndOutConfirm.partnerName(shared) == shared.seatNames[3])
+}

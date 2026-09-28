@@ -167,6 +167,9 @@ public final class GameModel: ObservableObject {
     /// The pair sitting as `team`: "Cheryl + Connor".
     public func teamNames(_ team: Int) -> String { "\(seatNames[team]) + \(seatNames[team + 2])" }
 
+    /// The phone holder's partner, across the table: the seat that asks before a 9-and-out bid (D70).
+    public var partnerSeat: Int { (bottomSeat + 2) % 4 }
+
     /// The team the score bar leads with as "Us": the phone holder's.
     public var ourTeam: Int { bottomSeat % 2 }
 
