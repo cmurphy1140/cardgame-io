@@ -85,6 +85,7 @@ struct TableSurface: View {
                                 TrumpTile(trump: trump, tally: model.trumpTally, width: cornerWidth,
                                           onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
                                     .modifier(CornerArrival())
+                                    .modifier(DemoTap(active: model.tallyDemo == .trump))
                             }
                         }
                         .accessibilitySortPriority(24)
@@ -96,6 +97,7 @@ struct TableSurface: View {
                     HStack(alignment: .center) {
                         // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
                         SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
+                            .modifier(DemoTap(active: model.tallyDemo == .face(seat: model.seat(at: 1))))
                             // Both side tiles share a row and a height, so the left one's lower edge serves both rails.
                             .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { onSideSeats($0) }
                             .overlay(alignment: .bottomTrailing) {
@@ -163,6 +165,16 @@ struct TableSurface: View {
             .opacity(hand.phase == .finished ? 0.12 : 1)
             .accessibilityHidden(hand.phase == .finished)
             .overlay { if hand.phase == .finished, !holdsResult { finishedCard } }
+            // The one-time demo of the two taps says what each pulse means, in the middle of the table (N61).
+            .overlay {
+                if let demo = model.tallyDemo {
+                    TallyDemoCaption(text: demo.caption)
+                        .padding(.horizontal, Theme.Table.railClearance)
+                        .onTapGesture { withAnimation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay) { model.advanceTallyDemo() } }
+                        .transition(.opacity)
+                        .id(demo.caption)
+                }
+            }
         }
         .accessibilityElement(children: .contain)
     }
@@ -436,34 +448,44 @@ struct TableSurface: View {
         HouseRules.bidRange.map { BidPill(bid: $0, enabled: allows($0)) }
     }
 
+    enum AuctionRow: Hashable { case numbers, nineAndOut, pass }
+
+    /// The auction's rows, top to bottom: the numbers, 9 and out on its own line under them when it may be bid
+    /// (so it covers no number), then Pass.
+    nonisolated static func auctionRows(nineAndOut: Bool) -> [AuctionRow] {
+        nineAndOut ? [.numbers, .nineAndOut, .pass] : [.numbers, .pass]
+    }
+
     /// The auction's controls (B05, N55): every number in one row, the lowest you may bid edged in light brown,
-    /// 9 and out tucked under the 9, and Pass as the one wide secondary action. The seats' boxes carry who bid
-    /// what, so there are no High and Lowest chips.
+    /// 9 and out on a short line of its own under the 9, and Pass as the one wide secondary action. The seats' boxes
+    /// carry who bid what, so there are no High and Lowest chips.
     private var bidding: some View {
         let row = Self.bidRow { model.allows(.bid($0)) }
         let lowest = row.first(where: \.enabled)?.bid
-        let nineAndOut = model.allows(.nineAndOut)
         return VStack(spacing: Theme.Table.auctionButtonSpacing) {
             if let context = model.auctionContext {
                 Text(context).font(.footnote).opacity(0.85).multilineTextAlignment(.center).padding(.bottom, 2)
             }
-            HStack(spacing: Theme.Table.auctionButtonSpacing) {
-                ForEach(row, id: \.bid) { pill in
-                    actionButton(String(pill.bid), action: .bid(pill.bid), fill: .ivory,
-                                 font: .title2.weight(.bold), labelColor: .suitRed)
-                        .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
-                            .stroke(Theme.Wood.light, lineWidth: pill.bid == lowest ? 3 : 0))
-                        // 9 and out hangs from the 9's lower edge, flush with the row's end so it stays on screen.
-                        .overlay(alignment: .bottomTrailing) {
-                            if pill.bid == HouseRules.bidRange.upperBound, nineAndOut { nineAndOutButton.offset(y: 11) }
+            ForEach(Self.auctionRows(nineAndOut: model.allows(.nineAndOut)), id: \.self) { line in
+                switch line {
+                case .numbers:
+                    HStack(spacing: Theme.Table.auctionButtonSpacing) {
+                        ForEach(row, id: \.bid) { pill in
+                            actionButton(String(pill.bid), action: .bid(pill.bid), fill: .ivory,
+                                         font: .title2.weight(.bold), labelColor: .suitRed)
+                                .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
+                                    .stroke(Theme.Wood.light, lineWidth: pill.bid == lowest ? 3 : 0))
                         }
-                        .zIndex(pill.bid == HouseRules.bidRange.upperBound ? 1 : 0)
+                    }
+                    .dynamicTypeSize(...Theme.Card.maximumTypeSize)
+                case .nineAndOut:
+                    // Flush with the row's end, under the 9 it belongs to.
+                    HStack { Spacer(minLength: 0); nineAndOutButton }
+                case .pass:
+                    actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
+                                 font: .body.weight(.semibold), labelColor: .ivory)
                 }
             }
-            .dynamicTypeSize(...Theme.Card.maximumTypeSize)
-            actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
-                         font: .body.weight(.semibold), labelColor: .ivory)
-                .padding(.top, nineAndOut ? 8 : 0)
         }
         .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: row)
     }

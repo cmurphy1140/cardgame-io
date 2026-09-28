@@ -5,7 +5,7 @@ struct TablePause: Equatable, Hashable {
     var sceneActive = true
     /// The returning player's welcome card is over the table.
     var welcomeShown = false
-    /// Any sheet: settings, tutorial, review, scoreboard, statistics.
+    /// Any sheet or panel: settings, tutorial, review, a team's score panel (N62), statistics.
     var sheetShown = false
     /// A confirmation dialog or an alert is up.
     var dialogShown = false

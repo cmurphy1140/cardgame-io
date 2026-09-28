@@ -689,3 +689,27 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The score only in the header, or rails that move with every point taken during a hand.
 
 **Why:** Connor asked for it (N59): the race to 25 at a glance, from arm's length. `scoreRailsFillToTwentyFiveAndEmptyBelowZero` and `scoreRailsMoveOnlyWhenTheHandEnds` hold it.
+
+## D83. The score sits at the rails' feet, each opening its team's panel (2026-09-28)
+
+**Chosen:** Each team's score moves from the top of its green rail (D82) to its foot, on a light tan tab with a light brown edge in the table's bottom corner: US bottom-left, THEM bottom-right, the pairs' names in pass and play. The hand keeps a band under it (`Theme.Table.railFootRoom`, 50 pt, the dealer row when you deal) so the tabs sit clear of the cards. Tapping a tab raises that team's `ScorePanel` from the bottom over the table: its label and players, its total, the 25 points as dots filled in green up to it (`ScorePanel.dots(_:)`), and the hands so far as cards that page sideways, newest first, each with the bidder, made or set, the change and the running total (`ScorePanel.content(team:history:seatNames:)`). A tap outside or a swipe up or down closes it; play waits while it is open. The header keeps only the pause button (`ScoreBarView`); the space where the score was stays empty. The full Score page (`ScoreboardView`) is gone.
+
+**Over:** The score in the header opening a scrolling Score page with red dots.
+
+**Why:** Connor asked for it (N62): the score where the rails end, one team at a time, with nothing to scroll. `theHeaderCarriesNoScore` and `eachTeamsPanelShowsItsTotalDotsAndHands` hold it.
+
+## D84. The table shows its two taps once, the first time trump is named (2026-09-28)
+
+**Chosen:** The first time trump is named on an install, once nothing covers the table, the app shows the two hand-kept notes by itself (`TallyDemo`): the trump tile presses and releases as if tapped (`DemoTap`) under the big bold caption "Count trump as it falls", then the opponent on the phone holder's left does, under "Mark who's out of trump" (`TallyDemoCaption`, light tan with a light brown edge, in the middle of the table). Each step holds 2.8 s (`TallyDemo.stepSeconds`) or until the caption is tapped, and play waits meanwhile. It is only a show: no tally mark or badge is made. `Settings.hasSeenTallyDemo` (Codable, false by default and for older files) is saved when it starts, so it never shows again, even if cut short. Under Reduce Motion the captions come without the pulse. Screenshot stages leave it out except `demo`, which holds the first caption.
+
+**Over:** A tip in How to play, or captions that stay until dismissed.
+
+**Why:** Connor asked for it (N61): the tally and the out-of-trump badge are invisible until someone shows them. `theTallyDemoShowsOnceAndTheFlagPersists` and `theTallyDemoLeavesTheTallyAndBadgesAlone` hold it.
+
+## D85. 9 and out takes its own line under the bid row (2026-09-28)
+
+**Chosen:** When 9 and out may be bid, its small dark pill sits on a short line of its own between the numbers and Pass, flush right under the 9 (`TableSurface.auctionRows(nineAndOut:)`). The numbers stay one row across the screen.
+
+**Over:** The pill hanging from the 9's lower edge (D81), where it covered the bottom of the 8 and the 9.
+
+**Why:** Connor asked for it: no pill may cover a number. `nineAndOutTakesItsOwnLineUnderTheBidRow` holds the order.

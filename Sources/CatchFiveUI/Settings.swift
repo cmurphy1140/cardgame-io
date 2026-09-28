@@ -25,6 +25,8 @@ public struct Settings: Codable, Equatable, Sendable {
     /// The tip the card between the home screen and the table shows next, so each visit carries on where
     /// the last one stopped (D67). Any value is read modulo the number of tips.
     public var nextTip: Int
+    /// The table has shown, once, how the trump tally and the out-of-trump marks are tapped (N61).
+    public var hasSeenTallyDemo: Bool
 
     public static let defaultSeatNames = ["Cheryl", "JC", "Connor", "Diane"]
     /// The defaults before the cast existed; files still carrying them migrate on load.
@@ -52,7 +54,8 @@ public struct Settings: Codable, Equatable, Sendable {
     public init(playSpeed: PlaySpeed = .relaxed, seatNames: [String] = Settings.defaultSeatNames,
                 haptics: Bool = true, difficulty: Difficulty = .standard, hasSeenRules: Bool = false,
                 completedLessons: Set<Int> = [], playerName: String? = nil,
-                playerPortrait: Portrait = Cast.defaultPlayerPortrait, beginnerMode: Bool = true, nextTip: Int = 0) {
+                playerPortrait: Portrait = Cast.defaultPlayerPortrait, beginnerMode: Bool = true, nextTip: Int = 0,
+                hasSeenTallyDemo: Bool = false) {
         self.playSpeed = playSpeed
         self.seatNames = seatNames
         self.haptics = haptics
@@ -63,6 +66,7 @@ public struct Settings: Codable, Equatable, Sendable {
         self.playerPortrait = playerPortrait
         self.beginnerMode = beginnerMode
         self.nextTip = nextTip
+        self.hasSeenTallyDemo = hasSeenTallyDemo
     }
 
     // Missing keys fall back to defaults so an older settings file keeps loading.
@@ -80,6 +84,7 @@ public struct Settings: Codable, Equatable, Sendable {
         // A file from before the setting existed keeps the guidance it always had.
         beginnerMode = (try? container.decodeIfPresent(Bool.self, forKey: .beginnerMode)) ?? nil ?? true
         nextTip = (try? container.decodeIfPresent(Int.self, forKey: .nextTip)) ?? nil ?? 0
+        hasSeenTallyDemo = (try? container.decodeIfPresent(Bool.self, forKey: .hasSeenTallyDemo)) ?? nil ?? false
         let names = (try? container.decodeIfPresent([String].self, forKey: .seatNames)) ?? nil ?? Settings.defaultSeatNames
         // Only a file from before the cast (no player name yet) still carries the direction defaults by
         // accident; after sign-in a typed "West" is a choice and stays.

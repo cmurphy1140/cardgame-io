@@ -50,3 +50,9 @@ import Testing
     #expect(ScoreRail.shown(in: match) == match.scores)
     #expect(ScoreRail.shown(in: match) != [0, 0])
 }
+
+@Test func nineAndOutTakesItsOwnLineUnderTheBidRow() {
+    // The 9-and-out pill sits on its own line between the numbers and Pass, covering no bid pill.
+    #expect(TableSurface.auctionRows(nineAndOut: true) == [.numbers, .nineAndOut, .pass])
+    #expect(TableSurface.auctionRows(nineAndOut: false) == [.numbers, .pass])
+}
