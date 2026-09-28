@@ -58,11 +58,7 @@ struct HandFanView: View {
             HStack(spacing: 10) {
                 if let seat = model.viewerSeat { NameTag(name: model.seatNames[seat]) }
                 Spacer(minLength: 0)
-                if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
-                    DealerDeck(onPlaced: onDeck)
-                    Text("DEALER").foregroundStyle(.gold)
-                        .font(.caption2.monospaced()).tracking(1)
-                }
+                if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat { DealerMark(onPlaced: onDeck, sideways: true) }
             }
         }
         .frame(maxWidth: .infinity)
@@ -125,7 +121,7 @@ struct HandFanView: View {
         let flight = deck.map { Self.dealOrigin(slot: slot, count: count, strip: strip, cardWidth: scaledWidth, in: fanFrame, deck: $0) } ?? .zero
         let insertion: AnyTransition = dealing
             ? .offset(flight)
-                .combined(with: .scale(scale: Theme.Table.dealerDeckWidth / scaledWidth)).combined(with: .opacity)
+                .combined(with: .scale(scale: Theme.Table.dealerMarkDeckWidth / scaledWidth)).combined(with: .opacity)
                 .animation(Theme.Motion.flight.delay(Theme.Motion.dealDelay + Double(index) * Theme.Motion.dealStagger))
             : .identity
         // A discard flies to the pile in the top-left corner, shrinking to a card back.

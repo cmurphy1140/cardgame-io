@@ -95,3 +95,16 @@ private func playHand(_ match: inout Match) throws {
     let holder = try #require(pass.viewerSeat)
     #expect(NameTag.names(pass) == (0..<4).map { pass.seatNames[(holder + $0) % 4] })
 }
+
+@Test func onlyTheDealerIsMarkedAndNoSeatSaysBidder() {
+    // N65: a big DEALER mark beside whoever deals; the bid box says who bid, so BIDDER goes.
+    #expect(DealerMark.label == "DEALER")
+    #expect(SeatView.marks(seat: 1, dealer: 1, bidder: 1) == ["DEALER"])
+    #expect(SeatView.marks(seat: 2, dealer: 1, bidder: 2).isEmpty)
+    #expect(SeatView.marks(seat: 3, dealer: 1, bidder: 2).isEmpty)
+    for seat in 0..<4 {
+        #expect(!SeatView.marks(seat: seat, dealer: 0, bidder: seat).contains("BIDDER"))
+    }
+    // Much larger than the 24 pt deck it replaces.
+    #expect(Theme.Table.dealerMarkDeckWidth >= 1.25 * 24)
+}

@@ -745,3 +745,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Names in small type under the faces, and no name for the phone holder.
 
 **Why:** Connor asked for it (N64): names big enough to read from across the table, in the look of a real name sticker. `everySeatWearsANameTagWithItsName` holds the words and the names by place.
+
+## D90. A big dealer mark, and no BIDDER word (2026-09-28)
+
+**Chosen:** Whoever deals wears the dealer's mark (`DealerMark`): a proper four-card deck, 30 pt cards where the old stack was 24, with a big DEALER on a light tan pill with a light brown edge across its foot, in dark brown rather than the old small gold word. It sits off to the right: a side seat's to the right of its stack of backs under the face (its band grows to hold it only while that seat deals, so nothing jumps within a hand), the partner's out beside their tile, right of their card on the pile and under the scorecard, and the phone holder's to the right of their name tag under the hand, the pill beside the deck there so the row stays short. The deal still flies in from the mark's deck (`DealerDeck`). The BIDDER word under a seat is gone: the bid box shows who bid (D87), and the dashed ring on the bidder's face stays. `SeatView.marks(seat:dealer:bidder:)` says what a seat wears. To fit the bidding screen with the bigger mark, the bar's boxes are 36 pt tall (was 40), with 4 pt under the bar and 6 pt above the seats (were 8 and 10).
+
+**Over:** A small deck tucked into the dealer's face, DEALER and BIDDER in small monospaced type under the seat.
+
+**Why:** Connor asked for it (N65): who deals should read from across the table. `onlyTheDealerIsMarkedAndNoSeatSaysBidder` holds the words and the size.

@@ -26,7 +26,7 @@ struct NameTag: View {
                             CardBackView(width: Theme.Table.seatBackWidth).offset(x: Double(index) * 3)
                         }
                     }
-                    .offset(x: Theme.Table.seatBackWidth + 4, y: 4)
+                    .offset(x: 10, y: 4)
                     .accessibilityHidden(true)
                 }
             }

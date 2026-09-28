@@ -177,7 +177,7 @@ public struct TableView: View {
         VStack(spacing: 6) {
             // Table and Clarify across the top (N68), each opening its drop-down under the bar.
             TableBar(open: Binding(get: { openMenu }, set: { box in withAnimation(motion(Theme.Motion.overlay)) { openMenu = box } }))
-                .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 8)
+                .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 4)
                 .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { barBottom = $0 }
                 // A solid header band: runs up behind the status bar and ends in a frown, the corners
                 // hanging lower than the middle, so the bar sits on one colour and the wood starts beneath.

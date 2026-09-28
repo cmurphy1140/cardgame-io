@@ -623,11 +623,13 @@ struct SeatView: View {
     private var thinking: Bool { active && !model.isHuman(seat) && hand.phase != .finished }
     /// This seat won the auction, once the auction is over.
     private var isBidder: Bool { hand.auction.nextSeat == nil && hand.auction.winner == seat }
+    /// This seat deals the hand and wears the dealer's mark (N65).
+    private var deals: Bool { Self.marks(seat: seat, dealer: hand.auction.dealer, bidder: hand.auction.winner).contains(DealerMark.label) }
     /// The player has marked this seat as out of trump (D65).
     private var markedOut: Bool { hand.trump != nil && model.outOfTrump.contains(seat) }
 
-    /// A name tag over a face over one line of badges (N64): a hint of a hand in play (the call has its own box, N55), and
-    /// DEALER or BIDDER when they apply. Everything a seat says sits under its own portrait, so nothing
+    /// A name tag over a face over one line of badges (N64): a hint of a hand in play (the call has its own box, N55);
+    /// the dealer's mark beside the face (N65), and no BIDDER, since the bid box shows who bid. Everything a seat says sits under its own portrait, so nothing
     /// about a player floats elsewhere on the table (spec R2). The seat to act wears a gold halo that
     /// breathes; that halo is the table's only turn indicator.
     var body: some View {
@@ -671,11 +673,6 @@ struct SeatView: View {
                 }
                 .padding(.vertical, Theme.Table.activeRingGap)
                 .padding(.top, Theme.Table.portraitSize * Theme.Table.portraitHeadroom)
-                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13). It
-                // tucks in against the bigger face so it stays inside the tile, clear of the pile (N48).
-                .overlay(alignment: .bottomTrailing) {
-                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 6, y: -2) }
-                }
                 // A computer deciding shows calm dots above its tile instead of a status line (T04).
                 .overlay(alignment: .top) {
                     if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
@@ -685,6 +682,15 @@ struct SeatView: View {
         }
         .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
+        // The dealer owns the deck: the big dealer mark, static, never a control (T12, T13, N65). The side seats wear
+        // it to the right of their stack of backs (below); the partner's sits off to the right of the tile, beside
+        // their card on the pile and under the scorecard.
+        .overlay(alignment: .bottomTrailing) {
+            if stackWithTag, deals {
+                DealerMark(onPlaced: onDeck)
+                    .offset(x: Theme.Table.dealerMarkWidth + Theme.Table.partnerMarkGap, y: Theme.Table.partnerMarkDrop)
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.seatSummary(for: seat) + (markedOut ? ", out of trump" : ""))
         .accessibilityActions {
@@ -694,23 +700,20 @@ struct SeatView: View {
         }
     }
 
-    /// Room the tile keeps on each side, the stack of backs with its trailing air, and the gap between badges.
+    /// Room the tile keeps on each side.
     nonisolated static let tilePadding = 4.0
-    nonisolated static let backsWidth = Theme.Table.seatBackWidth + 2 * 3 + 6
-    nonisolated static let badgeSpacing = 6.0
-    /// The most the badge text may shrink to fit the narrowest tile.
-    nonisolated static let roleShrink = 0.6
 
-    /// The seat's roles, one per line: DEALER, and BIDDER once the auction is over. A seat that deals and wins
-    /// the bid stacks the two, since side by side they clip to "DEA… BIDD…" on the narrowest tile.
-    nonisolated static func roles(seat: Int, dealer: Int, bidder: Int?, bidding: Bool) -> [String] {
-        (dealer == seat ? ["DEALER"] : []) + (bidder == seat && !bidding ? ["BIDDER"] : [])
+    /// The words a seat wears beside its face: DEALER for the dealer, and nothing for the bidder, whom the bid box
+    /// shows (N65).
+    nonisolated static func marks(seat: Int, dealer: Int, bidder: Int?) -> [String] {
+        dealer == seat ? [DealerMark.label] : []
     }
 
-    /// One band, always the same height, so the tiles do not jump when a call lands or the phase turns.
+    /// One band, the same height through a hand, so the tiles do not jump when a call lands or the phase turns: the
+    /// stack of backs in play, and to its right the dealer's mark when this seat deals (N65).
     private var badges: some View {
-        HStack(spacing: Self.badgeSpacing) {
-            // In the auction the call sits in the seat's bid box beside it (N55), so the band holds only the roles.
+        HStack(spacing: 6) {
+            // In the auction the call sits in the seat's bid box beside it (N55), so the band holds only the mark.
             if hand.phase != .bidding, !stackWithTag {
                 // The stack's thickness says roughly how many cards are left; there is no number (spec R20).
                 ZStack(alignment: .leading) {
@@ -721,17 +724,9 @@ struct SeatView: View {
                 .padding(.trailing, 6)
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
             }
-            let roles = Self.roles(seat: seat, dealer: hand.auction.dealer, bidder: hand.auction.winner, bidding: hand.phase == .bidding)
-            if !roles.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(roles, id: \.self) { role in
-                        if role == "DEALER" { Text(role).foregroundStyle(.gold) } else { Text(role).opacity(0.7) }
-                    }
-                }
-            }
+            if deals { DealerMark(onPlaced: onDeck) }
         }
-        .font(.system(.caption2, design: .monospaced)).lineLimit(1).minimumScaleFactor(Self.roleShrink)
-        .frame(height: backWidth * Theme.Card.ratio + 2)
+        .frame(height: deals ? nil : backWidth * Theme.Card.ratio + 2)
     }
 
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
@@ -739,16 +734,48 @@ struct SeatView: View {
     private var bigMomentScale: Double { SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1 }
 }
 
-/// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on
-/// the table and not a button (T13).
+/// Whoever deals (N65): a proper deck, much larger than the small stack it replaces, with a big DEALER label on a
+/// light tan pill across its foot. Nothing about it is a control.
+struct DealerMark: View {
+    nonisolated static let label = "DEALER"
+    /// Told the deck's centre in the table's coordinate space whenever it moves; the deal starts there.
+    var onPlaced: (CGPoint) -> Void = { _ in }
+    /// The label beside the deck rather than across its foot, for the short row under the hand.
+    var sideways = false
+
+    var body: some View {
+        Group {
+            if sideways {
+                HStack(spacing: 6) { DealerDeck(onPlaced: onPlaced); word }
+            } else {
+                VStack(spacing: -10) { DealerDeck(onPlaced: onPlaced); word }.frame(width: Theme.Table.dealerMarkWidth)
+            }
+        }
+        .dynamicTypeSize(...Theme.Card.maximumTypeSize)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var word: some View {
+        Text(Self.label).font(.system(size: 14, weight: .heavy)).tracking(0.5)
+            .foregroundStyle(Theme.Wood.streakDark)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(Theme.Table.cornerFill, in: Capsule())
+            .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1.5))
+            .fixedSize()
+    }
+}
+
+/// The dealer's deck: a squared stack of backs with no plate, edge or tap, so it reads as a thing on the table and
+/// not a button (T13).
 struct DealerDeck: View {
     /// Told the deck's centre in the table's coordinate space whenever it moves; the deal starts there.
     var onPlaced: (CGPoint) -> Void = { _ in }
 
     var body: some View {
         ZStack {
-            ForEach(0..<3, id: \.self) { index in
-                CardBackView(width: Theme.Table.dealerDeckWidth).offset(x: Double(index) * -1.5, y: Double(index) * -1.5)
+            ForEach(0..<4, id: \.self) { index in
+                CardBackView(width: Theme.Table.dealerMarkDeckWidth).offset(x: Double(index) * -1.5, y: Double(index) * -1.5)
             }
         }
         .onGeometryChange(for: CGPoint.self) { proxy in

@@ -107,13 +107,17 @@ public enum Theme {
         /// Seat tiles share one width; their height follows the phase (call text in the auction, backs in play).
         public static let seatTileWidth = 116.0
         /// Air between the header's edge and the partner's halo; the seats hold the top of the table (spec R25).
-        public static let seatInset = 10.0
+        public static let seatInset = 6.0
         /// The status-line glyph buttons (last trick, hint): hit area; the glyph itself has no plate.
         public static let statusButtonHitSize = 44.0
         /// The deck in the table's top-right corner.
         public static let deckWidth = 38.0
-        /// The deck beside the dealer's face (T12).
-        public static let dealerDeckWidth = 24.0
+        /// The dealer's mark (T12, N65): its deck's card width and the mark's width; and the partner's, set out this far
+        /// beside their tile and this far down, clear of their card on the pile and under the scorecard.
+        public static let dealerMarkDeckWidth = 30.0
+        public static let dealerMarkWidth = 72.0
+        public static let partnerMarkGap = 6.0
+        public static let partnerMarkDrop = 40.0
         /// How far above the fan the deck sits, for the deal-in flight.
         public static let deckRise = 520.0
         /// Each seat's box in the auction (N55): small enough that the side seats' boxes both fit between them,
@@ -148,7 +152,7 @@ public enum Theme {
         public static let auctionButtonSpacing = 6.0
         public static let auctionButtonRadius = 14.0
         /// The Table and Clarify boxes across the top (N68): skinny, but a full thumb tall.
-        public static let barHeight = 40.0
+        public static let barHeight = 36.0
         public static let barRadius = 10.0
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
