@@ -660,15 +660,28 @@ import Testing
     #expect(!round.beginnerMode)
 }
 
-@Test func seatTilesHoldTheLargerFaceAndItsHaloOnEveryVerifiedWidth() {
-    // Faces grew to at least 1.6× their first size (spec R2) and, with the halo at full breath, still fit
-    // inside the tile the pile row hands a side seat on the verified widths (iPhone 16 Pro and 16, less
-    // the table's inset).
+@MainActor @Test func seatTilesHoldTheLargerFaceAndItsHaloOnEveryVerifiedWidth() {
+    // Faces grew to at least 1.6× their first size (spec R2). At rest, face and halo fit inside the tile the
+    // pile row hands a side seat on the verified widths (iPhone 16 Pro and 16, less the table's inset); at
+    // full breath the halo may use the gap beside the tile, never the pile's reservation (N48).
     #expect(Theme.Table.portraitSize >= 36 * 1.6)
-    let halo = Theme.Table.portraitSize * Theme.Table.activePulseScale + 2 * Theme.Table.activeRingGap
+    let halo = Theme.Table.portraitSize + 2 * Theme.Table.activeRingGap
     for available in [370.0, 361.0] {
-        #expect(TableLayout.sideSeatWidth(available: available) >= halo + 8)
+        let tile = TableLayout.sideSeatWidth(available: available)
+        #expect(tile >= halo)
+        #expect(halo * Theme.Table.activePulseScale <= tile + 2 * TableLayout.seatGap)
+        // A big moment's face (N36) keeps the same bound, so it never reaches a card on the pile.
+        #expect(Theme.Table.portraitSize * Theme.Table.bigMomentScale <= tile + 2 * TableLayout.seatGap)
     }
+}
+
+@MainActor @Test func tableFacesAreBiggerAndTheirHeadsPopOutOfTheirDiscs() {
+    // About 1.3× the 68 pt faces they were (N48).
+    #expect(Theme.Table.portraitSize >= 68 * 1.25 && Theme.Table.portraitSize <= 68 * 1.35)
+    // The head rises over the disc's top edge (N49), by a tenth of the face or so.
+    #expect(PortraitView.popOverflow(top: PortraitView.headTop) >= 0.08)
+    // The seat keeps room above the disc for the tallest hat, so nothing reaches into the header.
+    #expect(Theme.Table.portraitHeadroom >= PortraitView.popOverflow(top: PortraitView.tallestTop))
 }
 
 @MainActor @Test func validationMessagesExplainRefusalsWithoutChangingTheMatch() throws {
@@ -1433,9 +1446,9 @@ import Testing
 }
 
 @Test func contractPlaqueShowsTheBidLargeAndNineAndOutAsNine() {
-    let normal = ContractPlaque.Contract(bid: 5, isNineAndOut: false, bidder: "Cheryl")
+    let normal = ContractPlaque.Contract(bid: 5, isNineAndOut: false, bidder: "Cheryl", portrait: Settings().playerPortrait)
     #expect(normal.number == "5" && normal.qualifier == nil && normal.spoken == "Cheryl bid 5")
-    let nine = ContractPlaque.Contract(bid: 9, isNineAndOut: true, bidder: "Otto")
+    let nine = ContractPlaque.Contract(bid: 9, isNineAndOut: true, bidder: "Otto", portrait: Settings().playerPortrait)
     #expect(nine.number == "9" && nine.qualifier == "and out" && nine.spoken == "Otto bid 9 and out")
 }
 
@@ -1517,4 +1530,25 @@ private func matchWithTeamOneDownTen() throws -> Match {
             == "You and Connor are down 11; Connor is bidding bolder.")
     #expect(GameModel.boldNoteText(team: [1, 3], deficit: 12, names: Settings.defaultSeatNames, solo: true)
             == "JC and Diane are down 12, bidding bolder.")
+}
+
+@Test func reviewBarSaysItIsTheLastTrick() {
+    // Reopening the pile shows the last trick of the hand in play, not a finished hand (N42).
+    #expect(TableSurface.reviewLabel == "Reviewing last trick")
+}
+
+@MainActor @Test func tableCornersMatchAndNearlyFillTheTopRowBesideThePartner() throws {
+    // Two corners of one width either side of the partner's tile fill nearly all of the top row on the
+    // verified widths (N51), and still fit it on the SE.
+    for available in [370.0, 361.0] {
+        let row = 2 * TableLayout.cornerWidth(available: available) + Theme.Table.seatTileWidth
+        #expect(row <= available && row >= available * 0.95)
+    }
+    #expect(2 * TableLayout.cornerWidth(available: 343) + Theme.Table.seatTileWidth <= 343)
+    // Big number, big suit (N52): well past the 44 and 56 pt they were.
+    #expect(Theme.Table.plaqueNumberSize >= 52 && Theme.Table.trumpGlyphSize >= 72)
+    // The bid corner carries the bidder's own face (N52).
+    let face = try #require(Cast.opponent(at: 1)?.portrait)
+    let contract = ContractPlaque.Contract(bid: 4, isNineAndOut: false, bidder: "JC", portrait: face)
+    #expect(contract.portrait == face)
 }

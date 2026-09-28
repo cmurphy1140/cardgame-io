@@ -82,9 +82,15 @@ public enum Theme {
         public static let pileMarginY = 48.0
         /// The little stack of backs under a seat's name in play: a hint of a hand, not a count (spec R20).
         public static let seatBackWidth = 14.0
-        /// Faces around the table read at a glance from arm's length: 68 pt, up from the 36 they started at
-        /// (spec R2) and a touch over the first pass's 60, the most a side tile holds beside the pile.
-        public static let portraitSize = 68.0
+        /// Faces around the table read at a glance from arm's length: 86 pt, about 1.3× the 68 of the last
+        /// pass (N48) and up from the 36 they started at (spec R2). At rest face and halo fit a side tile beside
+        /// the pile; at full breath the halo borrows the gap beside it.
+        public static let portraitSize = 86.0
+        /// Room kept above a table face's disc, as a fraction of its size, for the head that pops out (N49).
+        public static let portraitHeadroom = 0.24
+        /// While bidding the side seats rise this far into the partner's row, beside it, so the bigger faces
+        /// still leave the bid pills and Pass above the hand (N48).
+        public static let biddingSideRise = 100.0
         /// The tutorial's lesson tiles keep the smaller face so three of them still share a row.
         public static let tutorialPortraitSize = 36.0
         /// The seat to act wears a gold halo: a ring this wide, this far outside the portrait, that pulses
@@ -93,7 +99,8 @@ public enum Theme {
         public static let activeRingGap = 3.0
         public static let activePulseScale = 1.05
         /// A face drawn larger for a big public moment: the five of trump caught, a 9 and out declared (N36).
-        public static let bigMomentScale = 1.3
+        /// 1.15 of the bigger face (N48) is still larger than the 1.3 of the old one, and stays clear of the pile.
+        public static let bigMomentScale = 1.15
         /// A played card lands with its own small turn and drift, like a card tossed in by hand.
         public static let tossRotationDegrees = 4.0
         public static let tossDrift = 6.0
@@ -116,15 +123,21 @@ public enum Theme {
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
         /// The table's top corners either side of the partner (D65): the contract plaque on the left, the
-        /// trump tile with the player's tally on the right. Both stay within the partner row's height.
-        public static let cornerWidth = 92.0
+        /// trump tile with the player's tally on the right. One size for both (N51), as wide as the row allows
+        /// up to this (`TableLayout.cornerWidth(available:)`), so with the partner they nearly fill the row.
+        public static let cornerWidth = 124.0
+        public static let cornerHeight = 116.0
         public static let cornerRadius = 14.0
         /// Both corners sit on a very light tan (D76), so they read as paper laid on the felt, not holes in it.
         public static let cornerFill = Color(red: 0.91, green: 0.84, blue: 0.70)
-        /// The bid's number in the display serif, and the trump glyph on its tan tile.
-        public static let plaqueNumberSize = 44.0
-        public static let trumpTileHeight = 78.0
-        public static let trumpGlyphSize = 56.0
+        /// Big for people who won't read small text (N52): the bid's number in the display serif, the bidder's
+        /// face beside it, and the trump glyph on its tan tile.
+        public static let plaqueNumberSize = 56.0
+        public static let plaquePortraitSize = 50.0
+        public static let trumpGlyphSize = 80.0
+        /// A corner arrives (N53): it grows from this scale with a glow that fades over `cornerGlowSeconds`.
+        public static let cornerArrivalScale = 0.6
+        public static let cornerGlowSeconds = 0.9
         /// Tally strokes under the tile: height, the step between strokes, and the gap between groups of five.
         public static let tallyHeight = 16.0
         public static let tallyStep = 4.0
@@ -201,6 +214,9 @@ public enum Theme {
         public static let disc = Color(red: 0.10, green: 0.24, blue: 0.20)
         /// The flower hat.
         public static let blossom = Color(red: 0.93, green: 0.55, blue: 0.62)
+        /// A face that pops out of its disc (N49) is drawn this much larger and raised this fraction of its size.
+        public static let popScale = 1.2
+        public static let popRise = 0.26
     }
 }
 

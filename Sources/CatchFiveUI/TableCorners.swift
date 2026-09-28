@@ -1,13 +1,16 @@
 import CatchFive
 import SwiftUI
 
-/// The table's top-left corner once the auction resolves: who bid and how much (D65). A small BID eyebrow,
-/// the number large in the display serif, and the bidder's name; 9 and out reads as a 9 with "and out".
+/// The table's top-left corner once the auction resolves: who bid and how much (D65). The bidder's own face
+/// beside the number, large in the display serif, under a small BID eyebrow, and the bidder's name small
+/// underneath (N52); 9 and out reads as a 9 with "and out".
 struct ContractPlaque: View {
     struct Contract: Equatable {
         let bid: Int
         let isNineAndOut: Bool
         let bidder: String
+        /// The bidder's face, the same as at their seat.
+        let portrait: Portrait
 
         /// The big figure: the bid, or 9 for 9 and out.
         var number: String { isNineAndOut ? "9" : String(bid) }
@@ -17,6 +20,8 @@ struct ContractPlaque: View {
     }
 
     let contract: Contract
+    /// The corner's width, from `TableLayout.cornerWidth(available:)`; the height is `Theme.Table.cornerHeight`.
+    let width: Double
 
     /// The light tan of both corners, and the dark wood browns the plaque's words are set in (D76).
     static let fill = Theme.Table.cornerFill
@@ -25,19 +30,25 @@ struct ContractPlaque: View {
     static let nameInk = Theme.Wood.dark
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text("BID").font(.system(.caption2, design: .monospaced).weight(.semibold)).tracking(1.5)
-                .foregroundStyle(Self.eyebrowInk)
-            Text(contract.number).font(.system(size: Theme.Table.plaqueNumberSize, weight: .bold, design: .serif))
-                .foregroundStyle(Self.numberInk)
-            if let qualifier = contract.qualifier {
-                Text(qualifier).font(.caption.weight(.semibold)).foregroundStyle(Self.numberInk)
+        VStack(spacing: 2) {
+            HStack(alignment: .bottom, spacing: 6) {
+                PortraitView(portrait: contract.portrait, size: Theme.Table.plaquePortraitSize, popsOut: true)
+                    .padding(.top, Theme.Table.plaquePortraitSize * Theme.Table.portraitHeadroom)
+                VStack(spacing: -6) {
+                    Text("BID").font(.system(.caption2, design: .monospaced).weight(.semibold)).tracking(1.5)
+                        .foregroundStyle(Self.eyebrowInk)
+                    Text(contract.number).font(.system(size: Theme.Table.plaqueNumberSize, weight: .bold, design: .serif))
+                        .foregroundStyle(Self.numberInk)
+                    if let qualifier = contract.qualifier {
+                        Text(qualifier).font(.caption.weight(.semibold)).foregroundStyle(Self.numberInk)
+                    }
+                }
             }
             Text(contract.bidder).font(.subheadline.weight(.semibold)).foregroundStyle(Self.nameInk)
         }
         .lineLimit(1).minimumScaleFactor(0.6)
-        .padding(.vertical, 6).padding(.horizontal, 6)
-        .frame(width: Theme.Table.cornerWidth)
+        .padding(8)
+        .frame(width: width, height: Theme.Table.cornerHeight)
         .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
         .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
@@ -47,12 +58,14 @@ struct ContractPlaque: View {
     }
 }
 
-/// The table's top-right corner once trump is named: the suit big on a light tan tile (D76), and under it the
-/// player's own tally of trumps played (D65). Tap adds a mark, press and hold takes one back; the app
-/// never counts for the player (spec R4), it only keeps the marks they make.
+/// The table's top-right corner once trump is named: the suit big on a light tan tile (D76) the same size as the
+/// bid's (N51), and under it the player's own tally of trumps played (D65). Tap adds a mark, press and hold takes
+/// one back; the app never counts for the player (spec R4), it only keeps the marks they make.
 struct TrumpTile: View {
     let trump: Suit
     let tally: Int
+    /// The corner's width, from `TableLayout.cornerWidth(available:)`; the height is `Theme.Table.cornerHeight`.
+    let width: Double
     let onAdd: () -> Void
     let onTakeBack: () -> Void
 
@@ -70,10 +83,12 @@ struct TrumpTile: View {
         VStack(spacing: 4) {
             Text(trump.glyph).font(.system(size: Theme.Table.trumpGlyphSize))
                 .foregroundStyle(Self.glyphColor(trump))
-                .frame(width: Theme.Table.cornerWidth, height: Theme.Table.trumpTileHeight)
+                .frame(width: width, height: Theme.Table.cornerHeight)
                 .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
-                .shadow(color: .black.opacity(0.45), radius: 5, y: 4)
-            TallyMarks(count: tally).frame(width: Theme.Table.cornerWidth, height: Theme.Table.tallyHeight)
+                .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
+                .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
+                .dynamicTypeSize(...Theme.Card.maximumTypeSize)
+            TallyMarks(count: tally).frame(width: width, height: Theme.Table.tallyHeight)
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onAdd)
@@ -90,6 +105,30 @@ struct TrumpTile: View {
             @unknown default: break
             }
         }
+    }
+}
+
+/// A corner's arrival (N53): the first time it fills it grows in with a light glow that fades, so players know
+/// where to look; under Reduce Motion it fades in instead.
+struct CornerArrival: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var arrived = false
+    @State private var glowing = false
+
+    func body(content: Content) -> some View {
+        content
+            .shadow(color: .ivory.opacity(glowing ? 0.9 : 0), radius: 14)
+            .scaleEffect(arrived || reduceMotion ? 1 : Theme.Table.cornerArrivalScale)
+            .opacity(arrived ? 1 : 0)
+            .onAppear {
+                guard !reduceMotion else {
+                    withAnimation(Theme.Motion.reduced) { arrived = true }
+                    return
+                }
+                glowing = true
+                withAnimation(.spring(duration: 0.45, bounce: 0.35)) { arrived = true }
+                withAnimation(.easeOut(duration: Theme.Table.cornerGlowSeconds).delay(0.3)) { glowing = false }
+            }
     }
 }
 

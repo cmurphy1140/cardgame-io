@@ -59,14 +59,22 @@ struct TableSurface: View {
                     // The phone holder sits at the bottom; in pass and play the table turns with the phone.
                     // Who bid and for how much in the top-left corner, trump and the player's tally in the
                     // top-right, either side of the partner and no taller than the partner's tile (D65).
+                    // Both corners share one size and, with the partner, nearly fill the row (N51); each pops in
+                    // the first time it fills (N53).
+                    let cornerWidth = TableLayout.cornerWidth(available: geometry.size.width)
                     HStack(alignment: .top, spacing: 0) {
-                        corner { if let contract { ContractPlaque(contract: contract) } }.accessibilitySortPriority(25)
+                        corner(width: cornerWidth) {
+                            if let contract { ContractPlaque(contract: contract, width: cornerWidth).modifier(CornerArrival()) }
+                        }
+                        .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
                         SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
                         Spacer(minLength: 0)
-                        corner {
+                        corner(width: cornerWidth) {
                             if let trump = hand.trump {
-                                TrumpTile(trump: trump, tally: model.trumpTally, onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
+                                TrumpTile(trump: trump, tally: model.trumpTally, width: cornerWidth,
+                                          onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
+                                    .modifier(CornerArrival())
                             }
                         }
                         .accessibilitySortPriority(24)
@@ -82,6 +90,9 @@ struct TableSurface: View {
                         Spacer(minLength: TableLayout.seatGap)
                         SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
                     }
+                    // While bidding there is no pile between them and no corner above them, so the side seats rise
+                    // beside the partner and the bigger faces leave the bid pills their room (N48).
+                    .padding(.top, hand.phase == .bidding ? -Theme.Table.biddingSideRise : 0)
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
                         switch row {
@@ -107,7 +118,11 @@ struct TableSurface: View {
                 .frame(height: fits ? geometry.size.height : nil)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // A side face at its big-moment size reaches a little past the column; the screen's margin holds it,
+            // so the column clips top and bottom only.
+            .scrollClipDisabled()
             .frame(width: geometry.size.width, height: geometry.size.height)
+            .mask { Rectangle().padding(.horizontal, -Theme.Table.seatInset) }
             // Trump, very large and faint behind the play area: there when you look for it, never in the way.
             .background {
                 if let trump = hand.trump {
@@ -131,14 +146,15 @@ struct TableSurface: View {
     private var contract: ContractPlaque.Contract? {
         let auction = hand.auction
         guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
-        return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder])
+        return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder],
+                                       portrait: Cast.opponent(at: bidder)?.portrait ?? model.settings.playerPortrait)
     }
 
     /// A top corner of the table: a fixed width, top-aligned, empty until it has something to show.
-    private func corner(@ViewBuilder _ content: () -> some View) -> some View {
+    private func corner(width: Double, @ViewBuilder _ content: () -> some View) -> some View {
         // The clear strut holds the width while the corner is empty, so the partner stays centred.
         ZStack(alignment: .top) {
-            Color.clear.frame(width: Theme.Table.cornerWidth, height: 0)
+            Color.clear.frame(width: width, height: 0)
             content()
         }
     }
@@ -233,6 +249,9 @@ struct TableSurface: View {
         inAuction && !humanTurn ? 36 : 0
     }
 
+    /// The status line while the last trick is reopened: it is the last trick of the hand in play (N42).
+    nonisolated static let reviewLabel = "Reviewing last trick"
+
     private var statusLine: some View {
         HStack(spacing: 8) {
             if reopenedTrick != nil {
@@ -248,7 +267,7 @@ struct TableSurface: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Back to play")
-                Text("Reviewing last hand").font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(Self.reviewLabel).font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .accessibilityFocused(statusFocus)
                 Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
@@ -567,9 +586,9 @@ struct SeatView: View {
     /// breathes; that halo is the table's only turn indicator.
     var body: some View {
         VStack(spacing: 2) {
-            PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: SeatMood.expression(for: seat, in: model.match))
+            PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true)
                 // Big public moments show larger on the face, until the next lead (N36).
-                .scaleEffect(SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1)
+                .scaleEffect(bigMomentScale, anchor: .bottom)
                 .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: SeatMood.isBigMoment(for: seat, in: model.match))
                 // The bidder's ring: dashed, light brown, on the portrait's own edge, never the gold halo (D65).
                 .overlay {
@@ -588,6 +607,11 @@ struct SeatView: View {
                         .padding(-Theme.Table.activeRingGap)
                         .opacity(active ? 1 : 0)
                 }
+                // The popped head goes over the rings as well, so it stays in front of its circle (N49).
+                .overlay {
+                    PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true, headOnly: true)
+                        .scaleEffect(bigMomentScale, anchor: .bottom)
+                }
                 .scaleEffect(pulsing ? Theme.Table.activePulseScale : 1)
                 .onChange(of: active, initial: true) { _, isActive in
                     if isActive, !reduceMotion {
@@ -597,9 +621,11 @@ struct SeatView: View {
                     }
                 }
                 .padding(.vertical, Theme.Table.activeRingGap)
-                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13).
+                .padding(.top, Theme.Table.portraitSize * Theme.Table.portraitHeadroom)
+                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13). It
+                // tucks in against the bigger face so it stays inside the tile, clear of the pile (N48).
                 .overlay(alignment: .bottomTrailing) {
-                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 16, y: -2) }
+                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 6, y: -2) }
                 }
                 // A computer deciding shows calm dots above its tile instead of a status line (T04).
                 .overlay(alignment: .top) {
@@ -668,6 +694,8 @@ struct SeatView: View {
     }
 
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
+    private var expression: Portrait.Expression { SeatMood.expression(for: seat, in: model.match) }
+    private var bigMomentScale: Double { SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1 }
 }
 
 /// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on

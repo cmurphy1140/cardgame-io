@@ -641,3 +641,35 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A near-black plaque beside an ivory tile, two corners that read as different objects.
 
 **Why:** Connor marked up a screenshot of the table (N41): the two corners are one pair and should look it. `tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump` holds the fill, the ink and the suit colours.
+
+## D77. Bigger faces that pop out of their circles (2026-09-28)
+
+**Chosen:** Table portraits grow from 68 to 86 pt (`Theme.Table.portraitSize`, about 1.3×). The green disc stays, but the character inside is drawn 1.2× larger and raised a quarter of the face (`Theme.Portrait.popScale`, `popRise`): the shoulders stay clipped to the disc and the head rises over its top edge (`PortraitView(popsOut:)`). The seat draws the head a second time over its rings (`headOnly`), so the bidder's dashed ring and the gold halo pass behind the head, and keeps `Theme.Table.portraitHeadroom` (0.24 of the face) above the disc so the tallest hat never reaches the header. To make room: while bidding, the side seats rise `Theme.Table.biddingSideRise` (100 pt) beside the partner so the bid pills and Pass still sit above the hand; the dealer's deck tucks 10 pt closer to the face; a big moment's face (D73) grows 1.15× from its bottom edge (99 pt, still larger than the old 1.3× of 68) so it neither covers the name nor reaches the pile, and the table column clips only top and bottom so a side face at that size is not cut at the screen's edge. Other portraits (menu, pickers, hand-end card, tutorial) are unchanged.
+
+**Over:** Faces sized to sit wholly inside their discs, or a larger disc, which the side tiles beside the pile cannot hold.
+
+**Why:** Connor asked for bigger faces that pop out of their circles (N48, N49). At rest face and halo fit a side tile on iPhone 16 and 16 Pro, and at full breath or a big moment they stay within the gap beside it, never the pile's reservation; `seatTilesHoldTheLargerFaceAndItsHaloOnEveryVerifiedWidth` and `tableFacesAreBiggerAndTheirHeadsPopOutOfTheirDiscs` hold the sizes.
+
+## D78. Two hands reach for the five on the home screen (2026-09-28)
+
+**Chosen:** The home screen's five of hearts gains two hands, one reaching down from above for its top-right corner and one reaching up from below for its bottom-left, as if two players were going for the same card. Each is a `ReachingHand` (`MainMenuView.swift`): flat shapes in the cast's style, a palm, four fingers and a thumb in a portrait skin tone (tan above, brown below), a sleeve (the olive shirt colour above, `Theme.Wood.dark` below) with an ivory cuff. They drift 5 pt toward the card and back with its sway; under Reduce Motion the card and the hands hold still. The card keeps `HomeFiveCard.handRoom` (44 pt) above and below so the hands clear the title and the player card. They are decoration: no hit testing, hidden from VoiceOver.
+
+**Over:** The card alone, or photographic or emoji hands.
+
+**Why:** Connor asked for it (N47): "like catch five", the game's name in a picture.
+
+## D79. The review bar says "Reviewing last trick" (2026-09-28)
+
+**Chosen:** While the player has the pile reopened, the status line reads "Reviewing last trick" (`TableSurface.reviewLabel`), not "Reviewing last hand". The corners keep showing the bid and trump underneath, as in play.
+
+**Over:** "Reviewing last hand", which promised a finished hand's result the view never showed.
+
+**Why:** What reopens is the last trick of the hand in play (`reopenedTrick`), which has no hand score yet (N42). `reviewBarSaysItIsTheLastTrick` holds the words.
+
+## D80. Bigger matching corners, with the bidder's face (2026-09-28)
+
+**Chosen:** The two light tan corners (D65, D76) take one size: `TableLayout.cornerWidth(available:)` wide (up to `Theme.Table.cornerWidth`, 124 pt, and never so wide that the row overruns: 120 pt on the iPhone 16, 124 on the 16 Pro, 111 on the SE) by `Theme.Table.cornerHeight` (116 pt), so with the partner's tile they fill about 99 percent of the top row. Both have the same fill, edge and shadow. The bid corner shows the bidder's own portrait (`Contract.portrait`, the face at their seat, 50 pt and popping out of its disc as at the table, D77) beside a small BID and the number at 56 pt, with the bidder's name small underneath; the trump corner shows the suit at 80 pt, with the tally strokes still under it and the whole corner still the tap target. The first time a corner fills (the bid resolved, trump named) it grows in from 0.6 with an ivory glow that fades over 0.9 s (`CornerArrival`); under Reduce Motion it fades in.
+
+**Over:** A 92 pt plaque beside a shorter trump tile, the bidder named but not shown, and corners that simply appear.
+
+**Why:** Connor asked for it (N51, N52, N53): the corners are the table's scoreboard for the hand, and people who won't read small text need a big number, a big suit and a face they recognise, and a nudge to look there. `tableCornersMatchAndNearlyFillTheTopRowBesideThePartner` holds the widths, the sizes and the bidder's face.

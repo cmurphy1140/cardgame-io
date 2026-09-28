@@ -32,10 +32,10 @@ struct MainMenuView: View {
                 }
                 .padding(.top, 34)
 
-                // The five is the visual signature of the game, not another control.
+                // The five is the visual signature of the game, not another control. Two hands reach for it (N47).
                 HomeFiveCard()
                     .rotationEffect(.degrees(-5))
-                    .padding(.vertical, 4)
+                    .padding(.vertical, HomeFiveCard.handRoom)
                     .accessibilityHidden(true)
 
                 HStack(spacing: 14) {
@@ -131,11 +131,15 @@ extension MainMenuView {
 
 /// The home-screen signature card: a real five-of-hearts pip layout, larger than gameplay cards. It sways
 /// slowly and turns over to its back about every nine seconds (D67); under Reduce Motion it holds still.
+/// Two hands reach for it, one from above and one from below, drifting in and back with the sway (N47).
 private struct HomeFiveCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var swayed = false
     @State private var angle = 0.0
     @State private var showsBack = false
+
+    /// Room above and below the card for the reaching hands.
+    static let handRoom = 44.0
 
     var body: some View {
         Group {
@@ -144,6 +148,15 @@ private struct HomeFiveCard: View {
         .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
         .rotationEffect(.degrees(swayed ? 2 : -2))
         .offset(y: swayed ? -4 : 0)
+        // From above, reaching down for the top-right corner; from below, reaching up for the bottom-left.
+        .overlay {
+            ReachingHand(skin: .tan, sleeve: Theme.Portrait.color(.olive))
+                .rotationEffect(.degrees(225))
+                .offset(x: 66 - reach, y: -98 + reach)
+            ReachingHand(skin: .brown, sleeve: Theme.Wood.dark)
+                .rotationEffect(.degrees(45))
+                .offset(x: -66 + reach, y: 98 - reach)
+        }
         .onAppear {
             guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) { swayed = true }
@@ -195,5 +208,44 @@ private struct HomeFiveCard: View {
     }
     private var heart: some View {
         Text("♥").font(.system(size: 27)).foregroundStyle(Color.suitRed)
+    }
+
+    /// How far each hand has drifted toward the card, along its diagonal, with the sway.
+    private var reach: Double { swayed ? 5 : 0 }
+}
+
+/// A flat, drawn hand reaching up, fingers first, from a sleeve with a cuff: the cast's skin palette and shapes
+/// (`PortraitView`), decoration only.
+private struct ReachingHand: View {
+    let skin: Portrait.Skin
+    let sleeve: Color
+    var width = 46.0
+
+    var body: some View {
+        let skinColor = Theme.Portrait.color(skin)
+        let finger = width * 0.17
+        ZStack(alignment: .bottom) {
+            // Four fingers, the middle two longest, standing on the palm.
+            HStack(alignment: .bottom, spacing: width * 0.02) {
+                ForEach([0.30, 0.36, 0.34, 0.27], id: \.self) { length in
+                    Capsule().fill(skinColor).frame(width: finger, height: width * length * 1.8)
+                }
+            }
+            .offset(y: -width * 0.95)
+            RoundedRectangle(cornerRadius: width * 0.2, style: .continuous).fill(skinColor)
+                .frame(width: width * 0.76, height: width * 0.62)
+                .offset(y: -width * 0.5)
+            Capsule().fill(skinColor).frame(width: finger, height: width * 0.46)
+                .rotationEffect(.degrees(-38))
+                .offset(x: -width * 0.4, y: -width * 0.72)
+            // The sleeve and its cuff.
+            RoundedRectangle(cornerRadius: width * 0.1, style: .continuous).fill(sleeve)
+                .frame(width: width * 0.94, height: width * 0.46)
+            Rectangle().fill(.ivory).frame(width: width * 0.94, height: width * 0.1)
+                .offset(y: -width * 0.4)
+        }
+        .frame(width: width, height: width * 1.9, alignment: .bottom)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

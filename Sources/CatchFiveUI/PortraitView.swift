@@ -7,12 +7,39 @@ struct PortraitView: View {
     let size: Double
     /// The mood on the face; the default keeps pickers and cards calm.
     var expression: Portrait.Expression = .neutral
+    /// On the table the face pops out of its disc (N49): the character is drawn larger and higher, the body
+    /// stays clipped to the disc, and the head rises over its top edge, outside the view's frame. The seat
+    /// reserves `Theme.Table.portraitHeadroom` above the disc for it.
+    var popsOut = false
+    /// Draws only the popped head, with no disc, so a seat can lay it over its rings and keep the head in front.
+    var headOnly = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        if headOnly {
+            poppedHead
+        } else {
+            ZStack {
+                Circle().fill(Theme.Portrait.disc)
+                ZStack {
+                    shoulders
+                    headParts
+                }
+                .scaleEffect(popsOut ? Theme.Portrait.popScale : 1)
+                .offset(y: popsOut ? -size * Theme.Portrait.popRise : 0)
+            }
+            .animation(reduceMotion ? nil : Theme.Motion.overlay, value: expression)
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(Color.ivory.opacity(0.7), lineWidth: max(1, size * 0.03)))
+            .overlay { if popsOut { poppedHead } }
+            .accessibilityHidden(true)
+        }
+    }
+
+    /// Everything above the shoulders, back to front.
+    private var headParts: some View {
         ZStack {
-            Circle().fill(Theme.Portrait.disc)
-            shoulders
             hairBack
             head
             face
@@ -20,11 +47,28 @@ struct PortraitView: View {
             hairFront
             hat
         }
-        .animation(reduceMotion ? nil : Theme.Motion.overlay, value: expression)
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-        .overlay(Circle().stroke(Color.ivory.opacity(0.7), lineWidth: max(1, size * 0.03)))
-        .accessibilityHidden(true)
+    }
+
+    /// The head again, unclipped, over the upper half of the disc and above it: the part that pops out.
+    private var poppedHead: some View {
+        headParts
+            .scaleEffect(Theme.Portrait.popScale)
+            .offset(y: -size * Theme.Portrait.popRise)
+            .animation(reduceMotion ? nil : Theme.Motion.overlay, value: expression)
+            .frame(width: size, height: size)
+            .mask(alignment: .top) { Rectangle().frame(width: size * 2, height: size * 1.5).offset(y: -size) }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
+    /// Tops of the head and of the tallest hat, as fractions of `size` above the disc's centre, before popping.
+    nonisolated static let headTop = 0.29
+    nonisolated static let tallestTop = 0.39
+
+    /// How far, as a fraction of `size`, a part whose top sits `top` above the centre rises over the disc's
+    /// top edge once popped out.
+    nonisolated static func popOverflow(top: Double) -> Double {
+        top * Theme.Portrait.popScale + Theme.Portrait.popRise - 0.5
     }
 
     // MARK: Face
