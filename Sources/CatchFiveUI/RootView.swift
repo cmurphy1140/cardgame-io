@@ -33,7 +33,7 @@ public struct RootView: View {
     /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
     /// progress) or `home-tips` (the tip card over the table, held); `ninewin`, `ninelose` (a 9 and out made or missed,
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
-    /// (How to play with the full rules sheet open over it); `bold` (a computer team down 10 or more, its note held on the table).
+    /// (How to play with the full rules sheet open over it), `signoff` (the same, scrolled to the family's note); `bold` (a computer team down 10 or more, its note held on the table).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         var model = model
@@ -108,7 +108,7 @@ public struct RootView: View {
         _model = StateObject(wrappedValue: model)
         _tutorial = StateObject(wrappedValue: model.makeTutorial())
         let screen: Screen = switch stage {
-        case "picker", "stats", "settings", "howto", "rules", "home": .menu
+        case "picker", "stats", "settings", "howto", "rules", "signoff", "home": .menu
         case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
              "home-tips", "ninewin", "ninelose", "won", "confirm9", "bold": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)

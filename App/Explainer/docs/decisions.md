@@ -602,3 +602,10 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 
 **Measured** (`boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt` with `CATCH5_FULL_BENCHMARK=1`: Standard with the rule against Standard with the score hidden, every seed played twice with the teams swapped). Seeds 1..<601: win rate 0.503, margin +0.06 per match; seeds 601..<1201: 0.496, margin −0.14. All 2400 matches: win rate 0.499, margin −0.04, which is no measurable change in strength. Contracts bid by a team down 10 or more were made 682 of 921 times with the rule (0.740) against 693 of 868 without (0.798): the rule takes more contracts from behind and makes a smaller share of them. The sin hunt measures card play, which D71 does not change, so it plays with the score hidden: its seeded matches stay the ones its ceilings were set on. The full measurement runs with `CATCH5_FULL_BENCHMARK=1`; by default a 40-match sample keeps `swift test` quick. The threshold and the step are Connor's and were not tuned to these numbers.
 
+## D72. The rules sheet ends with the family's note and a way to write to us (2026-09-27)
+
+**Chosen:** After the last chapter of "How to play Catch 5" (`RulesView`), a sign-off in the display serif's italic: "We're honored you took a seat at our table. This game has been part of my family for generations. Always will be. The rules stay as they are, but if you have ideas for the app, email me. I'd love to hear them." Below it, cmurphy1140@gmail.com as an underlined ivory `Link` that opens a new mail with the subject "Catch 5". The words and the address live in `RulesText` beside `origin` (`signOff`, `contactEmail`, `contactURL`), outside the rule sections, so the verbatim check against `docs/catch-five-rules.md` is unchanged. The link is ivory, not gold, because gold keeps its established meanings.
+
+**Over:** No way for a player to reach the family from the app, or a contact line inside the rules themselves.
+
+**Why:** Connor asked for it (N34): the rules are the family's and stay as they are, but ideas for the app are welcome. `rulesSheetEndsWithTheFamilysNoteAndAMailLink` holds the wording and the link.

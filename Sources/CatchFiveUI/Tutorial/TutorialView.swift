@@ -29,7 +29,7 @@ struct TutorialView: View {
                 ToolbarItem(placement: .confirmationAction) { Button(isIntro ? "Skip" : "Done", action: onDismiss) }
             }
             .sheet(isPresented: $showRules) { RulesView { showRules = false } }
-            .onAppear { if ScreenshotStage.name == "rules" { showRules = true } }
+            .onAppear { if ["rules", "signoff"].contains(ScreenshotStage.name ?? "") { showRules = true } }
         }
         .preferredColorScheme(.dark)
     }
