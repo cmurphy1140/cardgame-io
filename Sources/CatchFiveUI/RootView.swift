@@ -3,8 +3,9 @@ import SwiftUI
 
 /// Owns the one `GameModel`. A new player sees login, then the tutorial as an intro they may skip, then the
 /// table. A returning player with a match in progress lands back on the table, curtain down in pass and play;
-/// with no match, or a finished one, they land on the main menu, Continue game or New match one tap away
-/// (override of spec R31/R32 and this comment, decision D64). The table's menu opens a pause card whose Main
+/// with no match, or a finished one, they land on the main menu, Back to the table or Deal me in one tap away
+/// (override of spec R31/R32 and this comment, decision D64). Going from the menu to the table shows the tip
+/// card first (D67); a launch that resumes onto the table does not. The table's menu opens a pause card whose Main
 /// menu comes back here with the match preserved (spec R31, R32).
 public struct RootView: View {
     enum Screen { case login, intro, menu, table }
@@ -14,6 +15,10 @@ public struct RootView: View {
     @State private var screen: Screen
     /// The pause card over the table, opened from the table's menu.
     @State private var showWelcome = false
+    /// The tip card over the table, on the way in from the main menu (D67).
+    @State private var showTips = false
+    /// The `home-tips` stage keeps the tip card up for its screenshot.
+    private let holdTips: Bool
     /// The menu opens with the Solo or Pass and play question up (the `picker` launch stage).
     private let choosingMode: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -25,7 +30,8 @@ public struct RootView: View {
     /// solo `draw` (the draw for dealer), `bidding` (your bid), `trump` (your trump choice), `table` (your play,
     /// cards on the pile), `dealer-bidder` (the same, a side seat having dealt and won the bid), `pause` (the
     /// pause card over it), `result` (the hand's result), `review` (with Review hand open) or `over` (the match
-    /// won); `stats`, `settings` or `howto` (the menu with that sheet open).
+    /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
+    /// progress) or `home-tips` (the tip card over the table, held).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         switch stage {
@@ -39,12 +45,12 @@ public struct RootView: View {
             Self.passAndPlay(model) { hand in hand.phase == .playing && !hand.currentTrick.isEmpty && hand.nextSeat != 0 }
         case "draw":
             model.newGame(mode: .solo)
-        case "bidding", "table", "pause", "result", "review":
+        case "bidding", "table", "pause", "result", "review", "home", "home-tips":
             model.newGame(mode: .solo)
             model.dismissDealerDraw()
             Self.play(model) { hand, humanTurn in
                 switch stage {
-                case "bidding": humanTurn && hand.phase == .bidding
+                case "bidding", "home", "home-tips": humanTurn && hand.phase == .bidding
                 case "table", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
                 default: hand.phase == .finished
                 }
@@ -74,12 +80,15 @@ public struct RootView: View {
         _model = StateObject(wrappedValue: model)
         _tutorial = StateObject(wrappedValue: model.makeTutorial())
         let screen: Screen = switch stage {
-        case "picker", "stats", "settings", "howto": .menu
-        case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over": .table
+        case "picker", "stats", "settings", "howto", "home": .menu
+        case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
+             "home-tips": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
         _screen = State(initialValue: screen)
         _showWelcome = State(initialValue: stage == "pause")
+        _showTips = State(initialValue: stage == "home-tips")
+        holdTips = stage == "home-tips"
         choosingMode = stage == "picker"
     }
 
@@ -133,13 +142,19 @@ public struct RootView: View {
             case .intro:
                 IntroView(model: model, tutorial: tutorial) { model.markRulesSeen(); show(.table) }.transition(.opacity)
             case .menu:
-                MainMenuView(model: model, tutorial: tutorial, onPlay: { showWelcome = false; show(.table) }, choosingMode: choosingMode)
+                MainMenuView(model: model, tutorial: tutorial, onPlay: { showWelcome = false; showTips = true; show(.table) },
+                             choosingMode: choosingMode)
                     .transition(.opacity)
             case .table:
-                TableView(model: model, tutorial: tutorial, covered: showWelcome) { withAnimation(motion) { showWelcome = true } }
+                TableView(model: model, tutorial: tutorial, covered: showWelcome || showTips) { withAnimation(motion) { showWelcome = true } }
                     .transition(.opacity)
                     // Under the card the table is neither tappable nor reachable by VoiceOver.
-                    .accessibilityHidden(showWelcome)
+                    .accessibilityHidden(showWelcome || showTips)
+                    .overlay {
+                        if showTips {
+                            TipCardView(model: model, holds: holdTips) { showTips = false }
+                        }
+                    }
                     .overlay {
                         if showWelcome {
                             ZStack {

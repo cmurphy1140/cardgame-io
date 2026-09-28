@@ -308,6 +308,13 @@ public final class GameModel: ObservableObject {
         TutorialModel(completed: settings.completedLessons) { [weak self] completed in self?.settings.completedLessons = completed }
     }
 
+    /// The tip the card shows next, and the index moved on and saved, so the next visit carries on from here (D67).
+    func takeNextTip() -> TipDeck.Face {
+        let face = TipDeck.tip(settings.nextTip)
+        settings.nextTip = (settings.nextTip % TipDeck.tips.count + TipDeck.tips.count + 1) % TipDeck.tips.count
+        return face
+    }
+
     /// True until the player has dismissed the tutorial once.
     public var needsRulesIntroduction: Bool { !settings.hasSeenRules }
     public func markRulesSeen() { settings.hasSeenRules = true }

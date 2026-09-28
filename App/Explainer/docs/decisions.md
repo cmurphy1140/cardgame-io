@@ -559,3 +559,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Leaving the sheet to open straight on the first rule, or adding the line to the rules document as if it were a rule.
 
 **Why:** Connor asked for it: the game is a family's, handed down, and the sheet is where a new player first reads about it. `rulesSheetOpensWithWhereTheGameComesFrom` holds the exact wording.
+
+## D67. Deal me in, and a tip card on the way to the table (2026-09-27)
+
+**Chosen:** The home screen's play buttons are "Back to the table" (prominent) and "Deal me in" (plain) while a match is in progress, and one prominent "Deal me in" otherwise (`MainMenuView.homeButtons(matchInProgress:)`). Deal me in replaces New match and keeps its start-over alert and Solo or Pass and play picker. Going from the home screen to the table through either button shows `TipCardView` over the covered table: a large ivory card that opens on `RulesText.origin` ("WHERE IT COMES FROM"), turns over after 3.2 s (a 3D turn about its vertical axis) to the next of eleven tips ("TIP n OF 11", `TipDeck.tips`), and deals on its own 3.2 s after that; a tap anywhere deals at once. Dealing sends four card backs to the four seats over 0.5 s as the dim lifts. The next tip index is `Settings.nextTip` (decoded with a default of 0, so older files load), advanced and saved by `GameModel.takeNextTip()` when a tip is shown, and wrapping after the eleventh; a visit that deals before the turn uses no tip. A launch that resumes straight onto the table (D64) shows no tip card. The five of hearts on the home screen sways slowly and turns over to its back about every 9 s; it is not a control. Under Reduce Motion the turn and the deal are crossfades and the five holds still. The table counts as covered while the card is up, so no computer acts behind it.
+
+**Over:** Continue game and New match, and going straight to the table.
+
+**Why:** Connor approved the mockup: the walk from the home screen to the table is a moment to teach one thing, the way someone at a real table says a word while they shuffle, and the eleventh tip says the game needs no connection.
