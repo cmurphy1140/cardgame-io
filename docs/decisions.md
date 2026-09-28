@@ -641,3 +641,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A near-black plaque beside an ivory tile, two corners that read as different objects.
 
 **Why:** Connor marked up a screenshot of the table (N41): the two corners are one pair and should look it. `tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump` holds the fill, the ink and the suit colours.
+
+## D77. Bigger faces that pop out of their circles (2026-09-28)
+
+**Chosen:** Table portraits grow from 68 to 86 pt (`Theme.Table.portraitSize`, about 1.3×). The green disc stays, but the character inside is drawn 1.2× larger and raised a quarter of the face (`Theme.Portrait.popScale`, `popRise`): the shoulders stay clipped to the disc and the head rises over its top edge (`PortraitView(popsOut:)`). The seat draws the head a second time over its rings (`headOnly`), so the bidder's dashed ring and the gold halo pass behind the head, and keeps `Theme.Table.portraitHeadroom` (0.24 of the face) above the disc so the tallest hat never reaches the header. To make room: while bidding, the side seats rise `Theme.Table.biddingSideRise` (100 pt) beside the partner so the bid pills and Pass still sit above the hand; the dealer's deck tucks 10 pt closer to the face; a big moment's face (D73) grows 1.15× from its bottom edge (99 pt, still larger than the old 1.3× of 68) so it neither covers the name nor reaches the pile, and the table column clips only top and bottom so a side face at that size is not cut at the screen's edge. Other portraits (menu, pickers, hand-end card, tutorial) are unchanged.
+
+**Over:** Faces sized to sit wholly inside their discs, or a larger disc, which the side tiles beside the pile cannot hold.
+
+**Why:** Connor asked for bigger faces that pop out of their circles (N48, N49). At rest face and halo fit a side tile on iPhone 16 and 16 Pro, and at full breath or a big moment they stay within the gap beside it, never the pile's reservation; `seatTilesHoldTheLargerFaceAndItsHaloOnEveryVerifiedWidth` and `tableFacesAreBiggerAndTheirHeadsPopOutOfTheirDiscs` hold the sizes.

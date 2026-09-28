@@ -82,6 +82,9 @@ struct TableSurface: View {
                         Spacer(minLength: TableLayout.seatGap)
                         SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
                     }
+                    // While bidding there is no pile between them and no corner above them, so the side seats rise
+                    // beside the partner and the bigger faces leave the bid pills their room (N48).
+                    .padding(.top, hand.phase == .bidding ? -Theme.Table.biddingSideRise : 0)
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
                         switch row {
@@ -107,7 +110,11 @@ struct TableSurface: View {
                 .frame(height: fits ? geometry.size.height : nil)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // A side face at its big-moment size reaches a little past the column; the screen's margin holds it,
+            // so the column clips top and bottom only.
+            .scrollClipDisabled()
             .frame(width: geometry.size.width, height: geometry.size.height)
+            .mask { Rectangle().padding(.horizontal, -Theme.Table.seatInset) }
             // Trump, very large and faint behind the play area: there when you look for it, never in the way.
             .background {
                 if let trump = hand.trump {
@@ -567,9 +574,9 @@ struct SeatView: View {
     /// breathes; that halo is the table's only turn indicator.
     var body: some View {
         VStack(spacing: 2) {
-            PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: SeatMood.expression(for: seat, in: model.match))
+            PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true)
                 // Big public moments show larger on the face, until the next lead (N36).
-                .scaleEffect(SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1)
+                .scaleEffect(bigMomentScale, anchor: .bottom)
                 .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: SeatMood.isBigMoment(for: seat, in: model.match))
                 // The bidder's ring: dashed, light brown, on the portrait's own edge, never the gold halo (D65).
                 .overlay {
@@ -588,6 +595,11 @@ struct SeatView: View {
                         .padding(-Theme.Table.activeRingGap)
                         .opacity(active ? 1 : 0)
                 }
+                // The popped head goes over the rings as well, so it stays in front of its circle (N49).
+                .overlay {
+                    PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true, headOnly: true)
+                        .scaleEffect(bigMomentScale, anchor: .bottom)
+                }
                 .scaleEffect(pulsing ? Theme.Table.activePulseScale : 1)
                 .onChange(of: active, initial: true) { _, isActive in
                     if isActive, !reduceMotion {
@@ -597,9 +609,11 @@ struct SeatView: View {
                     }
                 }
                 .padding(.vertical, Theme.Table.activeRingGap)
-                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13).
+                .padding(.top, Theme.Table.portraitSize * Theme.Table.portraitHeadroom)
+                // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13). It
+                // tucks in against the bigger face so it stays inside the tile, clear of the pile (N48).
                 .overlay(alignment: .bottomTrailing) {
-                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 16, y: -2) }
+                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 6, y: -2) }
                 }
                 // A computer deciding shows calm dots above its tile instead of a status line (T04).
                 .overlay(alignment: .top) {
@@ -668,6 +682,8 @@ struct SeatView: View {
     }
 
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
+    private var expression: Portrait.Expression { SeatMood.expression(for: seat, in: model.match) }
+    private var bigMomentScale: Double { SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1 }
 }
 
 /// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on
