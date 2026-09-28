@@ -542,3 +542,12 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Leaving the returning-player rule as it stood, which put Connor back at the menu every time iOS suspended and ended the app mid-hand, one extra tap from the game he was already in.
 
 **Why:** The main menu is for starting or resuming a choice, not for a match that is already running; a background-killed app should feel like nothing happened. The explainer only needs to live where a player goes looking for it, and duplicating it in Settings and the tutorial added menu weight without adding a use.
+
+## D65. Who bid, the bid and trump sit in the table's top corners, and the player keeps a trump tally by hand (2026-09-27)
+
+**Chosen:** The header keeps only the score and the pause control; the contract chip is gone. Once the auction resolves, the table's top-left corner shows a plaque (`ContractPlaque`): a small BID eyebrow, the bid large in the display serif (9 and out reads as a 9 with "and out" beneath) and the bidder's name. Once trump is named, the top-right corner shows it large on an ivory tile (`TrumpTile`), hearts and diamonds red, spades and clubs black, and a very large, faint trump watermark sits behind the play area, never hit-testable. Both corners flank the partner's tile and stay within its height (`Theme.Table.cornerWidth` and the tokens beside it). The bidder's portrait wears a dashed light-brown ring on its own edge, which cannot be mistaken for the solid gold halo outside the portrait of the seat to act. Tapping the trump tile adds a tally stroke (drawn in groups of five by `TallyMarks`, capped at 13); press and hold takes one back, down to 0; VoiceOver reads "Hearts are trump, 4 trump played" and adjusts with swipe up and down. Tapping a seat's portrait toggles an out-of-trump badge (the suit crossed out, `OutOfTrumpBadge`). The tally and the badges are `GameModel` view state (`trumpTally`, `outOfTrump`), cleared when the next hand or a new match starts, or when an undo takes back the trump call; the engine, `PlayerView`, the computers and the save never see them.
+
+**Over:** The contract chip in the header, which put the three things a player most needs to remember (who bid, the bid, trump) in a small line at the top of the screen.
+
+**Why:** Connor: "The three biggest things to remember are who bid, what the bid is, and what trump." The tally is consistent with spec R4 (no automatic number tracking) because the app itself never counts: it only keeps the marks the player makes, as a pencil would.
+

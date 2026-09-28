@@ -1,24 +1,15 @@
 import CatchFive
 import SwiftUI
 
-/// The bar pinned above the table, one row of three (spec R1): a score chip that opens the score sheet,
-/// the contract chip once bidding has resolved, and the menu, which is also where the game pauses (spec
-/// R32). Nothing else lives up here; the hand number is on the score sheet, the seat to act is ringed at
-/// the table, and the dealer badge sits on the hand's label.
+/// The bar pinned above the table (spec R1): a score chip that opens the score sheet, and the menu, which
+/// is also where the game pauses (spec R32). Nothing else lives up here; the bid and trump sit in the
+/// table's top corners (D65), the hand number is on the score sheet, the seat to act is ringed at the
+/// table, and the dealer badge sits on the hand's label.
 struct ScoreBarView: View {
-    /// What the contract chip shows: the bid and who holds it, plus trump once it is named.
-    struct Contract: Equatable {
-        let trump: Suit?
-        let bid: Int
-        let isNineAndOut: Bool
-        let bidder: String
-    }
-
     let us: Int
     let them: Int
     let usLabel: String
     let themLabel: String
-    let contract: Contract?
     let canUndo: Bool
     let onScores: () -> Void
     /// Opens the pause card over the table.
@@ -44,8 +35,6 @@ struct ScoreBarView: View {
             .accessibilityHint("Shows every hand of this match")
 
             Spacer(minLength: 4)
-            if let contract { contractChip(contract) }
-            Spacer(minLength: 4)
 
             Button(action: onPause) {
                 Image(systemName: "pause.circle").font(.title3).frame(width: 44, height: 44, alignment: .trailing)
@@ -55,24 +44,5 @@ struct ScoreBarView: View {
             .accessibilityLabel("Pause")
         }
         .foregroundStyle(.ivory)
-    }
-
-    /// "♣ 3 — Otto" in gold (rule 2), the suit in its own colour; "9 and out" spelled out.
-    private func contractChip(_ contract: Contract) -> some View {
-        HStack(spacing: 5) {
-            if let trump = contract.trump {
-                Text(trump.glyph).foregroundStyle(trump.isRed ? Color.suitRed : .ivory)
-            }
-            Text(contract.isNineAndOut ? "9 and out" : String(contract.bid))
-            Text("—").opacity(0.6)
-            Text(contract.bidder)
-        }
-        // The contract carries the same weight as the score it is played against, so it reads at
-        // the scores' size rather than a step below them.
-        .font(.system(.title3, design: .serif).weight(.semibold))
-        .foregroundStyle(.gold)
-        .lineLimit(1).minimumScaleFactor(0.7)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Bid: \(contract.bidder) bid \(contract.isNineAndOut ? "9 and out" : String(contract.bid))\(contract.trump.map { ", \($0.rawValue) trump" } ?? "")")
     }
 }

@@ -113,6 +113,27 @@ public enum Theme {
         public static let auctionButtonRadius = 14.0
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
+        /// The table's top corners either side of the partner (D65): the contract plaque on the left, the
+        /// trump tile with the player's tally on the right. Both stay within the partner row's height.
+        public static let cornerWidth = 92.0
+        public static let cornerRadius = 14.0
+        /// The bid's number in the display serif, and the trump glyph on its ivory tile.
+        public static let plaqueNumberSize = 44.0
+        public static let trumpTileHeight = 78.0
+        public static let trumpGlyphSize = 56.0
+        /// Tally strokes under the tile: height, the step between strokes, and the gap between groups of five.
+        public static let tallyHeight = 16.0
+        public static let tallyStep = 4.0
+        public static let tallyGroupGap = 7.0
+        /// The bidder's seat wears a dashed light-brown ring on the portrait's own edge, inside where the
+        /// gold halo of the seat to act would sit, so the two never read as one another.
+        public static let bidderRingWidth = 2.5
+        public static let bidderRingDash: [CGFloat] = [5, 3]
+        /// The player's out-of-trump mark: an ivory disc on the portrait's lower-left, the suit crossed out.
+        public static let outOfTrumpBadgeSize = 26.0
+        /// The trump watermark behind the play area: very large and only just visible.
+        public static let watermarkSize = 300.0
+        public static let watermarkOpacity = 0.06
     }
 
     public enum Motion {

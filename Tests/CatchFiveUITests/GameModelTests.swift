@@ -1379,3 +1379,73 @@ import Testing
     #expect(draw.sentence(names: Settings.defaultSeatNames) == "You draw the ace of spades and deal.")
     #expect(draw.sentence(names: Settings.defaultSeatNames, you: false) == "Cheryl draws the ace of spades and deals.")
 }
+
+/// Bids 9 from seat 0, lets the computers pass and names hearts, so trump is set and play has begun.
+@MainActor private func modelWithTrumpNamed() throws -> GameModel {
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    let model = GameModel(match: try Match(deck: deck, dealer: 3))
+    model.send(.bid(9))
+    for _ in 0..<3 { model.stepComputer() }
+    model.send(.chooseTrump(.hearts))
+    #expect(model.match.hand.trump == .hearts)
+    return model
+}
+
+@MainActor @Test func trumpTallyAddsCapsAtThirteenTakesBackToZeroAndResetsNextHand() throws {
+    let model = try modelWithTrumpNamed()
+    #expect(model.trumpTally == 0)
+    model.tallyTrump()
+    model.tallyTrump()
+    #expect(model.trumpTally == 2)
+    for _ in 0..<20 { model.tallyTrump() }
+    #expect(model.trumpTally == GameModel.trumpTallyCap && GameModel.trumpTallyCap == 13)
+    model.untallyTrump()
+    #expect(model.trumpTally == 12)
+    for _ in 0..<20 { model.untallyTrump() }
+    #expect(model.trumpTally == 0)
+    // Strokes group in fives, the fifth crossing the four before it.
+    #expect(TallyMarks.groups(0).isEmpty && TallyMarks.groups(4) == [4] && TallyMarks.groups(13) == [5, 5, 3])
+    #expect(TrumpTile.spoken(trump: .hearts, tally: 4) == "Hearts are trump, 4 trump played")
+    // The tally is the player's, not the game's: nothing in the match or its save changes.
+    let actions = model.match.actionCount
+    model.tallyTrump()
+    #expect(model.match.actionCount == actions)
+    try playOutHand(model)
+    model.nextHand()
+    #expect(model.trumpTally == 0)
+}
+
+@MainActor @Test func outOfTrumpBadgeTogglesAndResetsNextHand() throws {
+    let model = try modelWithTrumpNamed()
+    #expect(model.outOfTrump.isEmpty)
+    model.toggleOutOfTrump(1)
+    model.toggleOutOfTrump(2)
+    #expect(model.outOfTrump == [1, 2])
+    model.toggleOutOfTrump(1)
+    #expect(model.outOfTrump == [2])
+    try playOutHand(model)
+    model.nextHand()
+    #expect(model.outOfTrump.isEmpty)
+    // Before trump is named there is nothing to be out of.
+    model.toggleOutOfTrump(3)
+    #expect(model.outOfTrump.isEmpty)
+}
+
+@Test func contractPlaqueShowsTheBidLargeAndNineAndOutAsNine() {
+    let normal = ContractPlaque.Contract(bid: 5, isNineAndOut: false, bidder: "Cheryl")
+    #expect(normal.number == "5" && normal.qualifier == nil && normal.spoken == "Cheryl bid 5")
+    let nine = ContractPlaque.Contract(bid: 9, isNineAndOut: true, bidder: "Otto")
+    #expect(nine.number == "9" && nine.qualifier == "and out" && nine.spoken == "Otto bid 9 and out")
+}
+
+@MainActor private func playOutHand(_ model: GameModel) throws {
+    for _ in 0..<200 where model.match.hand.phase != .finished {
+        if model.isHumanTurn {
+            model.showHint()
+            model.send(try #require(model.hint).action)
+        } else {
+            model.stepComputer()
+        }
+    }
+    #expect(model.match.hand.phase == .finished)
+}
