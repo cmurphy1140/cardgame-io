@@ -59,6 +59,12 @@ enum TableLayout {
     static let seatGap = 4.0
     static let minimumSeatWidth = 84.0
 
+    /// Each top corner's width: up to `Theme.Table.cornerWidth`, and never so wide that the two corners and the
+    /// partner's tile overrun the row (N51).
+    static func cornerWidth(available: Double) -> Double {
+        min(Theme.Table.cornerWidth, (available - Theme.Table.seatTileWidth) / 2 - 2)
+    }
+
     static func sideSeatWidth(available: Double) -> Double {
         let room = (available - pileReservation - 2 * seatGap) / 2
         return max(minimumSeatWidth, min(Theme.Table.seatTileWidth, room))

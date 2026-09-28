@@ -1446,9 +1446,9 @@ import Testing
 }
 
 @Test func contractPlaqueShowsTheBidLargeAndNineAndOutAsNine() {
-    let normal = ContractPlaque.Contract(bid: 5, isNineAndOut: false, bidder: "Cheryl")
+    let normal = ContractPlaque.Contract(bid: 5, isNineAndOut: false, bidder: "Cheryl", portrait: Settings().playerPortrait)
     #expect(normal.number == "5" && normal.qualifier == nil && normal.spoken == "Cheryl bid 5")
-    let nine = ContractPlaque.Contract(bid: 9, isNineAndOut: true, bidder: "Otto")
+    let nine = ContractPlaque.Contract(bid: 9, isNineAndOut: true, bidder: "Otto", portrait: Settings().playerPortrait)
     #expect(nine.number == "9" && nine.qualifier == "and out" && nine.spoken == "Otto bid 9 and out")
 }
 
@@ -1535,4 +1535,20 @@ private func matchWithTeamOneDownTen() throws -> Match {
 @Test func reviewBarSaysItIsTheLastTrick() {
     // Reopening the pile shows the last trick of the hand in play, not a finished hand (N42).
     #expect(TableSurface.reviewLabel == "Reviewing last trick")
+}
+
+@MainActor @Test func tableCornersMatchAndNearlyFillTheTopRowBesideThePartner() throws {
+    // Two corners of one width either side of the partner's tile fill nearly all of the top row on the
+    // verified widths (N51), and still fit it on the SE.
+    for available in [370.0, 361.0] {
+        let row = 2 * TableLayout.cornerWidth(available: available) + Theme.Table.seatTileWidth
+        #expect(row <= available && row >= available * 0.95)
+    }
+    #expect(2 * TableLayout.cornerWidth(available: 343) + Theme.Table.seatTileWidth <= 343)
+    // Big number, big suit (N52): well past the 44 and 56 pt they were.
+    #expect(Theme.Table.plaqueNumberSize >= 52 && Theme.Table.trumpGlyphSize >= 72)
+    // The bid corner carries the bidder's own face (N52).
+    let face = try #require(Cast.opponent(at: 1)?.portrait)
+    let contract = ContractPlaque.Contract(bid: 4, isNineAndOut: false, bidder: "JC", portrait: face)
+    #expect(contract.portrait == face)
 }

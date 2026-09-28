@@ -665,3 +665,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** "Reviewing last hand", which promised a finished hand's result the view never showed.
 
 **Why:** What reopens is the last trick of the hand in play (`reopenedTrick`), which has no hand score yet (N42). `reviewBarSaysItIsTheLastTrick` holds the words.
+
+## D80. Bigger matching corners, with the bidder's face (2026-09-28)
+
+**Chosen:** The two light tan corners (D65, D76) take one size: `TableLayout.cornerWidth(available:)` wide (up to `Theme.Table.cornerWidth`, 124 pt, and never so wide that the row overruns: 120 pt on the iPhone 16, 124 on the 16 Pro, 111 on the SE) by `Theme.Table.cornerHeight` (116 pt), so with the partner's tile they fill about 99 percent of the top row. Both have the same fill, edge and shadow. The bid corner shows the bidder's own portrait (`Contract.portrait`, the face at their seat, 50 pt and popping out of its disc as at the table, D77) beside a small BID and the number at 56 pt, with the bidder's name small underneath; the trump corner shows the suit at 80 pt, with the tally strokes still under it and the whole corner still the tap target. The first time a corner fills (the bid resolved, trump named) it grows in from 0.6 with an ivory glow that fades over 0.9 s (`CornerArrival`); under Reduce Motion it fades in.
+
+**Over:** A 92 pt plaque beside a shorter trump tile, the bidder named but not shown, and corners that simply appear.
+
+**Why:** Connor asked for it (N51, N52, N53): the corners are the table's scoreboard for the hand, and people who won't read small text need a big number, a big suit and a face they recognise, and a nudge to look there. `tableCornersMatchAndNearlyFillTheTopRowBesideThePartner` holds the widths, the sizes and the bidder's face.

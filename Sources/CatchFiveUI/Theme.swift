@@ -123,15 +123,21 @@ public enum Theme {
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
         /// The table's top corners either side of the partner (D65): the contract plaque on the left, the
-        /// trump tile with the player's tally on the right. Both stay within the partner row's height.
-        public static let cornerWidth = 92.0
+        /// trump tile with the player's tally on the right. One size for both (N51), as wide as the row allows
+        /// up to this (`TableLayout.cornerWidth(available:)`), so with the partner they nearly fill the row.
+        public static let cornerWidth = 124.0
+        public static let cornerHeight = 116.0
         public static let cornerRadius = 14.0
         /// Both corners sit on a very light tan (D76), so they read as paper laid on the felt, not holes in it.
         public static let cornerFill = Color(red: 0.91, green: 0.84, blue: 0.70)
-        /// The bid's number in the display serif, and the trump glyph on its tan tile.
-        public static let plaqueNumberSize = 44.0
-        public static let trumpTileHeight = 78.0
-        public static let trumpGlyphSize = 56.0
+        /// Big for people who won't read small text (N52): the bid's number in the display serif, the bidder's
+        /// face beside it, and the trump glyph on its tan tile.
+        public static let plaqueNumberSize = 56.0
+        public static let plaquePortraitSize = 50.0
+        public static let trumpGlyphSize = 80.0
+        /// A corner arrives (N53): it grows from this scale with a glow that fades over `cornerGlowSeconds`.
+        public static let cornerArrivalScale = 0.6
+        public static let cornerGlowSeconds = 0.9
         /// Tally strokes under the tile: height, the step between strokes, and the gap between groups of five.
         public static let tallyHeight = 16.0
         public static let tallyStep = 4.0

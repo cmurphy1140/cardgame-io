@@ -59,14 +59,22 @@ struct TableSurface: View {
                     // The phone holder sits at the bottom; in pass and play the table turns with the phone.
                     // Who bid and for how much in the top-left corner, trump and the player's tally in the
                     // top-right, either side of the partner and no taller than the partner's tile (D65).
+                    // Both corners share one size and, with the partner, nearly fill the row (N51); each pops in
+                    // the first time it fills (N53).
+                    let cornerWidth = TableLayout.cornerWidth(available: geometry.size.width)
                     HStack(alignment: .top, spacing: 0) {
-                        corner { if let contract { ContractPlaque(contract: contract) } }.accessibilitySortPriority(25)
+                        corner(width: cornerWidth) {
+                            if let contract { ContractPlaque(contract: contract, width: cornerWidth).modifier(CornerArrival()) }
+                        }
+                        .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
                         SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
                         Spacer(minLength: 0)
-                        corner {
+                        corner(width: cornerWidth) {
                             if let trump = hand.trump {
-                                TrumpTile(trump: trump, tally: model.trumpTally, onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
+                                TrumpTile(trump: trump, tally: model.trumpTally, width: cornerWidth,
+                                          onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
+                                    .modifier(CornerArrival())
                             }
                         }
                         .accessibilitySortPriority(24)
@@ -138,14 +146,15 @@ struct TableSurface: View {
     private var contract: ContractPlaque.Contract? {
         let auction = hand.auction
         guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
-        return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder])
+        return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder],
+                                       portrait: Cast.opponent(at: bidder)?.portrait ?? model.settings.playerPortrait)
     }
 
     /// A top corner of the table: a fixed width, top-aligned, empty until it has something to show.
-    private func corner(@ViewBuilder _ content: () -> some View) -> some View {
+    private func corner(width: Double, @ViewBuilder _ content: () -> some View) -> some View {
         // The clear strut holds the width while the corner is empty, so the partner stays centred.
         ZStack(alignment: .top) {
-            Color.clear.frame(width: Theme.Table.cornerWidth, height: 0)
+            Color.clear.frame(width: width, height: 0)
             content()
         }
     }
