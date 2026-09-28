@@ -13,7 +13,8 @@ public struct TableView: View {
     @State private var confirmNineAndOut = false
     @State private var showSettings = false
     @State private var showTutorial = false
-    @State private var showScoreboard = false
+    /// The team whose score panel is open over the table (N62).
+    @State private var scorePanel: Int?
     @State private var showStatistics = false
     /// Completed tricks whose cards have already collapsed toward the winner.
     @State private var collapsedTricks = 0
@@ -54,7 +55,7 @@ public struct TableView: View {
     private var pause: TablePause {
         TablePause(sceneActive: scenePhase == .active,
                    welcomeShown: covered,
-                   sheetShown: showSettings || showTutorial || showScoreboard || showStatistics,
+                   sheetShown: showSettings || showTutorial || scorePanel != nil || showStatistics,
                    dialogShown: confirmNewGame || confirmNineAndOut || model.errorMessage != nil || model.saveError != nil,
                    inspectingTrick: reopenedTrick != nil,
                    drawShown: drawShown)
@@ -98,12 +99,14 @@ public struct TableView: View {
                         .transition(.opacity)
                 }
             }
+            .overlay { teamPanel }
             .overlay { celebration }
             .transformEnvironment(\.dynamicTypeSize) { $0 = $0.boosted(by: Theme.textBoostSteps) }
             .onAppear {
                 // The screenshot stages open on a match already won, so nothing announced the win.
                 if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
                 if ScreenshotStage.name == "confirm9" { confirmNineAndOut = true }
+                if ScreenshotStage.name == "panel" { scorePanel = model.ourTeam }
             }
     }
 
@@ -132,6 +135,16 @@ public struct TableView: View {
         }
     }
 
+    /// One team's score panel, risen from its rail's foot (N62).
+    @ViewBuilder private var teamPanel: some View {
+        if let team = scorePanel {
+            ScorePanel(content: ScorePanel.content(team: team, history: model.match.history, seatNames: model.seatNames),
+                       label: railLabel(team), names: model.teamNames(team),
+                       onClose: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = nil } })
+                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
     private func nextCelebration() {
         guard !celebrating.isEmpty else { return }
         withAnimation(motion(Theme.Motion.overlay)) { _ = celebrating.removeFirst() }
@@ -144,14 +157,11 @@ public struct TableView: View {
     /// Score bar, table and hand in one non-scrolling column.
     private var layout: some View {
         VStack(spacing: 6) {
-            // "Us" is the phone holder's team; in pass and play that turns with the phone, as the table does.
-            ScoreBarView(us: model.match.scores[model.ourTeam], them: model.match.scores[1 - model.ourTeam],
-                         usLabel: teamLabel(model.ourTeam), themLabel: teamLabel(1 - model.ourTeam),
-                         canUndo: model.canUndo,
-                         onScores: { showScoreboard = true }, onPause: onLeave)
+            // The score sits at the foot of the rails (N62); the rest of the header stays empty.
+            ScoreBarView(onPause: onLeave)
                 .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 8)
                 // A solid header band: runs up behind the status bar and ends in a frown, the corners
-                // hanging lower than the middle, so the scores sit on one colour and the wood starts beneath.
+                // hanging lower than the middle, so the pause button sits on one colour and the wood starts beneath.
                 .background {
                     WoodGrainView(vignette: .linear)
                         .clipShape(HeaderBandShape(dip: Theme.Table.headerDip))
@@ -181,7 +191,8 @@ public struct TableView: View {
                 RiffleShuffle().id(shuffles).position(dealerDeck)
             }
         }
-        // The score rails run down both edges, in the margin beside the hand, from below the side seats (N59).
+        // The score rails run down both edges, in the margin beside the hand, from below the side seats (N59), each
+        // ending in its team's score in a bottom corner (N62).
         .overlay(alignment: .topLeading) { scoreRails }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
@@ -194,6 +205,7 @@ public struct TableView: View {
     }
 
     /// Your team's rail on the left, the other team's on the right, each showing the score as the last hand left it.
+    /// Only the scores at their feet take taps.
     private var scoreRails: some View {
         let scores = ScoreRail.shown(in: model.match)
         let top = sideSeatsBottom + Theme.Table.railGap
@@ -208,12 +220,18 @@ public struct TableView: View {
             .offset(y: top)
         }
         .opacity(sideSeatsBottom > 0 ? 1 : 0)
-        .allowsHitTesting(false)
+        .allowsHitTesting(sideSeatsBottom > 0)
     }
 
     private func rail(team: Int, scores: [Int], leading: Bool) -> some View {
-        ScoreRail(score: scores[team], label: ScoreRail.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team)),
-                  leading: leading)
+        ScoreRail(score: scores[team], label: railLabel(team), leading: leading) {
+            withAnimation(motion(Theme.Motion.overlay)) { scorePanel = team }
+        }
+    }
+
+    /// US or THEM in solo, the pair's names in pass and play.
+    private func railLabel(_ team: Int) -> String {
+        ScoreRail.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team))
     }
 
     /// One animation for the whole table per accepted action, so cards fly between hand and pile in one
@@ -276,7 +294,6 @@ public struct TableView: View {
         withHaptics
             .sheet(isPresented: $showSettings) { SettingsView(settings: $model.settings) }
             .sheet(isPresented: $showTutorial, onDismiss: { model.markRulesSeen() }) { TutorialView(model: tutorial) { showTutorial = false } }
-            .sheet(isPresented: $showScoreboard) { ScoreboardView(history: model.match.history, names: model.seatNames) { showScoreboard = false } }
             .sheet(isPresented: $showStatistics) { StatisticsView(stats: model.statistics, records: model.records) { showStatistics = false } }
             .alert("Game notice", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
                 Button("OK") { model.errorMessage = nil }
@@ -294,8 +311,6 @@ public struct TableView: View {
                 Button("Cancel", role: .cancel) {}
             } message: { Text("This replaces your saved game. " + PlayMode.choiceMessage) }
     }
-
-    private func teamLabel(_ team: Int) -> String { model.teamNames(team).uppercased() }
 
     private func motion(_ animation: Animation) -> Animation { reduceMotion ? Theme.Motion.reduced : animation }
 

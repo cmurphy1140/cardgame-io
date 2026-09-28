@@ -689,3 +689,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The score only in the header, or rails that move with every point taken during a hand.
 
 **Why:** Connor asked for it (N59): the race to 25 at a glance, from arm's length. `scoreRailsFillToTwentyFiveAndEmptyBelowZero` and `scoreRailsMoveOnlyWhenTheHandEnds` hold it.
+
+## D83. The score sits at the rails' feet, each opening its team's panel (2026-09-28)
+
+**Chosen:** Each team's score moves from the top of its green rail (D82) to its foot, on a light tan tab with a light brown edge in the table's bottom corner: US bottom-left, THEM bottom-right, the pairs' names in pass and play. The hand keeps a band under it (`Theme.Table.railFootRoom`, 50 pt, the dealer row when you deal) so the tabs sit clear of the cards. Tapping a tab raises that team's `ScorePanel` from the bottom over the table: its label and players, its total, the 25 points as dots filled in green up to it (`ScorePanel.dots(_:)`), and the hands so far as cards that page sideways, newest first, each with the bidder, made or set, the change and the running total (`ScorePanel.content(team:history:seatNames:)`). A tap outside or a swipe up or down closes it; play waits while it is open. The header keeps only the pause button (`ScoreBarView`); the space where the score was stays empty. The full Score page (`ScoreboardView`) is gone.
+
+**Over:** The score in the header opening a scrolling Score page with red dots.
+
+**Why:** Connor asked for it (N62): the score where the rails end, one team at a time, with nothing to scroll. `theHeaderCarriesNoScore` and `eachTeamsPanelShowsItsTotalDotsAndHands` hold it.

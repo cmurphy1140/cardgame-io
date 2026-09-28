@@ -131,6 +131,8 @@ public enum Theme {
         public static let railInset = 2.0
         public static let railNumberSize = 26.0
         public static let railLabelWidth = 44.0
+        /// The band under the hand kept for the scores at the rails' feet, in the bottom corners (N62).
+        public static let railFootRoom = 50.0
         /// The hand-end card stands in this far from the table's sides, so the rails' labels and numbers stay clear
         /// of it while the rails fill (N59).
         public static let railClearance = 32.0

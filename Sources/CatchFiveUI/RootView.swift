@@ -34,7 +34,8 @@ public struct RootView: View {
     /// progress) or `home-tips` (the tip card over the table, held), `home-whywe` (the same, turning to why we play); `ninewin`, `ninelose` (a 9 and out made or missed,
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
     /// (How to play with the full rules sheet open over it), `signoff` (the same, scrolled to the family's note); `bold` (a computer team down 10 or more, its note held on the table); `five` (your team has just taken the five
-    /// of trump, the big faces up, your lead) or `handline` (a hand's result with a seat's line on it).
+    /// of trump, the big faces up, your lead), `handline` (a hand's result with a seat's line on it) or `panel` (three hands
+    /// in, your team's score panel open).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         var model = model
@@ -118,6 +119,15 @@ public struct RootView: View {
                 Self.play(model) { hand, _ in hand.phase == .finished }
                 if model.handEndLine != nil { break }
             }
+        case "panel":
+            // Three hands scored, then your turn in the fourth, with your team's score panel open (N62).
+            model.newGame(mode: .solo)
+            model.dismissDealerDraw()
+            for _ in 0..<3 where model.match.winner == nil {
+                Self.play(model) { hand, _ in hand.phase == .finished }
+                if model.match.winner == nil { model.nextHand() }
+            }
+            Self.play(model) { hand, humanTurn in humanTurn && hand.phase == .playing }
         case "over":
             model.newGame(mode: .solo)
             model.dismissDealerDraw()
@@ -133,7 +143,7 @@ public struct RootView: View {
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto", "rules", "signoff", "home": .menu
         case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
-             "home-tips", "home-whywe", "ninewin", "ninelose", "won", "confirm9", "bold", "five", "handline": .table
+             "home-tips", "home-whywe", "ninewin", "ninelose", "won", "confirm9", "bold", "five", "handline", "panel": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
         _screen = State(initialValue: screen)
