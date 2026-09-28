@@ -29,7 +29,7 @@ public struct RootView: View {
     /// `pass-table` (pass and play mid-hand, a player other than the first holding the phone);
     /// solo `draw` (the draw for dealer), `bidding` (your bid, a bid and a pass already in the boxes), `trump` (your trump choice), `table` (your play,
     /// cards on the pile), `dealer-bidder` (the same, a side seat having dealt and won the bid), `pause` (the
-    /// pause card over it), `result` (the hand's result), `review` (with Review hand open) or `over` (the match
+    /// pause card over it), `result` (the second hand's result), `review` (with Review hand open) or `over` (the match
     /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
     /// progress) or `home-tips` (the tip card over the table, held), `home-whywe` (the same, turning to why we play); `ninewin`, `ninelose` (a 9 and out made or missed,
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
@@ -65,6 +65,11 @@ public struct RootView: View {
                 }
                 let calls = model.match.hand.auction.calls
                 if stage != "bidding" || calls.contains(where: { $0.bid == nil }) && calls.contains(where: { $0.bid != nil }) { break }
+            }
+            // The `result` stage plays a second hand, so the scorecard shows a new total under a struck one (N66).
+            if stage == "result", model.match.winner == nil {
+                model.nextHand()
+                Self.play(model) { hand, _ in hand.phase == .finished }
             }
         case "trump", "dealer-bidder":
             // Deal until the hand reaches the wanted auction: you naming trump, or a side seat that dealt and won the bid.

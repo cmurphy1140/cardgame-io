@@ -1,11 +1,11 @@
 import CatchFive
 import SwiftUI
 
-/// One team's score, risen from its rail's foot over the table (N62): the total, the 25 points as dots filled in
-/// green up to it, and the hands so far as cards that page sideways, so nothing scrolls down. A tap outside it or
-/// a swipe closes it. It replaces the full Score page the header's score used to open.
+/// The full score sheet, opened from the scorecard (N66): both teams side by side, each with its total and the 25
+/// points as dots filled in green up to it, and the hands so far as cards that page sideways, newest first, so
+/// nothing scrolls down. A tap outside it or a swipe up or down closes it.
 struct ScorePanel: View {
-    /// One finished hand, from this team's side.
+    /// One finished hand, from one team's side.
     struct HandCard: Equatable {
         let number: Int
         /// "Cheryl bid 5, made".
@@ -28,7 +28,7 @@ struct ScorePanel: View {
     /// The dots a score fills: none below zero, all 25 from 25 up.
     nonisolated static func dots(_ score: Int) -> Int { min(HouseRules.matchTarget, max(0, score)) }
 
-    /// `team`'s panel from the match's finished hands.
+    /// `team`'s side of the sheet from the match's finished hands.
     nonisolated static func content(team: Int, history: [HandSummary], seatNames: [String]) -> Content {
         var before = 0
         let hands = history.map { hand in
@@ -41,11 +41,12 @@ struct ScorePanel: View {
         return Content(total: total, dots: dots(total), hands: hands)
     }
 
-    let content: Content
-    /// US or THEM in solo, the pair's names in pass and play (the rail's own label).
-    let label: String
-    /// The two players, "Cheryl + Connor".
-    let names: String
+    /// The phone holder's team and the other team.
+    let us: Content
+    let them: Content
+    /// US and THEM in solo, the pairs' names in pass and play (`Scorecard.label(us:mode:teamNames:)`).
+    let usLabel: String
+    let themLabel: String
     let onClose: () -> Void
 
     var body: some View {
@@ -69,16 +70,10 @@ struct ScorePanel: View {
 
     private var panel: some View {
         VStack(spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(label).font(.title2.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.6)
-                    Text(names).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6).opacity(0.8)
-                }
-                Spacer(minLength: 8)
-                Text(content.total, format: .number).font(.system(size: 56, weight: .heavy, design: .rounded)).monospacedDigit()
+            HStack(alignment: .top, spacing: 16) {
+                side(label: usLabel, content: us)
+                side(label: themLabel, content: them)
             }
-            .accessibilityElement(children: .combine)
-            dotsGrid
             hands
         }
         .foregroundStyle(Theme.Wood.streakDark)
@@ -88,36 +83,50 @@ struct ScorePanel: View {
         .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
     }
 
+    /// One team: its label and total over its dots.
+    private func side(label: String, content: Content) -> some View {
+        VStack(spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label).font(.title3.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.5)
+                Spacer(minLength: 4)
+                Text(content.total, format: .number).font(.system(size: 40, weight: .heavy, design: .rounded)).monospacedDigit()
+            }
+            .accessibilityElement(children: .combine)
+            dotsGrid(content.dots)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     /// 1 to 25 in five rows of five, filled green up to the total.
-    private var dotsGrid: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 6) {
+    private func dotsGrid(_ dots: Int) -> some View {
+        Grid(horizontalSpacing: 4, verticalSpacing: 4) {
             ForEach(0..<5, id: \.self) { row in
                 GridRow {
                     ForEach(1...5, id: \.self) { column in
                         let point = row * 5 + column
-                        let filled = point <= content.dots
-                        Text("\(point)").font(.subheadline.weight(.bold)).monospacedDigit()
-                            .foregroundStyle(filled ? Theme.Table.railEdge : Theme.Wood.dark.opacity(0.7))
-                            .frame(width: 34, height: 34)
-                            .background(filled ? Theme.Table.railFill : .clear, in: Circle())
-                            .overlay(Circle().stroke(filled ? Theme.Table.railFillEdge : Theme.Wood.light, lineWidth: 1.5))
+                        let filled = point <= dots
+                        Text("\(point)").font(.caption.weight(.bold)).monospacedDigit().minimumScaleFactor(0.6)
+                            .foregroundStyle(filled ? Theme.Table.dotInk : Theme.Wood.dark.opacity(0.7))
+                            .frame(width: 26, height: 26)
+                            .background(filled ? Theme.Table.dotFill : .clear, in: Circle())
+                            .overlay(Circle().stroke(filled ? Theme.Table.dotFillEdge : Theme.Wood.light, lineWidth: 1.5))
                     }
                 }
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(content.dots) of \(HouseRules.matchTarget) points")
+        .accessibilityLabel("\(dots) of \(HouseRules.matchTarget) points")
     }
 
-    /// The hands so far, one card each, newest first, paging sideways.
+    /// The hands so far, one card each with both teams' change and total, newest first, paging sideways.
     @ViewBuilder private var hands: some View {
-        if content.hands.isEmpty {
+        if us.hands.isEmpty {
             Text("No hands scored yet").font(.headline).opacity(0.75).frame(height: Self.cardHeight)
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
-                    ForEach(content.hands.reversed(), id: \.number) { hand in
-                        handCard(hand).containerRelativeFrame(.horizontal)
+                    ForEach(Array(zip(us.hands, them.hands).reversed()), id: \.0.number) { ours, theirs in
+                        handCard(ours, theirs).containerRelativeFrame(.horizontal)
                     }
                 }
                 .scrollTargetLayout()
@@ -127,31 +136,41 @@ struct ScorePanel: View {
         }
     }
 
-    private static let cardHeight = 92.0
+    private static let cardHeight = 104.0
 
-    private func handCard(_ hand: HandCard) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text("Hand \(hand.number)").font(.headline.weight(.heavy))
-                    // The hands this team bid carry the plaque's eyebrow.
-                    if hand.ourBid {
-                        Text("BID").font(.system(.caption2, design: .monospaced).weight(.semibold)).tracking(1.5).foregroundStyle(Theme.Wood.dark)
-                    }
-                }
-                Text(hand.line).font(.subheadline.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.7)
+    private func handCard(_ ours: HandCard, _ theirs: HandCard) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text("Hand \(ours.number)").font(.headline.weight(.heavy))
+                Text(ours.line).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
             }
-            Spacer(minLength: 4)
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(hand.change >= 0 ? "+\(hand.change)" : "\(hand.change)")
-                    .font(.system(size: 32, weight: .heavy, design: .rounded)).monospacedDigit()
-                Text("now \(hand.total)").font(.subheadline.weight(.bold)).monospacedDigit()
+            HStack(spacing: 12) {
+                change(label: usLabel, ours)
+                change(label: themLabel, theirs)
             }
         }
         .padding(12)
-        .frame(maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(.ivory, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
         .accessibilityElement(children: .combine)
+    }
+
+    /// One team's line on a hand card: its label, the change, and "now" the total; BID on the team that bid.
+    private func change(label: String, _ hand: HandCard) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Text(label).font(.caption.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.6)
+                if hand.ourBid {
+                    Text("BID").font(.system(.caption2, design: .monospaced).weight(.semibold)).tracking(1.5).foregroundStyle(Theme.Wood.dark)
+                }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(hand.change >= 0 ? "+\(hand.change)" : "\(hand.change)")
+                    .font(.system(size: 28, weight: .heavy, design: .rounded)).monospacedDigit()
+                Text("now \(hand.total)").font(.subheadline.weight(.bold)).monospacedDigit()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -54,17 +54,13 @@ struct HandFanView: View {
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TableLayout.space)) } action: { fanFrame = $0 }
-            // No "Your hand" caption (T05); the dealer badge stays when it is yours. The row is always there, so
-            // the scores at the rails' feet sit in the bottom corners clear of the cards (N62).
+            // No "Your hand" caption (T05); the dealer badge stays when it is yours.
             if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
                 HStack(spacing: 10) {
                     DealerDeck(onPlaced: onDeck)
                     Text("DEALER").foregroundStyle(.gold)
                         .font(.caption2.monospaced()).tracking(1)
                 }
-                .frame(minHeight: Theme.Table.railFootRoom)
-            } else {
-                Color.clear.frame(height: Theme.Table.railFootRoom)
             }
         }
         .frame(maxWidth: .infinity)

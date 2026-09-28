@@ -42,3 +42,41 @@ import Testing
     // The separate trump tile is gone: the suit is drawn in the box, in its own colour.
     #expect(ContractPlaque.glyphColor(.hearts) == .suitRed && ContractPlaque.glyphColor(.clubs) == .black)
 }
+
+/// Plays out the hand in progress: the first seat to speak bids 5, the rest pass, hearts are trump, then every
+/// seat plays its first legal card.
+private func playHand(_ match: inout Match) throws {
+    while match.hand.phase == .bidding {
+        let seat = try #require(match.hand.nextSeat)
+        if (try? match.bid(seat: seat, amount: 5)) == nil { try match.bid(seat: seat, amount: nil) }
+    }
+    try match.chooseTrump(seat: try #require(match.hand.auction.winner), suit: .hearts)
+    while match.hand.phase != .finished {
+        let seat = try #require(match.hand.nextSeat)
+        try match.play(seat: seat, card: try #require(match.hand.legalMoves(seat: seat).first))
+    }
+}
+
+@Test func theScorecardWritesEachNewTotalAndStrikesThePriorOne() throws {
+    // N66: a notebook page, US and THEM; each hand's new total on the next line, the one before scratched out.
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    var match = try Match(deck: deck, dealer: 3)
+    #expect(Scorecard.lines(team: 0, history: match.history).isEmpty)
+    #expect(Scorecard.columns == ["US", "THEM"])
+    try playHand(&match)
+    let first = match.scores
+    for team in 0...1 {
+        #expect(Scorecard.lines(team: team, history: match.history) == [.init(total: first[team], struck: false)])
+    }
+    try match.startNextHand(deck: deck)
+    // Nothing moves while a hand is being played.
+    #expect(Scorecard.lines(team: 0, history: match.history).count == 1)
+    try playHand(&match)
+    for team in 0...1 {
+        #expect(Scorecard.lines(team: team, history: match.history)
+            == [.init(total: first[team], struck: true), .init(total: match.scores[team], struck: false)])
+    }
+    #expect(Scorecard.handwriting == "Marker Felt")
+    #expect(Scorecard.label(us: false, mode: .passAndPlay, teamNames: "JC + Diane") == "JC + DIANE")
+    #expect(Scorecard.label(us: true, mode: .solo, teamNames: "Cheryl + Connor") == "US")
+}

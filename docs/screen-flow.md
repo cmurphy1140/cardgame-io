@@ -80,7 +80,7 @@ flowchart TD
     TB -->|New game, Solo or Pass and play, alert confirms| NEW[New match]
     TB -->|Home| M
     CL -->|How to play| TU[How to play, sheet]
-    T -->|score bar| SB[Scoreboard, sheet]
+    T -->|scorecard| SB[Score sheet, cover]
     T -->|hint| H[Hint detail, sheet]
     T -->|hand ends| R[Hand result, cover]
 

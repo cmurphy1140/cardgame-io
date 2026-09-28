@@ -18,8 +18,8 @@ public struct TableView: View {
     @State private var confirmNineAndOut = false
     @State private var showSettings = false
     @State private var showTutorial = false
-    /// The team whose score panel is open over the table (N62).
-    @State private var scorePanel: Int?
+    /// The full score sheet is open over the table (N66).
+    @State private var scorePanel = false
     @State private var showStatistics = false
     /// Completed tricks whose cards have already collapsed toward the winner.
     @State private var collapsedTricks = 0
@@ -30,8 +30,6 @@ public struct TableView: View {
     /// What the last revision changed, reduced to the one cue worth a haptic.
     @State private var cue: (id: Int, cue: TableFeedback.Cue)?
     @State private var seen: TableFeedback.Snapshot
-    /// The side seats' lower edge in the table's space: the score rails start below it (N59).
-    @State private var sideSeatsBottom = 0.0
     /// Where the deck beside the dealer rests on the table; the refill deals in from here (T12).
     @State private var dealerDeck: CGPoint?
     /// Counts hands dealt while the table is up; each one riffles once at the dealer's deck (D68).
@@ -64,7 +62,7 @@ public struct TableView: View {
     private var pause: TablePause {
         TablePause(sceneActive: scenePhase == .active,
                    welcomeShown: covered,
-                   sheetShown: showSettings || showTutorial || scorePanel != nil || showStatistics,
+                   sheetShown: showSettings || showTutorial || scorePanel || showStatistics,
                    dialogShown: newGameMode != nil || confirmNineAndOut || model.tallyDemo != nil || model.errorMessage != nil || model.saveError != nil,
                    inspectingTrick: reopenedTrick != nil,
                    drawShown: drawShown,
@@ -122,7 +120,7 @@ public struct TableView: View {
                 // The screenshot stages open on a match already won, so nothing announced the win.
                 if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
                 if ScreenshotStage.name == "confirm9" { confirmNineAndOut = true }
-                if ScreenshotStage.name == "panel" { scorePanel = model.ourTeam }
+                if ScreenshotStage.name == "panel" { scorePanel = true }
                 if ScreenshotStage.name == "table-menu" { openMenu = .table }
                 if ScreenshotStage.name == "clarify" { openMenu = .clarify }
             }
@@ -153,12 +151,14 @@ public struct TableView: View {
         }
     }
 
-    /// One team's score panel, risen from its rail's foot (N62).
+    /// The full score sheet, opened from the scorecard (N66).
     @ViewBuilder private var teamPanel: some View {
-        if let team = scorePanel {
-            ScorePanel(content: ScorePanel.content(team: team, history: model.match.history, seatNames: model.seatNames),
-                       label: railLabel(team), names: model.teamNames(team),
-                       onClose: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = nil } })
+        if scorePanel {
+            let them = 1 - model.ourTeam
+            ScorePanel(us: ScorePanel.content(team: model.ourTeam, history: model.match.history, seatNames: model.seatNames),
+                       them: ScorePanel.content(team: them, history: model.match.history, seatNames: model.seatNames),
+                       usLabel: teamLabel(model.ourTeam), themLabel: teamLabel(them),
+                       onClose: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = false } })
                 .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -192,7 +192,7 @@ public struct TableView: View {
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
                          onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
-                         onSideSeats: { sideSeatsBottom = $0 },
+                         onScorecard: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = true } },
                          holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -210,9 +210,6 @@ public struct TableView: View {
                 RiffleShuffle().id(shuffles).position(dealerDeck)
             }
         }
-        // The score rails run down both edges, in the margin beside the hand, from below the side seats (N59), each
-        // ending in its team's score in a bottom corner (N62).
-        .overlay(alignment: .topLeading) { scoreRails }
         .overlay { barMenu }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
@@ -243,34 +240,9 @@ public struct TableView: View {
         withAnimation(motion(Theme.Motion.overlay)) { openMenu = nil }
     }
 
-    /// Your team's rail on the left, the other team's on the right, each showing the score as the last hand left it.
-    /// Only the scores at their feet take taps.
-    private var scoreRails: some View {
-        let scores = ScoreRail.shown(in: model.match)
-        let top = sideSeatsBottom + Theme.Table.railGap
-        return GeometryReader { geometry in
-            HStack(alignment: .top, spacing: 0) {
-                rail(team: model.ourTeam, scores: scores, leading: true)
-                Spacer(minLength: 0)
-                rail(team: 1 - model.ourTeam, scores: scores, leading: false)
-            }
-            .padding(.horizontal, Theme.Table.railInset)
-            .frame(width: geometry.size.width, height: max(0, geometry.size.height - top))
-            .offset(y: top)
-        }
-        .opacity(sideSeatsBottom > 0 ? 1 : 0)
-        .allowsHitTesting(sideSeatsBottom > 0)
-    }
-
-    private func rail(team: Int, scores: [Int], leading: Bool) -> some View {
-        ScoreRail(score: scores[team], label: railLabel(team), leading: leading) {
-            withAnimation(motion(Theme.Motion.overlay)) { scorePanel = team }
-        }
-    }
-
     /// US or THEM in solo, the pair's names in pass and play.
-    private func railLabel(_ team: Int) -> String {
-        ScoreRail.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team))
+    private func teamLabel(_ team: Int) -> String {
+        Scorecard.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team))
     }
 
     /// One animation for the whole table per accepted action, so cards fly between hand and pile in one

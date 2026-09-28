@@ -729,3 +729,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A bid plaque in one corner and a trump tile with the tally in the other (D65, D80).
 
 **Why:** Connor asked for it (N63, N67): one place to look for the hand's contract, and the top-right corner freed for the scorecard. `theBidBoxShowsTheFaceTheBidAndTrumpAndTheSuitKeepsTheTally` holds the contents and the tally.
+
+## D88. A notebook scorecard in the top-right corner; the green rails go (2026-09-28)
+
+**Chosen:** The top-right corner, freed by trump moving into the bid box (D87), holds the scorecard (`Scorecard`): the bid box's size and light tan, with faint ruled lines like a notebook page and a line between two columns, US and THEM (the phone holder's team first, also in pass and play). When a hand ends each team's new total is handwritten in Marker Felt, built into iOS, on the next line and the total above it gets a scratch through it (`Scorecard.lines(team:history:)`); nothing changes during a hand. The newest three lines show. A tap opens the full sheet (`ScorePanel`), now both teams side by side, each with its total and 25 green dots, and every hand as a card paging sideways with both teams' change and total, so nothing scrolls down. The green rails and their bottom tabs (D82, D83) are gone, and the hand no longer keeps the 50 pt band they needed. Under the hand-end card everything fades back except the scorecard, and the card starts under the top row, so the new total is in view. The partner's auction box moves to the partner's left, into the empty bid box corner, since the scorecard holds the right; the side seats rise 48 pt while bidding (was 100) so they stay under the scorecard. The `result` screenshot stage plays two hands.
+
+**Over:** Green rails down both edges with tabs at their feet opening one team's panel.
+
+**Why:** Connor asked for it (N66): a score kept the way the family keeps it on paper. `theScorecardWritesEachNewTotalAndStrikesThePriorOne` holds the lines after one and two hands.

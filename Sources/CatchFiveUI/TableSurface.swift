@@ -18,8 +18,8 @@ struct TableSurface: View {
     let onNineAndOut: () -> Void
     /// The deck beside the dealer's tile says where it rests, so the deal can start there.
     var onDeck: (CGPoint) -> Void = { _ in }
-    /// The side seats' lower edge in the table's space, so the score rails can start below them (N59).
-    var onSideSeats: (Double) -> Void = { _ in }
+    /// The scorecard opens the full score sheet (N66).
+    var onScorecard: () -> Void = {}
     /// A match-win celebration is playing; the hand-end card waits until it has finished (D69).
     var holdsResult = false
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
@@ -31,6 +31,8 @@ struct TableSurface: View {
     @State private var contentHeight = 0.0
     /// The floating notice's height, so it sits wholly above "Your turn" in play.
     @State private var floatHeight = 0.0
+    /// The top row's lower edge: the hand-end card starts under it, so the scorecard stays in view (N66).
+    @State private var topRowBottom = 0.0
 
     private var hand: Hand { model.match.hand }
 
@@ -69,21 +71,27 @@ struct TableSurface: View {
                                 ContractPlaque.onTable(model, contract: contract, width: cornerWidth).modifier(CornerArrival())
                             }
                         }
+                        .opacity(dim)
                         .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
                         SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
-                            // The partner's box sits beside them, in the corner the bid plaque will take (N55).
-                            // Level with the top of the face, so it stays above the right-hand seat's head as it rises.
-                            .overlay(alignment: .topTrailing) {
+                            // The partner's box sits beside them on the left, in the corner the bid box will take (N55),
+                            // since the scorecard holds the right (N66). Level with the top of the face.
+                            .overlay(alignment: .topLeading) {
                                 if hand.phase == .bidding {
-                                    bidBox(at: 2, from: CGSize(width: -Theme.Table.bidBoxWidth, height: 0))
-                                        .offset(x: Theme.Table.bidBoxWidth + 4, y: Theme.Table.portraitSize * Theme.Table.portraitHeadroom)
+                                    bidBox(at: 2, from: CGSize(width: Theme.Table.bidBoxWidth, height: 0))
+                                        .offset(x: -Theme.Table.bidBoxWidth - 4, y: Theme.Table.portraitSize * Theme.Table.portraitHeadroom)
                                 }
                             }
+                            .opacity(dim)
                         Spacer(minLength: 0)
-                        corner(width: cornerWidth) {}
+                        // The scorecard: each team's total after every hand, handwritten on a notebook page (N66).
+                        Scorecard(us: Scorecard.lines(team: model.ourTeam, history: model.match.history),
+                                  them: Scorecard.lines(team: 1 - model.ourTeam, history: model.match.history),
+                                  width: cornerWidth, onOpen: onScorecard)
                             .accessibilitySortPriority(24)
                     }
+                    .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.space)).maxY } action: { topRowBottom = $0 }
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
                     // each beside the card its seat played.
@@ -92,8 +100,6 @@ struct TableSurface: View {
                         // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
                         SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
                             .modifier(DemoTap(active: model.tallyDemo == .face(seat: model.seat(at: 1))))
-                            // Both side tiles share a row and a height, so the left one's lower edge serves both rails.
-                            .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { onSideSeats($0) }
                             .overlay(alignment: .bottomTrailing) {
                                 if hand.phase == .bidding {
                                     bidBox(at: 1, from: CGSize(width: -Theme.Table.bidBoxWidth, height: -Theme.Table.bidBoxHeight))
@@ -111,9 +117,10 @@ struct TableSurface: View {
                                 }
                             }
                     }
-                    // While bidding there is no pile between them and no corner above them, so the side seats rise
-                    // beside the partner and the bigger faces leave the bid pills their room (N48).
+                    // While bidding there is no pile between them, so the side seats rise toward the partner, stopping
+                    // under the scorecard, and the bigger faces leave the bid pills their room (N48).
                     .padding(.top, hand.phase == .bidding ? -Theme.Table.biddingSideRise : 0)
+                    .opacity(dim)
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
                         switch row {
@@ -132,6 +139,7 @@ struct TableSurface: View {
                             if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
                         }
                     }
+                    .opacity(dim)
                 }
                 .padding(.top, Theme.Table.seatInset)
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { contentHeight = $0 }
@@ -149,6 +157,7 @@ struct TableSurface: View {
                 if let trump = hand.trump {
                     Text(trump.glyph).font(.system(size: Theme.Table.watermarkSize))
                         .foregroundStyle(.ivory.opacity(Theme.Table.watermarkOpacity))
+                        .opacity(dim)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
@@ -156,22 +165,28 @@ struct TableSurface: View {
             // No corner deck or discard pile (T12): the deck sits beside the dealer's tile instead.
             // The finished hand's card takes over the table; what is underneath fades back and leaves the
             // accessibility tree, so VoiceOver meets the card and nothing behind it.
-            .opacity(hand.phase == .finished ? 0.12 : 1)
             .accessibilityHidden(hand.phase == .finished)
-            .overlay { if hand.phase == .finished, !holdsResult { finishedCard } }
+            .overlay { if hand.phase == .finished, !holdsResult { finishedCard.padding(.top, topRowBottom) } }
             // The one-time demo of the two taps says what each pulse means, in the middle of the table (N61).
             .overlay {
                 if let demo = model.tallyDemo {
                     TallyDemoCaption(text: demo.caption)
-                        .padding(.horizontal, Theme.Table.railClearance)
+                        .padding(.horizontal, Theme.Table.overlayInset)
                         .onTapGesture { withAnimation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay) { model.advanceTallyDemo() } }
                         .transition(.opacity)
                         .id(demo.caption)
                 }
             }
         }
+        .coordinateSpace(.named(Self.space))
         .accessibilityElement(children: .contain)
     }
+
+    /// The surface's own space, for the top row's lower edge.
+    nonisolated static let space = "surface"
+
+    /// Everything but the scorecard fades back under the hand-end card, so the new total stays readable (N66).
+    private var dim: Double { hand.phase == .finished ? 0.12 : 1 }
 
     /// The box of the seat at `place` round the table (N55), its call arriving from `from`.
     private func bidBox(at place: Int, from: CGSize) -> some View {
@@ -547,7 +562,7 @@ struct TableSurface: View {
         .scrollBounceBehavior(.basedOnSize)
         .background(.ivory, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.Wood.header.opacity(0.45), lineWidth: 1.5))
-        .padding(.vertical, 8).padding(.horizontal, Theme.Table.railClearance)
+        .padding(.vertical, 8).padding(.horizontal, Theme.Table.overlayInset)
         .transition(reduceMotion ? .opacity : .offset(y: 12).combined(with: .opacity))
         .accessibilitySortPriority(40)
     }

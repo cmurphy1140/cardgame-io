@@ -88,9 +88,9 @@ public enum Theme {
         public static let portraitSize = 86.0
         /// Room kept above a table face's disc, as a fraction of its size, for the head that pops out (N49).
         public static let portraitHeadroom = 0.24
-        /// While bidding the side seats rise this far into the partner's row, beside it, so the bigger faces
-        /// still leave the bid pills and Pass above the hand (N48).
-        public static let biddingSideRise = 100.0
+        /// While bidding the side seats rise this far toward the partner's row, so the bigger faces still leave the
+        /// bid pills and Pass above the hand (N48); no further, since the scorecard holds the top-right corner (N66).
+        public static let biddingSideRise = 48.0
         /// The tutorial's lesson tiles keep the smaller face so three of them still share a row.
         public static let tutorialPortraitSize = 36.0
         /// The seat to act wears a gold halo: a ring this wide, this far outside the portrait, that pulses
@@ -125,24 +125,16 @@ public enum Theme {
         public static let bidBoxWordSize = 20.0
         /// How far a side seat's box tucks into the seat's own tile, toward the empty middle of the table.
         public static let bidBoxTuck = 14.0
-        /// The score rails down both edges of the table (N59): a bar thin enough to sit in the margin beside the
-        /// hand, the score bold above it, and the label (US, THEM or a pair's names) above that.
-        public static let railWidth = 11.0
-        public static let railInset = 2.0
-        public static let railNumberSize = 26.0
-        public static let railLabelWidth = 44.0
-        /// The band under the hand kept for the scores at the rails' feet, in the bottom corners (N62).
-        public static let railFootRoom = 50.0
-        /// The hand-end card stands in this far from the table's sides, so the rails' labels and numbers stay clear
-        /// of it while the rails fill (N59).
-        public static let railClearance = 32.0
-        /// Air between a side seat and the top of its rail.
-        public static let railGap = 6.0
-        /// Layered green: a dark track with a darker edge, a light fill with a mid-green edge.
-        public static let railTrack = Color(red: 0.12, green: 0.30, blue: 0.19)
-        public static let railEdge = Color(red: 0.05, green: 0.17, blue: 0.10)
-        public static let railFill = Color(red: 0.52, green: 0.80, blue: 0.52)
-        public static let railFillEdge = Color(red: 0.26, green: 0.55, blue: 0.30)
+        /// The hand-end card and the demo caption stand in this far from the table's sides.
+        public static let overlayInset = 12.0
+        /// The score sheet's filled dots, layered green: a light fill with a mid-green edge and dark green digits.
+        public static let dotInk = Color(red: 0.05, green: 0.17, blue: 0.10)
+        public static let dotFill = Color(red: 0.52, green: 0.80, blue: 0.52)
+        public static let dotFillEdge = Color(red: 0.26, green: 0.55, blue: 0.30)
+        /// The scorecard (N66): the ruled line's height, the handwritten total's size, and how many lines show.
+        public static let scorecardRule = 26.0
+        public static let scorecardNumberSize = 22.0
+        public static let scorecardLines = 3
         /// Bid, pass and suit pills: full column width, solid, well above the 44 pt minimum.
         public static let auctionButtonHeight = 64.0
         public static let auctionButtonSpacing = 6.0
@@ -196,8 +188,6 @@ public enum Theme {
         public static let toastSeconds = 4.0
         /// How long the table's "bidding bolder" note stays before it fades (D71).
         public static let boldNoteSeconds = 3.0
-        /// The score rails fill to a new score when a hand ends (N59); Reduce Motion jumps there instead.
-        public static let railFill = Animation.easeOut(duration: 0.8)
         /// After trump is named: discards rise toward the table and fade, then the refill deals in
         /// from the dealer's seat one card at a time.
         public static let discardRise = 240.0
