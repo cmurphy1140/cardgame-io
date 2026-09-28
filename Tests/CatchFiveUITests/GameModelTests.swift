@@ -1439,7 +1439,7 @@ import Testing
     #expect(nine.number == "9" && nine.qualifier == "and out" && nine.spoken == "Otto bid 9 and out")
 }
 
-@Test func tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump() {
+@MainActor @Test func tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump() {
     // Both corners share one very light tan fill (D76), about RGB 0.91, 0.84, 0.70.
     let tan = Theme.Table.cornerFill.resolve(in: EnvironmentValues())
     #expect(abs(Double(tan.red) - 0.91) < 0.01 && abs(Double(tan.green) - 0.84) < 0.01 && abs(Double(tan.blue) - 0.70) < 0.01)
