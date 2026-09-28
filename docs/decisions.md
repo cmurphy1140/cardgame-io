@@ -633,3 +633,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Translucent bordered buttons and a glass-backed menu icon, both of which let the felt or wood grain show through a control (R19: no translucent borders or plates on icons).
 
 **Why:** Connor marked up a screenshot of the home screen (N39, N40): every button reads as one solid piece of the table's wood, and the menu is a glyph, not a plate floating on glass.
+
+## D76. The table's corners sit on light tan (2026-09-27)
+
+**Chosen:** Both top corners (D65) take one fill, `Theme.Table.cornerFill`, a very light tan (RGB 0.91, 0.84, 0.70): the bid plaque drops its near-black `Theme.Wood.inlay` and the trump tile its ivory. The plaque's words move to the wood's dark browns: "BID" and the bidder's name in `Theme.Wood.dark`, the number (and "and out") in `Theme.Wood.streakDark`. The trump glyph keeps its suit's colour, red for hearts and diamonds and black for spades and clubs (`TrumpTile.glyphColor(_:)`). Size, position, the tally and its gestures are unchanged.
+
+**Over:** A near-black plaque beside an ivory tile, two corners that read as different objects.
+
+**Why:** Connor marked up a screenshot of the table (N41): the two corners are one pair and should look it. `tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump` holds the fill, the ink and the suit colours.
