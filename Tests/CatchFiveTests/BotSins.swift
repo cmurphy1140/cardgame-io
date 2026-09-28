@@ -98,7 +98,9 @@ func huntBotSins(seeds: Range<Int>) throws -> [BotSin] {
                 continue
             }
             guard let seat = match.hand.nextSeat,
-                  let action = try ComputerPlayer.decide(PlayerView(match: match, seat: seat)) else { break }
+                  // Score hidden, so the D71 bold-when-trailing rule stays off and the seeded matches are the
+                  // ones these ceilings were set on: the hunt measures card play, which D71 did not change.
+                  let action = try ComputerPlayer.decide(withoutScores(PlayerView(match: match, seat: seat))) else { break }
 
             // Capture what the seat could see before the card leaves its hand.
             if case let .play(card) = action, let trump = match.hand.trump {

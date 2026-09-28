@@ -28,6 +28,11 @@ public final class GameModel: ObservableObject {
     @Published public private(set) var explanation: String?
     /// A one-line note about something that happened without a tap, such as the discard after trump.
     @Published public private(set) var notice: String?
+    /// The table's note that a computer team down 10 or more is bidding one step bolder (D71); shown once
+    /// per hand when one of its seats calls, and faded by the table after a few seconds.
+    @Published public private(set) var boldNote: String?
+    /// The hand the bold note was last shown in, so it is said once per hand.
+    private var boldNoteHand: Int?
     /// How the first dealer of this match was chosen; shown until the first action, or dismissed.
     @Published private(set) var dealerDraw: DealerDraw?
     /// Why the human's last refused tap was refused, in the player's words; cleared by the next accepted action.
@@ -225,13 +230,40 @@ public final class GameModel: ObservableObject {
     public func stepComputer() {
         guard match.winner == nil, let seat = match.hand.nextSeat, !isHuman(seat) else { return }
         var announces = false
-        perform {
+        // Read before the call: the auction may close on it, and the note belongs to the hand it was made in.
+        let hand = match.handNumber
+        let bold = boldNoteHand == hand ? nil : boldNote(for: seat)
+        let acted = perform {
             let view = try PlayerView(match: match, seat: seat)
             guard let action = ComputerPlayer.decide(view, difficulty: settings.difficulty) else { return }
             announces = namesTrump(action)
             try match.apply(action, seat: seat)
         }
         if announces { notice = discardAnnouncement() }
+        if acted, let bold {
+            boldNote = bold
+            boldNoteHand = hand
+        }
+    }
+
+    /// What the table says when computer `seat` calls in the auction while its team is down 10 or more (D71):
+    /// "JC and Diane are down 12, bidding bolder." Nil for a person, an Easy computer, or a team not that far
+    /// behind; the same `ComputerPlayer.isTrailingBadly` that raises the bid decides it.
+    public func boldNote(for seat: Int) -> String? {
+        guard !isHuman(seat), settings.difficulty == .standard, match.hand.phase == .bidding,
+              let view = try? PlayerView(match: match, seat: seat), ComputerPlayer.isTrailingBadly(view) else { return nil }
+        return Self.boldNoteText(team: [seat % 2, seat % 2 + 2], deficit: ComputerPlayer.deficit(view),
+                                 names: seatNames, solo: mode == .solo)
+    }
+
+    public func clearBoldNote() { boldNote = nil }
+
+    /// The note's wording; in solo your own seat reads "You", and only your partner is the one bidding bolder.
+    static func boldNoteText(team: [Int], deficit: Int, names: [String], solo: Bool) -> String {
+        if solo, team.contains(0) {
+            return "You and \(names[2]) are down \(deficit); \(names[2]) is bidding bolder."
+        }
+        return "\(names[team[0]]) and \(names[team[1]]) are down \(deficit), bidding bolder."
     }
 
     /// True when `action` is the one that names trump, after which every seat discards and refills.

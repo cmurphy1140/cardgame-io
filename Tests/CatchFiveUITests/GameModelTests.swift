@@ -1449,3 +1449,59 @@ import Testing
     }
     #expect(model.match.hand.phase == .finished)
 }
+
+/// Plays seeded Standard matches until a hand is dealt with team 1 down 10 or more and seat 1 about to bid.
+private func matchWithTeamOneDownTen() throws -> Match {
+    struct Seeded: RandomNumberGenerator {
+        var state: UInt64
+        mutating func next() -> UInt64 { state = state &* 6364136223846793005 &+ 1442695040888963407; return state }
+    }
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    for seed in 1...200 {
+        var random = Seeded(state: UInt64(seed))
+        var match = try Match(deck: deck.shuffled(using: &random), dealer: 0)
+        while match.winner == nil {
+            if match.hand.phase == .finished {
+                try match.startNextHand(deck: deck.shuffled(using: &random))
+                if match.scores[0] - match.scores[1] >= 10, match.hand.nextSeat == 1 { return match }
+                continue
+            }
+            let seat = try #require(match.hand.nextSeat)
+            try match.apply(try #require(ComputerPlayer.decide(PlayerView(match: match, seat: seat))), seat: seat)
+        }
+    }
+    throw MatchError.matchFinished
+}
+
+@MainActor @Test func aComputerTeamDownTenSaysItIsBiddingBolderOncePerHand() throws {
+    let match = try matchWithTeamOneDownTen()
+    let down = match.scores[0] - match.scores[1]
+    let model = GameModel(match: match)
+    #expect(model.boldNote(for: 1) == "JC and Diane are down \(down), bidding bolder.")
+    #expect(model.boldNote(for: 0) == nil)   // the leading team, and a person
+    #expect(model.boldNote(for: 2) == nil)
+    model.stepComputer()
+    #expect(model.boldNote == "JC and Diane are down \(down), bidding bolder.")
+    model.clearBoldNote()
+    model.stepComputer()   // seat 2, the leading side: nothing to say
+    #expect(model.boldNote == nil)
+    model.stepComputer()   // seat 3, same team as seat 1: already said this hand
+    #expect(model.boldNote == nil)
+
+    // Easy computers keep the frozen strategy, so they never bid bolder and the table never says so.
+    let easy = GameModel(match: match, settings: { var s = Settings(); s.difficulty = .easy; return s }())
+    #expect(easy.boldNote(for: 1) == nil)
+    easy.stepComputer()
+    #expect(easy.boldNote == nil)
+}
+
+@MainActor @Test func theBoldNoteNamesYouWhenYourPartnerIsTheComputerBiddingBolder() throws {
+    let match = try matchWithTeamOneDownTen()
+    // The same score seen from the other side: in solo you sit at seat 0 beside Connor at seat 2.
+    let flipped = try PlayerView(match: match, seat: 0)
+    #expect(!ComputerPlayer.isTrailingBadly(flipped))
+    #expect(GameModel.boldNoteText(team: [0, 2], deficit: 11, names: Settings.defaultSeatNames, solo: true)
+            == "You and Connor are down 11; Connor is bidding bolder.")
+    #expect(GameModel.boldNoteText(team: [1, 3], deficit: 12, names: Settings.defaultSeatNames, solo: true)
+            == "JC and Diane are down 12, bidding bolder.")
+}

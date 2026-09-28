@@ -16,10 +16,13 @@ public struct PlayerView: Sendable {
     /// that discarded n kept 6 - n trumps. Public information: the count crosses this boundary, the
     /// discarded cards themselves never do.
     public let discardCounts: [Int]
+    /// The match score, team 0 then team 1, as it stood when this hand was dealt. Written on the score
+    /// sheet in front of everyone, so it is public (D71).
+    public let scores: [Int]
 
     public init(seat: Int, cards: [Card], phase: HandPhase, nextSeat: Int?, dealer: Int,
                 highestBid: Int?, bidder: Int?, trump: Suit?, trick: [Play], calls: [AuctionCall] = [],
-                completedTricks: [CompletedTrick] = [], discardCounts: [Int] = [0, 0, 0, 0]) {
+                completedTricks: [CompletedTrick] = [], discardCounts: [Int] = [0, 0, 0, 0], scores: [Int] = [0, 0]) {
         self.seat = seat
         self.cards = cards
         self.phase = phase
@@ -32,6 +35,7 @@ public struct PlayerView: Sendable {
         self.calls = calls
         self.completedTricks = completedTricks
         self.discardCounts = discardCounts
+        self.scores = scores
     }
 }
 
@@ -44,7 +48,7 @@ extension PlayerView {
                   dealer: hand.auction.dealer, highestBid: hand.auction.highestBid,
                   bidder: hand.auction.winner, trump: hand.trump, trick: hand.currentTrick,
                   calls: hand.auction.calls, completedTricks: hand.completedTricks,
-                  discardCounts: hand.discardCounts)
+                  discardCounts: hand.discardCounts, scores: match.scoresBeforeHand)
     }
 }
 
@@ -74,7 +78,7 @@ extension PlayerView {
                   dealer: hand.auction.dealer, highestBid: hand.auction.highestBid,
                   bidder: hand.auction.winner, trump: hand.trump, trick: trick,
                   calls: hand.auction.calls, completedTricks: earlier,
-                  discardCounts: hand.discardCounts)
+                  discardCounts: hand.discardCounts, scores: match.scoresBeforeHand)
     }
 }
 
@@ -105,6 +109,21 @@ public enum ComputerPlayer {
         case .easy: EasyPlayer.decide(view)
         case .standard: decide(view)
         }
+    }
+
+    /// How far a team must trail before its computers bid bolder: Connor's table, September 27, 2026 (D71).
+    public static let boldDeficit = 10
+
+    /// True when `view`'s team trails the other team by `boldDeficit` match points or more. A table that
+    /// is down a lot bids one more than the hand would otherwise carry; the bidding and the table's note
+    /// both ask this one question, so they cannot disagree.
+    public static func isTrailingBadly(_ view: PlayerView) -> Bool {
+        deficit(view) >= boldDeficit
+    }
+
+    /// Match points `view`'s team is behind the other team; zero or less when level or ahead.
+    public static func deficit(_ view: PlayerView) -> Int {
+        view.scores[1 - view.seat % 2] - view.scores[view.seat % 2]
     }
 
     /// The action this strategy would take from `view`'s seat, with its reasoning. Nil when it is not that seat's turn.
@@ -197,7 +216,9 @@ public enum ComputerPlayer {
         // The house floor overrides it upward: the table bids some shapes by name, whatever the estimate
         // makes of them, and a hand that meets one is never passed while its number is still there.
         let floor = houseBid(for: view.cards)
-        let confidence = max(Int(worth.rounded(.down)), floor ?? 0)
+        // A team down 10 or more bids one step bolder (D71): the most it will go rises by one, never past 9.
+        let level = max(Int(worth.rounded(.down)), floor ?? 0)
+        let confidence = min(level + (isTrailingBadly(view) ? 1 : 0), 9)
         // Bid the table's number for the shape, not the cheapest raise that clears the auction: ace
         // and king is a three bid even when two would win it, because the smallest legal raise hands
         // the hand back to anyone willing to say one more.
@@ -206,12 +227,13 @@ public enum ComputerPlayer {
         // contract at `needed` gains nothing by naming a bigger one — same contract, higher target,
         // and nobody left to outbid them.
         let called = isDealer ? needed : max(needed, min(floor ?? 0, confidence))
-        if called <= min(confidence, 9) {
+        if called <= confidence {
             let how = view.highestBid == nil ? "opens the bidding" : (isDealer ? "matches the high bid as dealer" : "is the smallest raise")
+            let behind = called > level ? " Your team is down \(deficit(view)), so the table bids one step bolder." : ""
             if let floor, called > needed, called <= floor {
-                return Advice(action: .bid(called), reason: "Bid \(called): \(suit.rawValue) like this is a \(floor) bid at the table whatever the count says, above the \(needed) that would have been enough.")
+                return Advice(action: .bid(called), reason: "Bid \(called): \(suit.rawValue) like this is a \(floor) bid at the table whatever the count says, above the \(needed) that would have been enough.\(behind)")
             }
-            return Advice(action: .bid(called), reason: "Bid \(called): \(hand), and \(called) \(how).")
+            return Advice(action: .bid(called), reason: "Bid \(called): \(hand), and \(called) \(how).\(behind)")
         }
         if isDealer && view.highestBid == nil {
             return Advice(action: .bid(2), reason: "Bid 2: everyone passed, so the dealer must open at two even though \(hand).")
