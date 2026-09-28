@@ -33,7 +33,8 @@ public struct RootView: View {
     /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
     /// progress) or `home-tips` (the tip card over the table, held); `ninewin`, `ninelose` (a 9 and out made or missed,
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
-    /// (How to play with the full rules sheet open over it), `signoff` (the same, scrolled to the family's note); `bold` (a computer team down 10 or more, its note held on the table).
+    /// (How to play with the full rules sheet open over it), `signoff` (the same, scrolled to the family's note); `bold` (a computer team down 10 or more, its note held on the table); `five` (your team has just taken the five
+    /// of trump, the big faces up, your lead) or `handline` (a hand's result with a seat's line on it).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         var model = model
@@ -96,6 +97,22 @@ public struct RootView: View {
                     if model.boldNote == nil, model.match.winner == nil { model.nextHand() }
                 }
             }
+        case "five":
+            // Deal until your team takes the five of trump and it is your lead, so the big faces hold on the table.
+            for _ in 0..<80 {
+                model.newGame(mode: .solo)
+                model.dismissDealerDraw()
+                Self.play(model) { hand, humanTurn in humanTurn && hand.phase == .playing && SeatMood.isBigMoment(for: 0, in: model.match) }
+                if model.isHumanTurn, model.match.hand.phase == .playing, SeatMood.isBigMoment(for: 0, in: model.match) { break }
+            }
+        case "handline":
+            // Play solo hands until one ends with a seat's line on the hand-end card.
+            for _ in 0..<40 {
+                model.newGame(mode: .solo)
+                model.dismissDealerDraw()
+                Self.play(model) { hand, _ in hand.phase == .finished }
+                if model.handEndLine != nil { break }
+            }
         case "over":
             model.newGame(mode: .solo)
             model.dismissDealerDraw()
@@ -110,7 +127,7 @@ public struct RootView: View {
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto", "rules", "signoff", "home": .menu
         case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
-             "home-tips", "ninewin", "ninelose", "won", "confirm9", "bold": .table
+             "home-tips", "ninewin", "ninelose", "won", "confirm9", "bold", "five", "handline": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
         _screen = State(initialValue: screen)

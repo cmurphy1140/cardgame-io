@@ -609,3 +609,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** No way for a player to reach the family from the app, or a contact line inside the rules themselves.
 
 **Why:** Connor asked for it (N34): the rules are the family's and stay as they are, but ideas for the app are welcome. `rulesSheetEndsWithTheFamilysNoteAndAMailLink` holds the wording and the link.
+
+## D73. Bigger faces for big moments, and one line after the hand (2026-09-27)
+
+**Chosen:** Two public moments get louder faces, ahead of the turn face, and the portrait grows to `Theme.Table.bigMomentScale` (1.3) while they last: the trick that caught the five of trump, while it lies on the table (the takers triumphant, the other team dismayed), and a 9-and-out declaration, from the call until the first lead (the declarer's partner `surprised`, a new `Portrait.Expression` drawn in the same style: raised brows, wider eyes, a small round mouth). Both end at the next lead. Seats say nothing while a hand is played. Once it is over, in solo, the hand-end card opens with one line from one seat, its portrait and table name above the result: the first of four lines in `HandEndLine.lines` that fits the public result (your team set: partner, "We'll get it back."; the other team set: its bidder, "Ouch."; your team caught the five: partner, "Nice catch on the five."; your team made its bid: partner, "That's how it's done."), or none. Pass and play shows no line: every seat is a person holding the phone in turn, and nobody should be spoken for. Everything is read from `Hand` in public (the trick's plays, the trump, the auction's calls) and the finished `HandSummary`.
+
+**Over:** The same pleased or rueful face for every trick, no reaction to a 9 and out, and a silent hand-end card.
+
+**Why:** Connor asked for it (N36): the five and a 9 and out are what the table reacts to, and a word from your partner after the hand is how a real table sounds. Words stay off the table during play so they can never read as a signal.

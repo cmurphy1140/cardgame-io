@@ -35,6 +35,7 @@ struct PortraitView: View {
         let eyeY = -size * 0.06
         let eyeDX = size * 0.08
         let lookAside = expression == .thinking ? size * 0.02 : 0
+        let eyeSize = expression == .surprised ? 0.05 : 0.035
         let browTilt: Double = switch expression {
         case .thinking: -12
         case .rueful, .dismayed: 14
@@ -44,6 +45,7 @@ struct PortraitView: View {
         let browLift: Double = switch expression {
         case .triumphant, .pleased: -size * 0.02
         case .dismayed: size * 0.005
+        case .surprised: -size * 0.035
         default: 0
         }
         let mouthCurve: Double = switch expression {   // positive smiles, negative frowns
@@ -55,7 +57,7 @@ struct PortraitView: View {
         }
         return ZStack {
             ForEach([-1.0, 1.0], id: \.self) { side in
-                Circle().fill(ink).frame(width: size * 0.035, height: size * 0.035)
+                Circle().fill(ink).frame(width: size * eyeSize, height: size * eyeSize)
                     .offset(x: side * eyeDX + lookAside, y: eyeY)
                 Capsule().fill(ink).frame(width: size * 0.09, height: max(1, size * 0.014))
                     .rotationEffect(.degrees(browTilt * side * -1))
@@ -65,6 +67,13 @@ struct PortraitView: View {
                 .stroke(ink, style: StrokeStyle(lineWidth: max(1, size * 0.018), lineCap: .round))
                 .frame(width: size * 0.14, height: size * 0.05)
                 .offset(y: size * 0.1)
+                .opacity(expression == .surprised ? 0 : 1)
+            // Surprise: a small round "oh" in place of the line.
+            Ellipse()
+                .stroke(ink, lineWidth: max(1, size * 0.018))
+                .frame(width: size * 0.07, height: size * 0.09)
+                .offset(y: size * 0.11)
+                .opacity(expression == .surprised ? 1 : 0)
         }
     }
 

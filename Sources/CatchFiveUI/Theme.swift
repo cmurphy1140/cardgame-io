@@ -92,6 +92,8 @@ public enum Theme {
         public static let activeRingWidth = 3.0
         public static let activeRingGap = 3.0
         public static let activePulseScale = 1.05
+        /// A face drawn larger for a big public moment: the five of trump caught, a 9 and out declared (N36).
+        public static let bigMomentScale = 1.3
         /// A played card lands with its own small turn and drift, like a card tossed in by hand.
         public static let tossRotationDegrees = 4.0
         public static let tossDrift = 6.0

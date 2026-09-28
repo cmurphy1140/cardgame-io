@@ -942,7 +942,8 @@ import Testing
     try match.bid(seat: 0, amount: 9)
     #expect(SeatMood.expression(for: 1, in: match) == .thinking)
     for seat in 1...3 { try match.bid(seat: seat, amount: nil) }
-    try match.chooseTrump(seat: 0, suit: .clubs)
+    // Hearts, so the first trick carries no five of trump: that trick gets the bigger faces (N36).
+    try match.chooseTrump(seat: 0, suit: .hearts)
     // Play one trick out; the winning team is pleased and the other rueful until the next lead.
     for _ in 0..<4 {
         let seat = try #require(match.hand.nextSeat)

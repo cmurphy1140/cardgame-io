@@ -490,6 +490,7 @@ struct TableSurface: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 12) {
                 if let winner = model.match.winner { matchOver(winner) }
+                if let line = model.handEndLine { handEndWords(line) }
                 HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
                 dealButton
             }
@@ -501,6 +502,20 @@ struct TableSurface: View {
         .padding(8)
         .transition(reduceMotion ? .opacity : .offset(y: 12).combined(with: .opacity))
         .accessibilitySortPriority(40)
+    }
+
+    /// One seat's line about the hand, under its portrait and name (N36).
+    private func handEndWords(_ line: HandEndLine) -> some View {
+        HStack(spacing: 10) {
+            PortraitView(portrait: Cast.opponent(at: line.seat)?.portrait ?? model.settings.playerPortrait, size: 40)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(model.seatNames[line.seat]).font(.caption.weight(.semibold)).foregroundStyle(Theme.Wood.dark)
+                Text("\u{201C}\(line.text)\u{201D}").font(.system(.title3, design: .serif).italic()).foregroundStyle(Theme.Wood.header)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16).padding(.top, 4)
+        .accessibilityElement(children: .combine)
     }
 
     private var dealButton: some View {
@@ -553,6 +568,9 @@ struct SeatView: View {
     var body: some View {
         VStack(spacing: 2) {
             PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: SeatMood.expression(for: seat, in: model.match))
+                // Big public moments show larger on the face, until the next lead (N36).
+                .scaleEffect(SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1)
+                .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: SeatMood.isBigMoment(for: seat, in: model.match))
                 // The bidder's ring: dashed, light brown, on the portrait's own edge, never the gold halo (D65).
                 .overlay {
                     Circle().strokeBorder(Theme.Wood.streakLight,

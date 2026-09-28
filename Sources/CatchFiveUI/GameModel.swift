@@ -89,6 +89,13 @@ public final class GameModel: ObservableObject {
         return HandOutcome(summary: last, before: before, names: seatNames)
     }
 
+    /// One seat's line on the hand-end card (N36): only once the hand is over, and only in solo, where
+    /// "you" and "your partner" are clear; pass and play shows none.
+    var handEndLine: HandEndLine? {
+        guard mode == .solo, match.hand.phase == .finished, let last = match.history.last else { return nil }
+        return HandEndLine(summary: last)
+    }
+
     /// The last hand read as a 9 and out, when it was one: who bid it and which points were missed (D69).
     var lastNineAndOut: NineAndOutResult? { match.history.last.flatMap(NineAndOutResult.init(summary:)) }
 
