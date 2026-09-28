@@ -657,3 +657,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The card alone, or photographic or emoji hands.
 
 **Why:** Connor asked for it (N47): "like catch five", the game's name in a picture.
+
+## D79. The review bar says "Reviewing last trick" (2026-09-28)
+
+**Chosen:** While the player has the pile reopened, the status line reads "Reviewing last trick" (`TableSurface.reviewLabel`), not "Reviewing last hand". The corners keep showing the bid and trump underneath, as in play.
+
+**Over:** "Reviewing last hand", which promised a finished hand's result the view never showed.
+
+**Why:** What reopens is the last trick of the hand in play (`reopenedTrick`), which has no hand score yet (N42). `reviewBarSaysItIsTheLastTrick` holds the words.

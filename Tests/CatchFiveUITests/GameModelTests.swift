@@ -1531,3 +1531,8 @@ private func matchWithTeamOneDownTen() throws -> Match {
     #expect(GameModel.boldNoteText(team: [1, 3], deficit: 12, names: Settings.defaultSeatNames, solo: true)
             == "JC and Diane are down 12, bidding bolder.")
 }
+
+@Test func reviewBarSaysItIsTheLastTrick() {
+    // Reopening the pile shows the last trick of the hand in play, not a finished hand (N42).
+    #expect(TableSurface.reviewLabel == "Reviewing last trick")
+}

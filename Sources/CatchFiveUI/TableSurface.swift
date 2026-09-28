@@ -240,6 +240,9 @@ struct TableSurface: View {
         inAuction && !humanTurn ? 36 : 0
     }
 
+    /// The status line while the last trick is reopened: it is the last trick of the hand in play (N42).
+    nonisolated static let reviewLabel = "Reviewing last trick"
+
     private var statusLine: some View {
         HStack(spacing: 8) {
             if reopenedTrick != nil {
@@ -255,7 +258,7 @@ struct TableSurface: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Back to play")
-                Text("Reviewing last hand").font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(Self.reviewLabel).font(.title3.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .accessibilityFocused(statusFocus)
                 Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
