@@ -1,6 +1,10 @@
 /// The house rules as shown in the app. Every paragraph is copied verbatim from
 /// `docs/catch-five-rules.md`; a test reads that file and fails if the two drift apart.
 public enum RulesText {
+    /// Where the game comes from: the first line of the rules sheet and the first face of the tip card (D66, D67).
+    /// Not a rule, so it lives outside `sections` and the verbatim check against the rules document.
+    public static let origin = "A New England variant of Pitch, passed down through generations. We hope you enjoy it as much as we do."
+
     public struct Section: Sendable {
         public let title: String
         public let paragraphs: [String]

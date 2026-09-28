@@ -551,3 +551,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 
 **Why:** Connor: "The three biggest things to remember are who bid, what the bid is, and what trump." The tally is consistent with spec R4 (no automatic number tracking) because the app itself never counts: it only keeps the marks the player makes, as a pencil would.
 
+
+## D66. The rules sheet opens with where the game comes from (2026-09-27)
+
+**Chosen:** "How to play Catch 5" (`RulesView`) shows one line above its first chapter, in the display serif's italic: "A New England variant of Pitch, passed down through generations. We hope you enjoy it as much as we do." The words live once, as `RulesText.origin`, outside the rule sections, so the verbatim check against `docs/catch-five-rules.md` is unchanged and the tip card (D67) quotes the same constant.
+
+**Over:** Leaving the sheet to open straight on the first rule, or adding the line to the rules document as if it were a rule.
+
+**Why:** Connor asked for it: the game is a family's, handed down, and the sheet is where a new player first reads about it. `rulesSheetOpensWithWhereTheGameComesFrom` holds the exact wording.
