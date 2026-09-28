@@ -713,3 +713,43 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The pill hanging from the 9's lower edge (D81), where it covered the bottom of the 8 and the 9.
 
 **Why:** Connor asked for it: no pill may cover a number. `nineAndOutTakesItsOwnLineUnderTheBidRow` holds the order.
+
+## D86. Table and Clarify across the top (2026-09-28)
+
+**Chosen:** The lone pause button gives way to one long, skinny bar across the top of the table (`TableBar`): two light tan boxes with a light brown edge and a small gap, "Table" and "Clarify", in big bold type, each opening a drop-down under it on a light tan card (`TableBarMenu`); a tap outside closes it and play waits while it is open (`TablePause.menuShown`). Table holds Pause (the pause card drops down over the table, Continue game and one big line: "You can leave the app and come back to this exact spot.", `WelcomeCard.keepsPlace`), New game (Solo or Pass and play, then the "Start over?" alert, still an alert with Cancel as D57 requires) and Home (the main menu, the match kept). Clarify holds four short answers to "what am I looking at", the bid box, the scorecard, tapping the suit to count trump and tapping a face to mark who's out (`TableBar.answers`), and a How to play button that opens the lessons. The screenshot stages `table-menu` and `clarify` open each drop-down over the `table` state.
+
+**Over:** A bare pause glyph, with New game and Home only on the pause card and the main menu, and the table's taps explained nowhere on the table.
+
+**Why:** Connor asked for it (N68): the controls and the answers should be where the players are looking. `theTableBarHasTableAndClarifyWithTheirDropDowns` holds the boxes, their contents and the pause.
+
+## D87. The bid box holds who bid, the bid and trump (2026-09-28)
+
+**Chosen:** The bid box in the top-left corner (`ContractPlaque`) carries Connor's three biggest things: the bidder's face, the bid, and trump. The face (46 pt) and the bid (52 pt serif under BID) share the top of the box; trump, once named, sits under them at 48 pt in its suit's colour (`Theme.Table.bidBoxSuitSize`), with the player's tally strokes beside it in dark brown. The separate trump tile is gone. The suit is where the tally lives now: tap adds a mark, press and hold takes one back, VoiceOver adjusts it, and the one-time tally demo (D84) pulses the suit. The bidder's name leaves the box; VoiceOver still reads it, and the name tags carry names (D89).
+
+**Over:** A bid plaque in one corner and a trump tile with the tally in the other (D65, D80).
+
+**Why:** Connor asked for it (N63, N67): one place to look for the hand's contract, and the top-right corner freed for the scorecard. `theBidBoxShowsTheFaceTheBidAndTrumpAndTheSuitKeepsTheTally` holds the contents and the tally.
+
+## D88. A notebook scorecard in the top-right corner; the green rails go (2026-09-28)
+
+**Chosen:** The top-right corner, freed by trump moving into the bid box (D87), holds the scorecard (`Scorecard`): the bid box's size and light tan, with faint ruled lines like a notebook page and a line between two columns, US and THEM (the phone holder's team first, also in pass and play). When a hand ends each team's new total is handwritten in Marker Felt, built into iOS, on the next line and the total above it gets a scratch through it (`Scorecard.lines(team:history:)`); nothing changes during a hand. The newest three lines show. A tap opens the full sheet (`ScorePanel`), now both teams side by side, each with its total and 25 green dots, and every hand as a card paging sideways with both teams' change and total, so nothing scrolls down. The green rails and their bottom tabs (D82, D83) are gone, and the hand no longer keeps the 50 pt band they needed. Under the hand-end card everything fades back except the scorecard, and the card starts under the top row, so the new total is in view. The partner's auction box moves to the partner's left, into the empty bid box corner, since the scorecard holds the right; the side seats rise 48 pt while bidding (was 100) so they stay under the scorecard. The `result` screenshot stage plays two hands.
+
+**Over:** Green rails down both edges with tabs at their feet opening one team's panel.
+
+**Why:** Connor asked for it (N66): a score kept the way the family keeps it on paper. `theScorecardWritesEachNewTotalAndStrikesThePriorOne` holds the lines after one and two hands.
+
+## D89. Name tags above every head (2026-09-28)
+
+**Chosen:** Every seat wears a "HI, MY NAME IS" sticker floating above its head, not on the body (`NameTag`): white with a green outline, the words printed on a green band, the name handwritten under it in Marker Felt, 88 pt wide. It replaces the name under the face. The partner's stack of backs rides with the tag, tucked behind its corner, so the partner's tile ends at the face; the side seats keep theirs under the face. The phone holder has no face on the table, so their tag sits under the hand on the left, in the row the deal uses when it is theirs; in pass and play every tag turns with the phone (`NameTag.names(_:)`). To keep "Your turn" on screen with the taller seats, the table's column now runs under the bottom safe area, stopping 16 pt above the screen's edge (`Theme.Table.footInset`), since the home indicator only takes the middle of that edge; and while bidding the side seats rise 36 pt (was 48, D88) so the right-hand tag stays under the scorecard.
+
+**Over:** Names in small type under the faces, and no name for the phone holder.
+
+**Why:** Connor asked for it (N64): names big enough to read from across the table, in the look of a real name sticker. `everySeatWearsANameTagWithItsName` holds the words and the names by place.
+
+## D90. A big dealer mark, and no BIDDER word (2026-09-28)
+
+**Chosen:** Whoever deals wears the dealer's mark (`DealerMark`): a proper four-card deck, 30 pt cards where the old stack was 24, with a big DEALER on a light tan pill with a light brown edge across its foot, in dark brown rather than the old small gold word. It sits off to the right: a side seat's to the right of its stack of backs under the face (its band grows to hold it only while that seat deals, so nothing jumps within a hand), the partner's out beside their tile, right of their card on the pile and under the scorecard, and the phone holder's to the right of their name tag under the hand, the pill beside the deck there so the row stays short. The deal still flies in from the mark's deck (`DealerDeck`). The BIDDER word under a seat is gone: the bid box shows who bid (D87), and the dashed ring on the bidder's face stays. `SeatView.marks(seat:dealer:bidder:)` says what a seat wears. To fit the bidding screen with the bigger mark, the bar's boxes are 36 pt tall (was 40), with 4 pt under the bar and 6 pt above the seats (were 8 and 10).
+
+**Over:** A small deck tucked into the dealer's face, DEALER and BIDDER in small monospaced type under the seat.
+
+**Why:** Connor asked for it (N65): who deals should read from across the table. `onlyTheDealerIsMarkedAndNoSeatSaysBidder` holds the words and the size.

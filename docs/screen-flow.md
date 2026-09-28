@@ -32,6 +32,7 @@ stateDiagram-v2
     menu --> table: Deal me in (confirmed), tip card first
 
     table --> menu: pause card, Main menu
+    table --> menu: Table box, Home
     note right of table
         The match is preserved.
         Nothing is discarded without asking.
@@ -73,13 +74,13 @@ deal. A launch that resumes onto the table skips it.
 ```mermaid
 flowchart TD
     T[Table]
-    T -->|gear menu| P[Pause card, cover]
-    T -->|gear menu| U[Undo last action]
-    T -->|gear menu| S[Settings, sheet]
-    T -->|gear menu| ST[Statistics, sheet]
-    T -->|gear menu| TU[How to play, sheet]
-    T -->|gear menu, alert confirms| NEW[New match]
-    T -->|score bar| SB[Scoreboard, sheet]
+    T -->|Table box| TB[Table drop-down, play waits]
+    T -->|Clarify box| CL[Clarify drop-down, play waits]
+    TB -->|Pause| P[Pause card, drops down, cover]
+    TB -->|New game, Solo or Pass and play, alert confirms| NEW[New match]
+    TB -->|Home| M
+    CL -->|How to play| TU[How to play, sheet]
+    T -->|scorecard| SB[Score sheet, cover]
     T -->|hint| H[Hint detail, sheet]
     T -->|hand ends| R[Hand result, cover]
 

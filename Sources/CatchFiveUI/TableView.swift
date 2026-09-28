@@ -9,12 +9,17 @@ public struct TableView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var cards
-    @State private var confirmNewGame = false
+    /// The mode New game picked, while the start-over alert asks to be sure (D57).
+    @State private var newGameMode: PlayMode?
+    /// The Table or Clarify drop-down open under the bar (N68).
+    @State private var openMenu: TableBar.Box?
+    /// The bar's lower edge in the table's space: the drop-downs hang from it.
+    @State private var barBottom = 0.0
     @State private var confirmNineAndOut = false
     @State private var showSettings = false
     @State private var showTutorial = false
-    /// The team whose score panel is open over the table (N62).
-    @State private var scorePanel: Int?
+    /// The full score sheet is open over the table (N66).
+    @State private var scorePanel = false
     @State private var showStatistics = false
     /// Completed tricks whose cards have already collapsed toward the winner.
     @State private var collapsedTricks = 0
@@ -25,8 +30,6 @@ public struct TableView: View {
     /// What the last revision changed, reduced to the one cue worth a haptic.
     @State private var cue: (id: Int, cue: TableFeedback.Cue)?
     @State private var seen: TableFeedback.Snapshot
-    /// The side seats' lower edge in the table's space: the score rails start below it (N59).
-    @State private var sideSeatsBottom = 0.0
     /// Where the deck beside the dealer rests on the table; the refill deals in from here (T12).
     @State private var dealerDeck: CGPoint?
     /// Counts hands dealt while the table is up; each one riffles once at the dealer's deck (D68).
@@ -38,16 +41,20 @@ public struct TableView: View {
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
+    /// Home in the Table drop-down: back to the main menu, the match kept.
+    private let onHome: () -> Void
     /// Something outside this view covers the table (the welcome card); computers wait while it is up.
     private let covered: Bool
 
-    public init(model: GameModel, tutorial: TutorialModel? = nil, covered: Bool = false, onLeave: @escaping () -> Void = {}) {
+    public init(model: GameModel, tutorial: TutorialModel? = nil, covered: Bool = false, onLeave: @escaping () -> Void = {},
+                onHome: @escaping () -> Void = {}) {
         _model = StateObject(wrappedValue: model)
         // Share the root's tutorial model when there is one, so lessons finished in the intro show as done here.
         _tutorial = StateObject(wrappedValue: tutorial ?? model.makeTutorial())
         _seen = State(initialValue: TableFeedback.Snapshot(model))
         self.covered = covered
         self.onLeave = onLeave
+        self.onHome = onHome
     }
 
     /// Every reason the scheduler must wait, gathered in one place. Any sheet, dialog, cover or the
@@ -55,10 +62,11 @@ public struct TableView: View {
     private var pause: TablePause {
         TablePause(sceneActive: scenePhase == .active,
                    welcomeShown: covered,
-                   sheetShown: showSettings || showTutorial || scorePanel != nil || showStatistics,
-                   dialogShown: confirmNewGame || confirmNineAndOut || model.tallyDemo != nil || model.errorMessage != nil || model.saveError != nil,
+                   sheetShown: showSettings || showTutorial || scorePanel || showStatistics,
+                   dialogShown: newGameMode != nil || confirmNineAndOut || model.tallyDemo != nil || model.errorMessage != nil || model.saveError != nil,
                    inspectingTrick: reopenedTrick != nil,
-                   drawShown: drawShown)
+                   drawShown: drawShown,
+                   menuShown: openMenu != nil)
     }
 
     /// The draw for dealer is showing: a fresh match, not yet covered, with its draw still on the table.
@@ -112,7 +120,9 @@ public struct TableView: View {
                 // The screenshot stages open on a match already won, so nothing announced the win.
                 if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
                 if ScreenshotStage.name == "confirm9" { confirmNineAndOut = true }
-                if ScreenshotStage.name == "panel" { scorePanel = model.ourTeam }
+                if ScreenshotStage.name == "panel" { scorePanel = true }
+                if ScreenshotStage.name == "table-menu" { openMenu = .table }
+                if ScreenshotStage.name == "clarify" { openMenu = .clarify }
             }
     }
 
@@ -141,12 +151,14 @@ public struct TableView: View {
         }
     }
 
-    /// One team's score panel, risen from its rail's foot (N62).
+    /// The full score sheet, opened from the scorecard (N66).
     @ViewBuilder private var teamPanel: some View {
-        if let team = scorePanel {
-            ScorePanel(content: ScorePanel.content(team: team, history: model.match.history, seatNames: model.seatNames),
-                       label: railLabel(team), names: model.teamNames(team),
-                       onClose: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = nil } })
+        if scorePanel {
+            let them = 1 - model.ourTeam
+            ScorePanel(us: ScorePanel.content(team: model.ourTeam, history: model.match.history, seatNames: model.seatNames),
+                       them: ScorePanel.content(team: them, history: model.match.history, seatNames: model.seatNames),
+                       usLabel: teamLabel(model.ourTeam), themLabel: teamLabel(them),
+                       onClose: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = false } })
                 .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -163,11 +175,12 @@ public struct TableView: View {
     /// Score bar, table and hand in one non-scrolling column.
     private var layout: some View {
         VStack(spacing: 6) {
-            // The score sits at the foot of the rails (N62); the rest of the header stays empty.
-            ScoreBarView(onPause: onLeave)
-                .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 8)
+            // Table and Clarify across the top (N68), each opening its drop-down under the bar.
+            TableBar(open: Binding(get: { openMenu }, set: { box in withAnimation(motion(Theme.Motion.overlay)) { openMenu = box } }))
+                .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 4)
+                .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { barBottom = $0 }
                 // A solid header band: runs up behind the status bar and ends in a frown, the corners
-                // hanging lower than the middle, so the pause button sits on one colour and the wood starts beneath.
+                // hanging lower than the middle, so the bar sits on one colour and the wood starts beneath.
                 .background {
                     WoodGrainView(vignette: .linear)
                         .clipShape(HeaderBandShape(dip: Theme.Table.headerDip))
@@ -179,7 +192,7 @@ public struct TableView: View {
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
                          onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
-                         onSideSeats: { sideSeatsBottom = $0 },
+                         onScorecard: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = true } },
                          holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -197,47 +210,42 @@ public struct TableView: View {
                 RiffleShuffle().id(shuffles).position(dealerDeck)
             }
         }
-        // The score rails run down both edges, in the margin beside the hand, from below the side seats (N59), each
-        // ending in its team's score in a bottom corner (N62).
-        .overlay(alignment: .topLeading) { scoreRails }
+        .overlay { barMenu }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
-        .padding(.bottom, 6)
+        .padding(.bottom, Theme.Table.footInset)
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The row under the hand (your name tag, and the deal when it is yours) sits down beside the home indicator,
+        // which only takes the middle of the bottom edge, so the table gets that height back (N64).
+        .ignoresSafeArea(.container, edges: .bottom)
         .foregroundStyle(.ivory)
         .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
 
-    /// Your team's rail on the left, the other team's on the right, each showing the score as the last hand left it.
-    /// Only the scores at their feet take taps.
-    private var scoreRails: some View {
-        let scores = ScoreRail.shown(in: model.match)
-        let top = sideSeatsBottom + Theme.Table.railGap
-        return GeometryReader { geometry in
-            HStack(alignment: .top, spacing: 0) {
-                rail(team: model.ourTeam, scores: scores, leading: true)
-                Spacer(minLength: 0)
-                rail(team: 1 - model.ourTeam, scores: scores, leading: false)
-            }
-            .padding(.horizontal, Theme.Table.railInset)
-            .frame(width: geometry.size.width, height: max(0, geometry.size.height - top))
-            .offset(y: top)
+    /// The open drop-down, hanging from the bar over the table.
+    @ViewBuilder private var barMenu: some View {
+        if let box = openMenu {
+            TableBarMenu(box: box,
+                         onPause: { closeMenu(); onLeave() },
+                         onNewGame: { mode in closeMenu(); newGameMode = mode },
+                         onHome: { closeMenu(); onHome() },
+                         onHowToPlay: { closeMenu(); showTutorial = true },
+                         onClose: closeMenu)
+                .padding(.top, barBottom)
+                .id(box)
+                .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
         }
-        .opacity(sideSeatsBottom > 0 ? 1 : 0)
-        .allowsHitTesting(sideSeatsBottom > 0)
     }
 
-    private func rail(team: Int, scores: [Int], leading: Bool) -> some View {
-        ScoreRail(score: scores[team], label: railLabel(team), leading: leading) {
-            withAnimation(motion(Theme.Motion.overlay)) { scorePanel = team }
-        }
+    private func closeMenu() {
+        withAnimation(motion(Theme.Motion.overlay)) { openMenu = nil }
     }
 
     /// US or THEM in solo, the pair's names in pass and play.
-    private func railLabel(_ team: Int) -> String {
-        ScoreRail.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team))
+    private func teamLabel(_ team: Int) -> String {
+        Scorecard.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team))
     }
 
     /// One animation for the whole table per accepted action, so cards fly between hand and pile in one
@@ -323,11 +331,13 @@ public struct TableView: View {
             } message: { Text(model.saveError ?? "") }
             // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
             // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
-            .alert("Start over?", isPresented: $confirmNewGame) {
-                Button("Solo", role: .destructive) { model.newGame(mode: .solo) }
-                Button("Pass and play", role: .destructive) { model.newGame(mode: .passAndPlay) }
-                Button("Cancel", role: .cancel) {}
-            } message: { Text("This replaces your saved game. " + PlayMode.choiceMessage) }
+            .alert("Start over?", isPresented: Binding(get: { newGameMode != nil }, set: { if !$0 { newGameMode = nil } })) {
+                Button("Start over", role: .destructive) {
+                    if let mode = newGameMode { model.newGame(mode: mode) }
+                    newGameMode = nil
+                }
+                Button("Cancel", role: .cancel) { newGameMode = nil }
+            } message: { Text("This replaces your saved game with a new \(newGameMode == .passAndPlay ? "pass and play" : "solo") game.") }
     }
 
     private func motion(_ animation: Animation) -> Animation { reduceMotion ? Theme.Motion.reduced : animation }

@@ -3,12 +3,6 @@ import CatchFive
 import Foundation
 import Testing
 
-@MainActor @Test func theHeaderCarriesNoScore() {
-    // N62: the score lives at the foot of the rails; the header keeps only the pause button.
-    let bar = ScoreBarView(onPause: {})
-    #expect(Mirror(reflecting: bar).children.map(\.label) == ["onPause"])
-}
-
 @MainActor @Test func eachTeamsPanelShowsItsTotalDotsAndHands() throws {
     // N62: a 5 bid by seat 0, played out; each panel carries its own total, dots to 25 and the hand so far.
     var match = try Match(deck: RootView.nineAndOutDeck(), dealer: 3)

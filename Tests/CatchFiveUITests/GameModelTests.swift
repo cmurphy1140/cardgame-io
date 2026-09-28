@@ -1299,26 +1299,6 @@ import Testing
     #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "Hazel", "Dad", "Rue"])
 }
 
-@Test func aSeatThatDealsAndBidsReadsBothRolesInFull() {
-    // DEALER and BIDDER stack, one per line, rather than sharing one line that the narrowest tile clips.
-    #expect(SeatView.roles(seat: 1, dealer: 1, bidder: 1, bidding: false) == ["DEALER", "BIDDER"])
-    #expect(SeatView.roles(seat: 1, dealer: 1, bidder: 1, bidding: true) == ["DEALER"])
-    #expect(SeatView.roles(seat: 2, dealer: 1, bidder: 2, bidding: false) == ["BIDDER"])
-    #expect(SeatView.roles(seat: 3, dealer: 1, bidder: 2, bidding: false).isEmpty)
-    // The widest role, in the tile's caption (caption2 two steps up: 15 pt monospaced), beside the stack of
-    // backs, fits the side tile on iPhone SE (375 − 32) within the text's allowed shrink; both roles on one
-    // line would not.
-    // Menlo stands in for SF Mono: both advance 0.6 em a character.
-    let font = CTFontCreateWithName("Menlo" as CFString, 15, nil)
-    let word = { (text: String) -> Double in
-        let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [.init(kCTFontAttributeName as String): font]))
-        return CTLineGetTypographicBounds(line, nil, nil, nil)
-    }
-    let room = TableLayout.sideSeatWidth(available: 343) - 2 * SeatView.tilePadding - SeatView.backsWidth - SeatView.badgeSpacing
-    #expect(word("DEALER") * SeatView.roleShrink <= room && word("BIDDER") * SeatView.roleShrink <= room)
-    #expect(word("DEALER") + SeatView.badgeSpacing + word("BIDDER") > room / SeatView.roleShrink)
-}
-
 @MainActor @Test func passAndPlayTurnsTheTableToThePhoneHolder() throws {
     // Solo: you are always at the bottom, West on the left, your partner across, East on the right.
     let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
@@ -1412,7 +1392,6 @@ import Testing
     #expect(model.trumpTally == 0)
     // Strokes group in fives, the fifth crossing the four before it.
     #expect(TallyMarks.groups(0).isEmpty && TallyMarks.groups(4) == [4] && TallyMarks.groups(13) == [5, 5, 3])
-    #expect(TrumpTile.spoken(trump: .hearts, tally: 4) == "Hearts are trump, 4 trump played")
     // The tally is the player's, not the game's: nothing in the match or its save changes.
     let actions = model.match.actionCount
     model.tallyTrump()
@@ -1449,12 +1428,11 @@ import Testing
     // Both corners share one very light tan fill (D76), about RGB 0.91, 0.84, 0.70.
     let tan = Theme.Table.cornerFill.resolve(in: EnvironmentValues())
     #expect(abs(Double(tan.red) - 0.91) < 0.01 && abs(Double(tan.green) - 0.84) < 0.01 && abs(Double(tan.blue) - 0.70) < 0.01)
-    #expect(ContractPlaque.fill == Theme.Table.cornerFill && TrumpTile.fill == Theme.Table.cornerFill)
+    #expect(ContractPlaque.fill == Theme.Table.cornerFill)
     // The plaque's words are dark brown from the wood; the trump glyph keeps its suit's colour.
-    #expect(ContractPlaque.eyebrowInk == Theme.Wood.dark && ContractPlaque.numberInk == Theme.Wood.streakDark
-        && ContractPlaque.nameInk == Theme.Wood.dark)
-    #expect(TrumpTile.glyphColor(.hearts) == .suitRed && TrumpTile.glyphColor(.diamonds) == .suitRed)
-    #expect(TrumpTile.glyphColor(.spades) == .black && TrumpTile.glyphColor(.clubs) == .black)
+    #expect(ContractPlaque.eyebrowInk == Theme.Wood.dark && ContractPlaque.numberInk == Theme.Wood.streakDark)
+    #expect(ContractPlaque.glyphColor(.hearts) == .suitRed && ContractPlaque.glyphColor(.diamonds) == .suitRed)
+    #expect(ContractPlaque.glyphColor(.spades) == .black && ContractPlaque.glyphColor(.clubs) == .black)
 }
 
 @MainActor private func playOutHand(_ model: GameModel) throws {
@@ -1538,8 +1516,8 @@ private func matchWithTeamOneDownTen() throws -> Match {
         #expect(row <= available && row >= available * 0.95)
     }
     #expect(2 * TableLayout.cornerWidth(available: 343) + Theme.Table.seatTileWidth <= 343)
-    // Big number, big suit (N52): well past the 44 and 56 pt they were.
-    #expect(Theme.Table.plaqueNumberSize >= 52 && Theme.Table.trumpGlyphSize >= 72)
+    // Big number, big suit (N52), the suit now inside the bid box (N63).
+    #expect(Theme.Table.plaqueNumberSize >= 52 && Theme.Table.bidBoxSuitSize >= 40)
     // The bid corner carries the bidder's own face (N52).
     let face = try #require(Cast.opponent(at: 1)?.portrait)
     let contract = ContractPlaque.Contract(bid: 4, isNineAndOut: false, bidder: "JC", portrait: face)

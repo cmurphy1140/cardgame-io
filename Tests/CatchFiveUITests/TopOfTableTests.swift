@@ -1,0 +1,110 @@
+import CatchFive
+@testable import CatchFiveUI
+import Foundation
+import Testing
+
+@MainActor @Test func theTableBarHasTableAndClarifyWithTheirDropDowns() {
+    // N68: one skinny bar, two boxes; Table pauses, starts over or goes home, Clarify answers what's on the table.
+    #expect(TableBar.Box.allCases.map(\.title) == ["Table", "Clarify"])
+    #expect(TableBar.TableItem.allCases.map(\.title) == ["Pause", "New game", "Home"])
+    #expect(TableBar.newGameChoices.map(\.title) == ["Solo", "Pass and play"])
+    #expect(TableBar.newGameChoices.map(\.mode) == [.solo, .passAndPlay])
+    #expect(TableBar.answers.map(\.topic) == ["The bid box", "The scorecard", "Tap the suit", "Tap a face"])
+    #expect(TableBar.answers.allSatisfy { !$0.text.isEmpty })
+    #expect(TableBar.howToPlay == "How to play")
+    // Play waits while a drop-down is open.
+    #expect(TablePause(menuShown: true).isPaused)
+    #expect(!TablePause().isPaused)
+    // The pause card says the game keeps its place.
+    #expect(WelcomeCard.keepsPlace == "You can leave the app and come back to this exact spot.")
+}
+
+@MainActor @Test func theBidBoxShowsTheFaceTheBidAndTrumpAndTheSuitKeepsTheTally() throws {
+    // N63, N67: who bid (their face), the bid and trump in one box; the tally lives on the suit.
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    let model = GameModel(match: try Match(deck: deck, dealer: 3))
+    model.send(.bid(9))
+    for _ in 0..<3 { model.stepComputer() }
+    #expect(ContractPlaque.contract(in: model)?.trump == nil)
+    model.send(.chooseTrump(.hearts))
+    let bidder = try #require(model.match.hand.auction.winner)
+    let contract = try #require(ContractPlaque.contract(in: model))
+    #expect(contract.portrait == (Cast.opponent(at: bidder)?.portrait ?? model.settings.playerPortrait))
+    #expect(contract.number == String(try #require(model.match.hand.auction.highestBid)))
+    #expect(contract.trump == .hearts)
+    let box = ContractPlaque.onTable(model, contract: contract, width: 120)
+    box.onAdd()
+    box.onAdd()
+    #expect(model.trumpTally == 2)
+    box.onTakeBack()
+    #expect(model.trumpTally == 1)
+    #expect(ContractPlaque.spoken(contract, tally: 1) == "\(model.seatNames[bidder]) bid 9, hearts are trump, 1 trump played")
+    // The separate trump tile is gone: the suit is drawn in the box, in its own colour.
+    #expect(ContractPlaque.glyphColor(.hearts) == .suitRed && ContractPlaque.glyphColor(.clubs) == .black)
+}
+
+/// Plays out the hand in progress: the first seat to speak bids 5, the rest pass, hearts are trump, then every
+/// seat plays its first legal card.
+private func playHand(_ match: inout Match) throws {
+    while match.hand.phase == .bidding {
+        let seat = try #require(match.hand.nextSeat)
+        if (try? match.bid(seat: seat, amount: 5)) == nil { try match.bid(seat: seat, amount: nil) }
+    }
+    try match.chooseTrump(seat: try #require(match.hand.auction.winner), suit: .hearts)
+    while match.hand.phase != .finished {
+        let seat = try #require(match.hand.nextSeat)
+        try match.play(seat: seat, card: try #require(match.hand.legalMoves(seat: seat).first))
+    }
+}
+
+@Test func theScorecardWritesEachNewTotalAndStrikesThePriorOne() throws {
+    // N66: a notebook page, US and THEM; each hand's new total on the next line, the one before scratched out.
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    var match = try Match(deck: deck, dealer: 3)
+    #expect(Scorecard.lines(team: 0, history: match.history).isEmpty)
+    #expect(Scorecard.columns == ["US", "THEM"])
+    try playHand(&match)
+    let first = match.scores
+    for team in 0...1 {
+        #expect(Scorecard.lines(team: team, history: match.history) == [.init(total: first[team], struck: false)])
+    }
+    try match.startNextHand(deck: deck)
+    // Nothing moves while a hand is being played.
+    #expect(Scorecard.lines(team: 0, history: match.history).count == 1)
+    try playHand(&match)
+    for team in 0...1 {
+        #expect(Scorecard.lines(team: team, history: match.history)
+            == [.init(total: first[team], struck: true), .init(total: match.scores[team], struck: false)])
+    }
+    #expect(Scorecard.handwriting == "Marker Felt")
+    #expect(Scorecard.label(us: false, mode: .passAndPlay, teamNames: "JC + Diane") == "JC + DIANE")
+    #expect(Scorecard.label(us: true, mode: .solo, teamNames: "Cheryl + Connor") == "US")
+}
+
+@MainActor @Test func everySeatWearsANameTagWithItsName() throws {
+    // N64: a "HI, MY NAME IS" sticker above every head, the name handwritten; the phone holder's too.
+    #expect(NameTag.band == "HI, MY NAME IS")
+    #expect(NameTag.handwriting == Scorecard.handwriting)
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect(NameTag.names(solo) == solo.seatNames)
+    // Pass and play turns the table with the phone, and the tags turn with it.
+    let pass = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    pass.newGame(mode: .passAndPlay)
+    pass.dismissDealerDraw()
+    pass.ready()
+    let holder = try #require(pass.viewerSeat)
+    #expect(NameTag.names(pass) == (0..<4).map { pass.seatNames[(holder + $0) % 4] })
+}
+
+@Test func onlyTheDealerIsMarkedAndNoSeatSaysBidder() {
+    // N65: a big DEALER mark beside whoever deals; the bid box says who bid, so BIDDER goes.
+    #expect(DealerMark.label == "DEALER")
+    #expect(SeatView.marks(seat: 1, dealer: 1, bidder: 1) == ["DEALER"])
+    #expect(SeatView.marks(seat: 2, dealer: 1, bidder: 2).isEmpty)
+    #expect(SeatView.marks(seat: 3, dealer: 1, bidder: 2).isEmpty)
+    for seat in 0..<4 {
+        #expect(!SeatView.marks(seat: seat, dealer: 0, bidder: seat).contains("BIDDER"))
+    }
+    // Much larger than the 24 pt deck it replaces.
+    #expect(Theme.Table.dealerMarkDeckWidth >= 1.25 * 24)
+}
