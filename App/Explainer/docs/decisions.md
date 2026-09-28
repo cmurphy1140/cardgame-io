@@ -567,3 +567,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Continue game and New match, and going straight to the table.
 
 **Why:** Connor approved the mockup: the walk from the home screen to the table is a moment to teach one thing, the way someone at a real table says a word while they shuffle, and the eleventh tip says the game needs no connection.
+
+## D68. A quick riffle at the dealer's seat as each hand starts (2026-09-27)
+
+**Chosen:** When an accepted action leaves a hand freshly dealt (bidding, no call yet: `RiffleShuffle.startsHand(_:)`), `TableView` plays `RiffleShuffle` over the dealer's deck: six small card backs split into two halves, riffle back together and fade, 0.6 s in all. It takes no taps, is hidden from VoiceOver, and is not a `TablePause` reason, so the scheduler and the computers carry on beneath it and no test waits for it. Under Reduce Motion the stack shows still and fades.
+
+**Over:** No shuffle, or a shuffle the table waits for.
+
+**Why:** A hand at a real table starts with the dealer shuffling; showing it marks the new hand without costing a beat.

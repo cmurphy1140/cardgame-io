@@ -26,6 +26,8 @@ public struct TableView: View {
     @State private var seen: TableFeedback.Snapshot
     /// Where the deck beside the dealer rests on the table; the refill deals in from here (T12).
     @State private var dealerDeck: CGPoint?
+    /// Counts hands dealt while the table is up; each one riffles once at the dealer's deck (D68).
+    @State private var shuffles = 0
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
@@ -120,6 +122,12 @@ public struct TableView: View {
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
                 .padding(.horizontal, 16)
         }
+        // The shuffle sits over the dealer's deck, in the same space the deck reports its place in.
+        .overlay(alignment: .topLeading) {
+            if shuffles > 0, let dealerDeck {
+                RiffleShuffle().id(shuffles).position(dealerDeck)
+            }
+        }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
         .padding(.bottom, 6)
@@ -139,6 +147,7 @@ public struct TableView: View {
             .onChange(of: model.match.handNumber) { _, _ in collapsedTricks = 0; reopenedTrick = nil }
             .onChange(of: model.revision) { _, revision in
                 withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil }
+                if RiffleShuffle.startsHand(model.match.hand) { shuffles += 1 }
                 noteChanges(revision)
             }
             .onChange(of: model.lastHumanAction) { _, action in toast = action }

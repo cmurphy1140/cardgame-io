@@ -46,3 +46,19 @@ import Testing
         .init(title: "Deal me in", prominent: true, action: .dealMeIn),
     ])
 }
+
+@MainActor @Test func theShuffleRunsOnceAtTheStartOfEachHandAndHoldsNothingUp() throws {
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect(RiffleShuffle.startsHand(model.match.hand))
+    model.send(.bid(nil))
+    #expect(!RiffleShuffle.startsHand(model.match.hand))
+    for _ in 0..<400 where model.match.hand.phase != .finished {
+        if model.isHumanTurn { model.showHint(); model.send(try #require(model.hint).action) } else { model.stepComputer() }
+    }
+    model.nextHand()
+    #expect(RiffleShuffle.startsHand(model.match.hand))
+    // A quick riffle, and nothing the scheduler waits for: no pause reason exists for it.
+    #expect(RiffleShuffle.seconds <= 0.6)
+    #expect(!TablePause(sceneActive: true, welcomeShown: false, sheetShown: false, dialogShown: false,
+                        inspectingTrick: false, drawShown: false).isPaused)
+}
