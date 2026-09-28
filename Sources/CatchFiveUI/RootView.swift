@@ -2,8 +2,10 @@ import CatchFive
 import SwiftUI
 
 /// Owns the one `GameModel`. A new player sees login, then the tutorial as an intro they may skip, then the
-/// table. A returning player lands on the main menu, Continue game one tap away; the table's menu opens a
-/// pause card whose Main menu comes back here with the match preserved (spec R31, R32).
+/// table. A returning player with a match in progress lands back on the table, curtain down in pass and play;
+/// with no match, or a finished one, they land on the main menu, Continue game or New match one tap away
+/// (override of spec R31/R32 and this comment, decision D64). The table's menu opens a pause card whose Main
+/// menu comes back here with the match preserved (spec R31, R32).
 public struct RootView: View {
     enum Screen { case login, intro, menu, table }
 
@@ -74,7 +76,7 @@ public struct RootView: View {
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto": .menu
         case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over": .table
-        default: Self.initialScreen(for: model.settings)
+        default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
         _screen = State(initialValue: screen)
         _showWelcome = State(initialValue: stage == "pause")
@@ -104,11 +106,13 @@ public struct RootView: View {
         }
     }
 
-    /// Login until a name is saved; the intro until it has been seen or skipped; then the main menu, never
-    /// a popup over the table (spec R32).
-    nonisolated static func initialScreen(for settings: Settings) -> Screen {
+    /// Login until a name is saved; the intro until it has been seen or skipped; then straight onto the table
+    /// if a match is in progress, otherwise the main menu (decision D64). A match with no winner counts as in
+    /// progress; a finished or absent match falls back to the menu, never a popup over the table (spec R32).
+    nonisolated static func initialScreen(for settings: Settings, matchInProgress: Bool) -> Screen {
         if !settings.hasSignedIn { return .login }
-        return settings.hasSeenRules ? .menu : .intro
+        if !settings.hasSeenRules { return .intro }
+        return matchInProgress ? .table : .menu
     }
 
     enum Destination: Equatable { case menu, intro, table }

@@ -540,8 +540,37 @@ import Testing
 }
 
 @MainActor @Test func rootOpensOnLoginUntilSignedInThenOnTheTable() {
-    #expect(RootView.initialScreen(for: Settings()) == .login)
-    #expect(RootView.initialScreen(for: Settings(hasSeenRules: true, playerName: "Connor")) == .menu)
+    #expect(RootView.initialScreen(for: Settings(), matchInProgress: false) == .login)
+    #expect(RootView.initialScreen(for: Settings(hasSeenRules: true, playerName: "Connor"), matchInProgress: false) == .menu)
+}
+
+@MainActor @Test func rootNeverSignedInAlwaysGoesToLoginEvenWithAMatchInProgress() {
+    #expect(RootView.initialScreen(for: Settings(), matchInProgress: true) == .login)
+}
+
+@MainActor @Test func rootResumesAMatchInProgressOntoTheTable() {
+    let settings = Settings(hasSeenRules: true, playerName: "Connor")
+    #expect(RootView.initialScreen(for: settings, matchInProgress: true) == .table)
+    #expect(RootView.initialScreen(for: settings, matchInProgress: false) == .menu)   // finished or no match: unchanged
+}
+
+@MainActor @Test func rootResumesPassAndPlayWithTheCurtainDown() throws {
+    // A restored pass-and-play match resumes onto the table, but nobody's hand is showing: the curtain
+    // is down for whoever is next, exactly as a fresh restore leaves `revealedSeat`.
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let model = GameModel.loadDefault(in: directory)
+    model.newGame(mode: .passAndPlay)
+    model.dismissDealerDraw()
+    model.ready()
+    model.send(.bid(nil))
+    var settings = model.settings
+    settings.setPlayerName("Connor")
+    settings.hasSeenRules = true
+    model.settings = settings
+    let restored = GameModel.loadDefault(in: directory)
+    #expect(restored.revealedSeat == nil)
+    #expect(RootView.initialScreen(for: restored.settings, matchInProgress: restored.matchInProgress) == .table)
 }
 
 
@@ -833,10 +862,10 @@ import Testing
 
 @Test func rootRoutesSignedInPlayersWhoSkippedTheIntroBackToIt() {
     var settings = Settings(playerName: "Connor")
-    #expect(RootView.initialScreen(for: settings) == .intro)   // signed in, never saw the intro or rules
+    #expect(RootView.initialScreen(for: settings, matchInProgress: false) == .intro)   // signed in, never saw the intro or rules
     settings.hasSeenRules = true
-    #expect(RootView.initialScreen(for: settings) == .menu)
-    #expect(RootView.initialScreen(for: Settings()) == .login)
+    #expect(RootView.initialScreen(for: settings, matchInProgress: false) == .menu)
+    #expect(RootView.initialScreen(for: Settings(), matchInProgress: false) == .login)
 }
 
 @Test func signingInKeepsAMatchAnExistingInstallLeftInProgress() {

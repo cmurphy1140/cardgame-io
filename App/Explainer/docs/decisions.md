@@ -534,3 +534,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Recording every match with seat 0's performance, which credited the phone owner with a match four people played.
 
 **Why:** In pass and play seat 0 is whoever sat there, not the owner.
+
+## D64. A launch with a match in progress opens onto the table, and "How Catch 5 is built" keeps one entry (2026-09-27)
+
+**Chosen:** `RootView.initialScreen(for:matchInProgress:)` sends a signed-in player who has seen the rules straight to `.table` when the saved match has no winner yet, instead of the main menu; a finished match or no match falls back to the menu as before (spec R31/R32 and the `RootView` doc comment, overridden by Connor for this case). In pass and play the curtain stays down: a restored `GameModel` never carries a revealed seat, so the resumed table shows nobody's hand until Ready is pressed. Separately, "How Catch 5 is built" now opens only from the main menu's hamburger (spec R29); the entries in `SettingsView` and the tutorial's "More" menu are gone, and the tutorial's toolbar carries a single "Full rules" button in their place.
+
+**Over:** Leaving the returning-player rule as it stood, which put Connor back at the menu every time iOS suspended and ended the app mid-hand, one extra tap from the game he was already in.
+
+**Why:** The main menu is for starting or resuming a choice, not for a match that is already running; a background-killed app should feel like nothing happened. The explainer only needs to live where a player goes looking for it, and duplicating it in Settings and the tutorial added menu weight without adding a use.
