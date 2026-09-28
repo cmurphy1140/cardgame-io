@@ -18,21 +18,27 @@ struct ContractPlaque: View {
 
     let contract: Contract
 
+    /// The light tan of both corners, and the dark wood browns the plaque's words are set in (D76).
+    static let fill = Theme.Table.cornerFill
+    static let eyebrowInk = Theme.Wood.dark
+    static let numberInk = Theme.Wood.streakDark
+    static let nameInk = Theme.Wood.dark
+
     var body: some View {
         VStack(spacing: 0) {
             Text("BID").font(.system(.caption2, design: .monospaced).weight(.semibold)).tracking(1.5)
-                .foregroundStyle(Theme.Wood.streakLight)
+                .foregroundStyle(Self.eyebrowInk)
             Text(contract.number).font(.system(size: Theme.Table.plaqueNumberSize, weight: .bold, design: .serif))
-                .foregroundStyle(.ivory)
+                .foregroundStyle(Self.numberInk)
             if let qualifier = contract.qualifier {
-                Text(qualifier).font(.caption.weight(.semibold)).foregroundStyle(.ivory)
+                Text(qualifier).font(.caption.weight(.semibold)).foregroundStyle(Self.numberInk)
             }
-            Text(contract.bidder).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.Wood.streakLight)
+            Text(contract.bidder).font(.subheadline.weight(.semibold)).foregroundStyle(Self.nameInk)
         }
         .lineLimit(1).minimumScaleFactor(0.6)
         .padding(.vertical, 6).padding(.horizontal, 6)
         .frame(width: Theme.Table.cornerWidth)
-        .background(Theme.Wood.inlay, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
+        .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
         .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
@@ -41,7 +47,7 @@ struct ContractPlaque: View {
     }
 }
 
-/// The table's top-right corner once trump is named: the suit big on an ivory tile, and under it the
+/// The table's top-right corner once trump is named: the suit big on a light tan tile (D76), and under it the
 /// player's own tally of trumps played (D65). Tap adds a mark, press and hold takes one back; the app
 /// never counts for the player (spec R4), it only keeps the marks they make.
 struct TrumpTile: View {
@@ -49,6 +55,11 @@ struct TrumpTile: View {
     let tally: Int
     let onAdd: () -> Void
     let onTakeBack: () -> Void
+
+    static let fill = Theme.Table.cornerFill
+
+    /// Red for hearts and diamonds, black for spades and clubs: the suit's own colour, never a control's.
+    nonisolated static func glyphColor(_ suit: Suit) -> Color { suit.isRed ? .suitRed : .black }
 
     /// "Hearts are trump, 4 trump played".
     nonisolated static func spoken(trump: Suit, tally: Int) -> String {
@@ -58,9 +69,9 @@ struct TrumpTile: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(trump.glyph).font(.system(size: Theme.Table.trumpGlyphSize))
-                .foregroundStyle(trump.isRed ? Color.suitRed : .black)
+                .foregroundStyle(Self.glyphColor(trump))
                 .frame(width: Theme.Table.cornerWidth, height: Theme.Table.trumpTileHeight)
-                .background(.ivory, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
+                .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
                 .shadow(color: .black.opacity(0.45), radius: 5, y: 4)
             TallyMarks(count: tally).frame(width: Theme.Table.cornerWidth, height: Theme.Table.tallyHeight)
         }

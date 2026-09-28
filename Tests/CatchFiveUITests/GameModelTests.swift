@@ -1439,6 +1439,18 @@ import Testing
     #expect(nine.number == "9" && nine.qualifier == "and out" && nine.spoken == "Otto bid 9 and out")
 }
 
+@MainActor @Test func tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump() {
+    // Both corners share one very light tan fill (D76), about RGB 0.91, 0.84, 0.70.
+    let tan = Theme.Table.cornerFill.resolve(in: EnvironmentValues())
+    #expect(abs(Double(tan.red) - 0.91) < 0.01 && abs(Double(tan.green) - 0.84) < 0.01 && abs(Double(tan.blue) - 0.70) < 0.01)
+    #expect(ContractPlaque.fill == Theme.Table.cornerFill && TrumpTile.fill == Theme.Table.cornerFill)
+    // The plaque's words are dark brown from the wood; the trump glyph keeps its suit's colour.
+    #expect(ContractPlaque.eyebrowInk == Theme.Wood.dark && ContractPlaque.numberInk == Theme.Wood.streakDark
+        && ContractPlaque.nameInk == Theme.Wood.dark)
+    #expect(TrumpTile.glyphColor(.hearts) == .suitRed && TrumpTile.glyphColor(.diamonds) == .suitRed)
+    #expect(TrumpTile.glyphColor(.spades) == .black && TrumpTile.glyphColor(.clubs) == .black)
+}
+
 @MainActor private func playOutHand(_ model: GameModel) throws {
     for _ in 0..<200 where model.match.hand.phase != .finished {
         if model.isHumanTurn {

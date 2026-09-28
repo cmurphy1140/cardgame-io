@@ -119,7 +119,9 @@ public enum Theme {
         /// trump tile with the player's tally on the right. Both stay within the partner row's height.
         public static let cornerWidth = 92.0
         public static let cornerRadius = 14.0
-        /// The bid's number in the display serif, and the trump glyph on its ivory tile.
+        /// Both corners sit on a very light tan (D76), so they read as paper laid on the felt, not holes in it.
+        public static let cornerFill = Color(red: 0.91, green: 0.84, blue: 0.70)
+        /// The bid's number in the display serif, and the trump glyph on its tan tile.
         public static let plaqueNumberSize = 44.0
         public static let trumpTileHeight = 78.0
         public static let trumpGlyphSize = 56.0

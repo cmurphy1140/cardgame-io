@@ -74,11 +74,12 @@ struct MainMenuView: View {
                 Button("Statistics", systemImage: "chart.bar") { showStatistics = true }
                 Button("How Catch 5 is built", systemImage: "doc.text.magnifyingglass") { showExplainer = true }
             } label: {
-                Image(systemName: "line.3.horizontal").font(.title2.weight(.medium))
-                    .shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
+                Image(systemName: "line.3.horizontal").font(.system(size: 33, weight: .medium))
+                    .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
                     .frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
                     .contentShape(Rectangle())
             }
+            .menuStyle(.borderlessButton)
             .tint(.ivory)
             .accessibilityLabel("Menu")
             .padding(.trailing, 12).padding(.top, 4)
