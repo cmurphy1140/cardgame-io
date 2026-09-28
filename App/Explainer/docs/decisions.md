@@ -713,3 +713,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The pill hanging from the 9's lower edge (D81), where it covered the bottom of the 8 and the 9.
 
 **Why:** Connor asked for it: no pill may cover a number. `nineAndOutTakesItsOwnLineUnderTheBidRow` holds the order.
+
+## D86. Table and Clarify across the top (2026-09-28)
+
+**Chosen:** The lone pause button gives way to one long, skinny bar across the top of the table (`TableBar`): two light tan boxes with a light brown edge and a small gap, "Table" and "Clarify", in big bold type, each opening a drop-down under it on a light tan card (`TableBarMenu`); a tap outside closes it and play waits while it is open (`TablePause.menuShown`). Table holds Pause (the pause card drops down over the table, Continue game and one big line: "You can leave the app and come back to this exact spot.", `WelcomeCard.keepsPlace`), New game (Solo or Pass and play, then the "Start over?" alert, still an alert with Cancel as D57 requires) and Home (the main menu, the match kept). Clarify holds four short answers to "what am I looking at", the bid box, the scorecard, tapping the suit to count trump and tapping a face to mark who's out (`TableBar.answers`), and a How to play button that opens the lessons. The screenshot stages `table-menu` and `clarify` open each drop-down over the `table` state.
+
+**Over:** A bare pause glyph, with New game and Home only on the pause card and the main menu, and the table's taps explained nowhere on the table.
+
+**Why:** Connor asked for it (N68): the controls and the answers should be where the players are looking. `theTableBarHasTableAndClarifyWithTheirDropDowns` holds the boxes, their contents and the pause.

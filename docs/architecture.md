@@ -6,7 +6,7 @@
 flowchart TB
     subgraph View["View layer — SwiftUI (Sources/CatchFiveUI)"]
         RV["RootView: login → intro → main menu → table<br/>LoginView · IntroView · MainMenuView · WelcomeCard (pause) · PortraitView (Cast)"]
-        TV["TableView + TableScheduler<br/>ScoreBarView · TableSurface (SeatView, pile) · HandFanView"]
+        TV["TableView + TableScheduler<br/>TableBar · TableSurface (SeatView, pile) · HandFanView"]
         CV["CardView · CardBackView · Theme"]
         HS[HandSummaryView]
         SH["Sheets: Settings, Tutorial + Rules,<br/>Review, Scoreboard, Statistics, Explainer"]

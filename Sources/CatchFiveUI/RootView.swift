@@ -35,7 +35,8 @@ public struct RootView: View {
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
     /// (How to play with the full rules sheet open over it), `signoff` (the same, scrolled to the family's note); `bold` (a computer team down 10 or more, its note held on the table); `five` (your team has just taken the five
     /// of trump, the big faces up, your lead), `handline` (a hand's result with a seat's line on it), `panel` (three hands
-    /// in, your team's score panel open) or `demo` (the `table` state with the one-time tally demo's first caption held).
+    /// in, your team's score panel open) or `demo` (the `table` state with the one-time tally demo's first caption held);
+    /// `table-menu` and `clarify` (the `table` state with that drop-down open under the bar).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         var model = model
@@ -50,7 +51,7 @@ public struct RootView: View {
             Self.passAndPlay(model) { hand in hand.phase == .playing && !hand.currentTrick.isEmpty && hand.nextSeat != 0 }
         case "draw":
             model.newGame(mode: .solo)
-        case "bidding", "table", "demo", "pause", "result", "review", "home", "home-tips", "home-whywe", "confirm9":
+        case "bidding", "table", "table-menu", "clarify", "demo", "pause", "result", "review", "home", "home-tips", "home-whywe", "confirm9":
             // The `bidding` stage deals until a bid and a pass are both in the seats' boxes before your turn (N55).
             for _ in 0..<200 {
                 model.newGame(mode: .solo)
@@ -58,7 +59,7 @@ public struct RootView: View {
                 Self.play(model) { hand, humanTurn in
                     switch stage {
                     case "bidding", "home", "home-tips", "home-whywe", "confirm9": humanTurn && hand.phase == .bidding
-                    case "table", "demo", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
+                    case "table", "table-menu", "clarify", "demo", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
                     default: hand.phase == .finished
                     }
                 }
@@ -143,7 +144,7 @@ public struct RootView: View {
         _tutorial = StateObject(wrappedValue: model.makeTutorial())
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto", "rules", "signoff", "home": .menu
-        case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
+        case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "table-menu", "clarify", "dealer-bidder", "pause", "result", "review", "over",
              "home-tips", "home-whywe", "ninewin", "ninelose", "won", "confirm9", "bold", "five", "handline", "panel", "demo": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
@@ -223,7 +224,9 @@ public struct RootView: View {
                              choosingMode: choosingMode)
                     .transition(.opacity)
             case .table:
-                TableView(model: model, tutorial: tutorial, covered: showWelcome || showTips) { withAnimation(motion) { showWelcome = true } }
+                TableView(model: model, tutorial: tutorial, covered: showWelcome || showTips,
+                          onLeave: { withAnimation(motion) { showWelcome = true } },
+                          onHome: { showWelcome = false; show(.menu) })
                     .transition(.opacity)
                     // Under the card the table is neither tappable nor reachable by VoiceOver.
                     .accessibilityHidden(showWelcome || showTips)
@@ -239,7 +242,8 @@ public struct RootView: View {
                                 WelcomeCard(model: model, onPlay: { withAnimation(motion) { showWelcome = false } },
                                             onMenu: { showWelcome = false; show(.menu) })
                             }
-                            .transition(.opacity)
+                            // The pause card drops down from the bar's Table box (N68).
+                            .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                             .accessibilityAddTraits(.isModal)
                         }
                     }

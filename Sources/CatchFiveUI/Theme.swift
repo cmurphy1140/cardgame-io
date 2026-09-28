@@ -147,6 +147,9 @@ public enum Theme {
         public static let auctionButtonHeight = 64.0
         public static let auctionButtonSpacing = 6.0
         public static let auctionButtonRadius = 14.0
+        /// The Table and Clarify boxes across the top (N68): skinny, but a full thumb tall.
+        public static let barHeight = 40.0
+        public static let barRadius = 10.0
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
         /// The table's top corners either side of the partner (D65): the contract plaque on the left, the

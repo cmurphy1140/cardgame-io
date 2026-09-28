@@ -1,10 +1,12 @@
 import CatchFive
 import SwiftUI
 
-/// The pause card, shown over the dimmed table from the table's menu: Continue game (until the match is
-/// won) and Main menu, which keeps the match and goes to the menu, where New match, Settings, the lessons,
-/// statistics and the build explainer live (P02, P03). No greeting and no summary: the main menu carries those.
+/// The pause card, dropped down over the dimmed table from the Table box's Pause (N68): Continue game (until the
+/// match is won), one big line saying the game keeps its place, and Main menu, which keeps the match and goes to
+/// the menu, where New match, Settings, the lessons, statistics and the build explainer live (P02, P03).
 struct WelcomeCard: View {
+    nonisolated static let keepsPlace = "You can leave the app and come back to this exact spot."
+
     @ObservedObject var model: GameModel
     let onPlay: () -> Void
     /// Leaves the table for the main menu with the match preserved.
@@ -17,6 +19,11 @@ struct WelcomeCard: View {
                 Text("Paused").font(.system(.title3, design: .serif).weight(.semibold))
             }
             .accessibilityElement(children: .combine)
+
+            if model.match.winner == nil {
+                Text(Self.keepsPlace).font(.title3.weight(.bold)).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             VStack(spacing: 10) {
                 if model.match.winner == nil {
