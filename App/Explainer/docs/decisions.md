@@ -697,3 +697,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The score in the header opening a scrolling Score page with red dots.
 
 **Why:** Connor asked for it (N62): the score where the rails end, one team at a time, with nothing to scroll. `theHeaderCarriesNoScore` and `eachTeamsPanelShowsItsTotalDotsAndHands` hold it.
+
+## D84. The table shows its two taps once, the first time trump is named (2026-09-28)
+
+**Chosen:** The first time trump is named on an install, once nothing covers the table, the app shows the two hand-kept notes by itself (`TallyDemo`): the trump tile presses and releases as if tapped (`DemoTap`) under the big bold caption "Count trump as it falls", then the opponent on the phone holder's left does, under "Mark who's out of trump" (`TallyDemoCaption`, light tan with a light brown edge, in the middle of the table). Each step holds 2.8 s (`TallyDemo.stepSeconds`) or until the caption is tapped, and play waits meanwhile. It is only a show: no tally mark or badge is made. `Settings.hasSeenTallyDemo` (Codable, false by default and for older files) is saved when it starts, so it never shows again, even if cut short. Under Reduce Motion the captions come without the pulse. Screenshot stages leave it out except `demo`, which holds the first caption.
+
+**Over:** A tip in How to play, or captions that stay until dismissed.
+
+**Why:** Connor asked for it (N61): the tally and the out-of-trump badge are invisible until someone shows them. `theTallyDemoShowsOnceAndTheFlagPersists` and `theTallyDemoLeavesTheTallyAndBadgesAlone` hold it.

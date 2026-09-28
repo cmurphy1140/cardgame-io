@@ -484,6 +484,24 @@ public final class GameModel: ObservableObject {
         if outOfTrump.remove(seat) == nil { outOfTrump.insert(seat) }
     }
 
+    /// The two taps being shown by the table, once per install, the first time trump is named (N61).
+    @Published public private(set) var tallyDemo: TallyDemo?
+    private var tallyDemoLeft: [TallyDemo] = []
+
+    /// Starts the tally demo if trump is named and this install has never seen it. The flag is saved at once, so
+    /// a demo cut short never comes back.
+    public func beginTallyDemoIfDue() {
+        guard match.hand.trump != nil, !settings.hasSeenTallyDemo, tallyDemo == nil else { return }
+        settings.hasSeenTallyDemo = true
+        tallyDemoLeft = TallyDemo.steps(opponent: seat(at: 1))
+        advanceTallyDemo()
+    }
+
+    /// The demo's next step, or its end. Only the table's pulse and caption move; no mark or badge is made.
+    public func advanceTallyDemo() {
+        tallyDemo = tallyDemoLeft.isEmpty ? nil : tallyDemoLeft.removeFirst()
+    }
+
     /// The player's tally and marks belong to one hand.
     private func clearTrumpTally() {
         trumpTally = 0

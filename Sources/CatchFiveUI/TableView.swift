@@ -56,13 +56,19 @@ public struct TableView: View {
         TablePause(sceneActive: scenePhase == .active,
                    welcomeShown: covered,
                    sheetShown: showSettings || showTutorial || scorePanel != nil || showStatistics,
-                   dialogShown: confirmNewGame || confirmNineAndOut || model.errorMessage != nil || model.saveError != nil,
+                   dialogShown: confirmNewGame || confirmNineAndOut || model.tallyDemo != nil || model.errorMessage != nil || model.saveError != nil,
                    inspectingTrick: reopenedTrick != nil,
                    drawShown: drawShown)
     }
 
     /// The draw for dealer is showing: a fresh match, not yet covered, with its draw still on the table.
     private var drawShown: Bool { model.dealerDraw != nil && model.match.actionCount == 0 && !covered }
+
+    /// The tally demo is looked for when trump is named and when the table is uncovered again.
+    private struct DemoKey: Hashable {
+        let trumpNamed: Bool
+        let paused: Bool
+    }
 
     /// The scheduler restarts whenever an action lands or the pause lifts, and cancels when a pause begins.
     private struct SchedulerKey: Hashable {
@@ -266,6 +272,18 @@ public struct TableView: View {
                 withAnimation(motion(Theme.Motion.overlay)) { model.clearBoldNote() }
             }
             .onChange(of: scenePhase) { _, phase in if phase != .active { model.persist() } }
+            // The first time trump is named on this install, once nothing covers the table, it shows its two taps (N61).
+            // Screenshot stages leave it out, except `demo`, which holds its first caption.
+            .task(id: DemoKey(trumpNamed: model.match.hand.trump != nil, paused: pause.isPaused || model.curtainSeat != nil)) {
+                guard ScreenshotStage.name == nil || ScreenshotStage.name == "demo", !pause.isPaused, model.curtainSeat == nil else { return }
+                withAnimation(motion(Theme.Motion.overlay)) { model.beginTallyDemoIfDue() }
+            }
+            .task(id: model.tallyDemo) {
+                guard model.tallyDemo != nil, ScreenshotStage.name != "demo" else { return }
+                try? await Task.sleep(for: .seconds(TallyDemo.stepSeconds))
+                guard !Task.isCancelled else { return }
+                withAnimation(motion(Theme.Motion.overlay)) { model.advanceTallyDemo() }
+            }
     }
 
     /// Two haptics only: the refusal buzz, and one outcome cue per accepted action (`TableFeedback`).

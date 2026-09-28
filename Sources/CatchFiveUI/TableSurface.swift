@@ -85,6 +85,7 @@ struct TableSurface: View {
                                 TrumpTile(trump: trump, tally: model.trumpTally, width: cornerWidth,
                                           onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
                                     .modifier(CornerArrival())
+                                    .modifier(DemoTap(active: model.tallyDemo == .trump))
                             }
                         }
                         .accessibilitySortPriority(24)
@@ -96,6 +97,7 @@ struct TableSurface: View {
                     HStack(alignment: .center) {
                         // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
                         SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
+                            .modifier(DemoTap(active: model.tallyDemo == .face(seat: model.seat(at: 1))))
                             // Both side tiles share a row and a height, so the left one's lower edge serves both rails.
                             .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { onSideSeats($0) }
                             .overlay(alignment: .bottomTrailing) {
@@ -163,6 +165,16 @@ struct TableSurface: View {
             .opacity(hand.phase == .finished ? 0.12 : 1)
             .accessibilityHidden(hand.phase == .finished)
             .overlay { if hand.phase == .finished, !holdsResult { finishedCard } }
+            // The one-time demo of the two taps says what each pulse means, in the middle of the table (N61).
+            .overlay {
+                if let demo = model.tallyDemo {
+                    TallyDemoCaption(text: demo.caption)
+                        .padding(.horizontal, Theme.Table.railClearance)
+                        .onTapGesture { withAnimation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay) { model.advanceTallyDemo() } }
+                        .transition(.opacity)
+                        .id(demo.caption)
+                }
+            }
         }
         .accessibilityElement(children: .contain)
     }
