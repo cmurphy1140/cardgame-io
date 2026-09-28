@@ -26,6 +26,12 @@ public struct TableView: View {
     @State private var seen: TableFeedback.Snapshot
     /// Where the deck beside the dealer rests on the table; the refill deals in from here (T12).
     @State private var dealerDeck: CGPoint?
+    /// Counts hands dealt while the table is up; each one riffles once at the dealer's deck (D68).
+    @State private var shuffles = 0
+    /// What still plays before the match-over card: the 9-and-out screen and the cascade (D69).
+    @State private var celebrating: [Celebration] = []
+    /// Counts cascades begun, for their success haptic.
+    @State private var cascades = 0
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
@@ -81,7 +87,52 @@ public struct TableView: View {
                     .transition(.opacity)
                 }
             }
+            // The one bid that can end the match on its own: the partner asks, then the engine judges it at that moment (D70).
+            .overlay {
+                if confirmNineAndOut {
+                    NineAndOutConfirm(name: NineAndOutConfirm.partnerName(model), portrait: portraits[model.partnerSeat],
+                                      onSure: { confirmNineAndOut = false; model.send(.nineAndOut) },
+                                      onCancel: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = false } })
+                        .transition(.opacity)
+                }
+            }
+            .overlay { celebration }
             .transformEnvironment(\.dynamicTypeSize) { $0 = $0.boosted(by: Theme.textBoostSteps) }
+            .onAppear {
+                // The screenshot stages open on a match already won, so nothing announced the win.
+                if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
+                if ScreenshotStage.name == "confirm9" { confirmNineAndOut = true }
+            }
+    }
+
+    /// The next celebration step over the table, each moving on by itself or at a tap (D69).
+    @ViewBuilder private var celebration: some View {
+        switch celebrating.first {
+        case .cascade:
+            CardCascade()
+                .transition(.opacity)
+                .task {
+                    cascades += 1
+                    try? await Task.sleep(for: .seconds(Celebration.cascadeSeconds))
+                    guard !Task.isCancelled else { return }
+                    nextCelebration()
+                }
+        case let .nineAndOut(result):
+            NineAndOutScreen(result: result, bidderName: model.seatNames[result.bidder], onDone: nextCelebration)
+                .transition(.opacity)
+                .task {
+                    try? await Task.sleep(for: .seconds(Celebration.nineSeconds))
+                    guard !Task.isCancelled else { return }
+                    nextCelebration()
+                }
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private func nextCelebration() {
+        guard !celebrating.isEmpty else { return }
+        withAnimation(motion(Theme.Motion.overlay)) { _ = celebrating.removeFirst() }
     }
 
     private var portraits: [Portrait] {
@@ -108,8 +159,9 @@ public struct TableView: View {
             TableSurface(model: model, namespace: cards, collapsedTricks: collapsedTricks, reopenedTrick: reopenedTrick, toast: toast,
                          onReopenTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = model.match.hand.completedTricks.count } },
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
-                         onNineAndOut: { confirmNineAndOut = true },
+                         onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
+                         holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 16)
@@ -119,6 +171,12 @@ public struct TableView: View {
                         deck: dealerDeck, onDeck: { dealerDeck = $0 })
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
                 .padding(.horizontal, 16)
+        }
+        // The shuffle sits over the dealer's deck, in the same space the deck reports its place in.
+        .overlay(alignment: .topLeading) {
+            if shuffles > 0, let dealerDeck {
+                RiffleShuffle().id(shuffles).position(dealerDeck)
+            }
         }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
@@ -139,6 +197,7 @@ public struct TableView: View {
             .onChange(of: model.match.handNumber) { _, _ in collapsedTricks = 0; reopenedTrick = nil }
             .onChange(of: model.revision) { _, revision in
                 withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil }
+                if RiffleShuffle.startsHand(model.match.hand) { shuffles += 1 }
                 noteChanges(revision)
             }
             .onChange(of: model.lastHumanAction) { _, action in toast = action }
@@ -161,12 +220,14 @@ public struct TableView: View {
         withScheduling
             .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.4), trigger: shakeCount) { _, _ in model.settings.haptics }
             .sensoryFeedback(cue?.cue.feedback ?? .selection, trigger: cue?.id ?? 0) { _, _ in model.settings.haptics && cue != nil }
+            .sensoryFeedback(.success, trigger: cascades) { _, _ in model.settings.haptics }
     }
 
     /// After each accepted action, work out what it did and pick the one cue and announcement for it.
     private func noteChanges(_ revision: Int) {
         let now = TableFeedback.Snapshot(model)
         if let picked = TableFeedback.cue(from: seen, to: now) { cue = (revision, picked) }
+        if now.winner != nil, seen.winner == nil { celebrating = model.celebrations }
         let handEnded = now.hands > seen.hands
         if now.tricks > seen.tricks, !handEnded, let winner = now.lastTrickWinner {
             AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the hand").post()
@@ -190,11 +251,6 @@ public struct TableView: View {
                 Button("Retry") { model.retrySave() }
                 Button("Not now", role: .cancel) { model.saveError = nil }
             } message: { Text(model.saveError ?? "") }
-            // The one bid that can end the match on its own: confirm it, then let the engine judge it at that moment.
-            .confirmationDialog("Bid 9 and out?", isPresented: $confirmNineAndOut, titleVisibility: .visible) {
-                Button("Bid 9 and out", role: .destructive) { model.send(.nineAndOut) }
-                Button("Cancel", role: .cancel) {}
-            } message: { Text("Take all nine points to win the match. Take fewer and you lose it, whatever the score.") }
             // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
             // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
             .alert("Start over?", isPresented: $confirmNewGame) {

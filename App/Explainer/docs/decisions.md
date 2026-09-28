@@ -551,3 +551,43 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 
 **Why:** Connor: "The three biggest things to remember are who bid, what the bid is, and what trump." The tally is consistent with spec R4 (no automatic number tracking) because the app itself never counts: it only keeps the marks the player makes, as a pencil would.
 
+
+## D66. The rules sheet opens with where the game comes from (2026-09-27)
+
+**Chosen:** "How to play Catch 5" (`RulesView`) shows one line above its first chapter, in the display serif's italic: "A New England variant of Pitch, passed down through generations. We hope you enjoy it as much as we do." The words live once, as `RulesText.origin`, outside the rule sections, so the verbatim check against `docs/catch-five-rules.md` is unchanged and the tip card (D67) quotes the same constant.
+
+**Over:** Leaving the sheet to open straight on the first rule, or adding the line to the rules document as if it were a rule.
+
+**Why:** Connor asked for it: the game is a family's, handed down, and the sheet is where a new player first reads about it. `rulesSheetOpensWithWhereTheGameComesFrom` holds the exact wording.
+
+## D67. Deal me in, and a tip card on the way to the table (2026-09-27)
+
+**Chosen:** The home screen's play buttons are "Back to the table" (prominent) and "Deal me in" (plain) while a match is in progress, and one prominent "Deal me in" otherwise (`MainMenuView.homeButtons(matchInProgress:)`). Deal me in replaces New match and keeps its start-over alert and Solo or Pass and play picker. Going from the home screen to the table through either button shows `TipCardView` over the covered table: a large ivory card that opens on `RulesText.origin` ("WHERE IT COMES FROM"), turns over after 3.2 s (a 3D turn about its vertical axis) to the next of eleven tips ("TIP n OF 11", `TipDeck.tips`), and deals on its own 3.2 s after that; a tap anywhere deals at once. Dealing sends four card backs to the four seats over 0.5 s as the dim lifts. The next tip index is `Settings.nextTip` (decoded with a default of 0, so older files load), advanced and saved by `GameModel.takeNextTip()` when a tip is shown, and wrapping after the eleventh; a visit that deals before the turn uses no tip. A launch that resumes straight onto the table (D64) shows no tip card. The five of hearts on the home screen sways slowly and turns over to its back about every 9 s; it is not a control. Under Reduce Motion the turn and the deal are crossfades and the five holds still. The table counts as covered while the card is up, so no computer acts behind it.
+
+**Over:** Continue game and New match, and going straight to the table.
+
+**Why:** Connor approved the mockup: the walk from the home screen to the table is a moment to teach one thing, the way someone at a real table says a word while they shuffle, and the eleventh tip says the game needs no connection.
+
+## D68. A quick riffle at the dealer's seat as each hand starts (2026-09-27)
+
+**Chosen:** When an accepted action leaves a hand freshly dealt (bidding, no call yet: `RiffleShuffle.startsHand(_:)`), `TableView` plays `RiffleShuffle` over the dealer's deck: six small card backs split into two halves, riffle back together and fade, 0.6 s in all. It takes no taps, is hidden from VoiceOver, and is not a `TablePause` reason, so the scheduler and the computers carry on beneath it and no test waits for it. Under Reduce Motion the stack shows still and fades.
+
+**Over:** No shuffle, or a shuffle the table waits for.
+
+**Why:** A hand at a real table starts with the dealer shuffling; showing it marks the new hand without costing a beat.
+
+## D69. A won match is celebrated, and a 9 and out gets its own moment (2026-09-27)
+
+**Chosen:** When an action wins the match, `TableView` plays `GameModel.celebrations` before the hand-end card shows (`TableSurface.holdsResult`): first, if the deciding hand was bid 9 and out, `NineAndOutScreen`, full screen, "9 and out" large in the display serif and gold with the bidder's name and High, Low, Jack, Five and Game each ticked, or, if it was missed, a quieter ivory "9 and out missed" naming the points missed with those rows crossed and dimmed; then, for a win worth cheering (your team in solo, any team in pass and play), `CardCascade`, sixteen cards tumbling across the table for 2 s with a success haptic when haptics are on. A lost solo match has no cascade. The 9-and-out screen moves on after 3.5 s or at a tap; the cascade takes no taps. Everything is read from the engine's finished hand (`NineAndOutResult(summary:)`, from `HandScore`'s point owners, an undealt Jack or Five counting as missed) and `Match.winner`; the engine is unchanged. Under Reduce Motion the cascade is a still spread of five cards and the steps crossfade.
+
+**Over:** Going straight to the match-over card, as before.
+
+**Why:** Winning a match, and above all making 9 and out, is the moment the family talks about afterwards; the table should mark it. The existing match-won cue (D-series haptics, `TableFeedback`) still fires when the match is won, so a win that cascades straight away feels two success taps close together.
+
+## D70. The partner asks before 9 and out (2026-09-27)
+
+**Chosen:** The 9-and-out pill opens `NineAndOutConfirm`, a card over the dimmed table in the partner's voice: the portrait and name of the phone holder's partner (`GameModel.partnerSeat`, across from the bottom seat, so in pass and play it is that seat's partner), the line "Are you sure? Take all nine and we win the match. Miss one and we lose it.", a gold "I'm sure" that sends the bid, and "Not this time", always present; a tap on the dim also backs out. The card keeps `confirmNineAndOut`, so the table stays paused while it is up, and the engine still judges the bid when it is sent. The label on the gold button is the header's dark brown, not black, under the palette rule. It replaces the system `confirmationDialog` with its red destructive button.
+
+**Over:** The confirmation dialog, which on iOS 26 anchors to its button as a popover and drops its Cancel button (D57), and whose red button put the suit colour on a control.
+
+**Why:** At a real table it is the partner who says "are you sure?"; the card makes that the voice of the check and keeps an explicit way out on every system.

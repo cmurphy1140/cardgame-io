@@ -2,14 +2,14 @@ import CatchFive
 import SwiftUI
 
 /// The main menu (spec R31): who is playing, where the saved match stands, and every destination that is
-/// not the table itself. Continue game leads back to the match untouched; New match replaces it after a
-/// word of warning; How to play opens the lessons. Settings, Statistics and the build explainer wait in a
+/// not the table itself. Back to the table leads back to the match untouched; Deal me in starts a new one,
+/// after a word of warning if it would replace one (D67); How to play opens the lessons. Settings, Statistics and the build explainer wait in a
 /// hamburger menu in the top-right corner, one tap from here in every mode (spec R29), as a bare glyph
 /// with no plate (spec R19).
 struct MainMenuView: View {
     @ObservedObject var model: GameModel
     @ObservedObject var tutorial: TutorialModel
-    /// Continue or a fresh deal: the table takes over.
+    /// Back to the table or a fresh deal: the tip card, then the table.
     let onPlay: () -> Void
     /// Opens with the Solo or Pass and play question already up (the screenshot launch stage).
     var choosingMode = false
@@ -57,12 +57,11 @@ struct MainMenuView: View {
                 .accessibilityElement(children: .combine)
 
                 VStack(spacing: 10) {
-                    // New match always asks Solo or Pass and play; the same question warns when a match is in progress.
-                    if model.match.winner == nil {
-                        MenuButtons.prominent("Continue game", action: onPlay)
-                        MenuButtons.plain("New match") { confirmNewMatch = true }
-                    } else {
-                        MenuButtons.prominent("New match") { confirmNewMatch = true }
+                    // Deal me in always asks Solo or Pass and play; the same question warns when a match is in progress.
+                    ForEach(Self.homeButtons(matchInProgress: model.matchInProgress), id: \.title) { button in
+                        let action = button.action == .backToTable ? onPlay : { confirmNewMatch = true }
+                        if button.prominent { MenuButtons.prominent(button.title, action: action) }
+                        else { MenuButtons.plain(button.title, action: action) }
                     }
                     MenuButtons.plain("How to play") { showTutorial = true }
                 }
@@ -103,7 +102,7 @@ struct MainMenuView: View {
             switch ScreenshotStage.name {
             case "stats": showStatistics = true
             case "settings": showSettings = true
-            case "howto": showTutorial = true
+            case "howto", "rules": showTutorial = true
             default: break
             }
         }
@@ -111,9 +110,66 @@ struct MainMenuView: View {
 }
 
 
-/// The home-screen signature card: a real five-of-hearts pip layout, larger than gameplay cards.
+extension MainMenuView {
+    struct HomeButton: Equatable {
+        enum Action { case backToTable, dealMeIn }
+        let title: String
+        let prominent: Bool
+        let action: Action
+    }
+
+    /// The home screen's play buttons (D67): with a match in progress, Back to the table in the prominent style
+    /// and Deal me in plain; otherwise Deal me in alone, prominent. Deal me in keeps New match's alert and mode picker.
+    nonisolated static func homeButtons(matchInProgress: Bool) -> [HomeButton] {
+        matchInProgress
+            ? [HomeButton(title: "Back to the table", prominent: true, action: .backToTable),
+               HomeButton(title: "Deal me in", prominent: false, action: .dealMeIn)]
+            : [HomeButton(title: "Deal me in", prominent: true, action: .dealMeIn)]
+    }
+}
+
+/// The home-screen signature card: a real five-of-hearts pip layout, larger than gameplay cards. It sways
+/// slowly and turns over to its back about every nine seconds (D67); under Reduce Motion it holds still.
 private struct HomeFiveCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var swayed = false
+    @State private var angle = 0.0
+    @State private var showsBack = false
+
     var body: some View {
+        Group {
+            if showsBack { CardBackView(width: 112).frame(width: 112, height: 168) } else { face }
+        }
+        .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+        .rotationEffect(.degrees(swayed ? 2 : -2))
+        .offset(y: swayed ? -4 : 0)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) { swayed = true }
+        }
+        .task {
+            guard !reduceMotion else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(9))
+                guard !Task.isCancelled else { return }
+                await turn()
+                try? await Task.sleep(for: .seconds(1.5))
+                guard !Task.isCancelled else { return }
+                await turn()
+            }
+        }
+    }
+
+    /// Turns the card over about its vertical axis, swapping face and back edge-on.
+    private func turn() async {
+        withAnimation(.easeIn(duration: 0.3)) { angle = 90 }
+        try? await Task.sleep(for: .milliseconds(300))
+        showsBack.toggle()
+        angle = -90
+        withAnimation(.easeOut(duration: 0.3)) { angle = 0 }
+    }
+
+    private var face: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(.ivory)

@@ -84,6 +84,12 @@ public final class GameModel: ObservableObject {
         return HandOutcome(summary: last, before: before, names: seatNames)
     }
 
+    /// The last hand read as a 9 and out, when it was one: who bid it and which points were missed (D69).
+    var lastNineAndOut: NineAndOutResult? { match.history.last.flatMap(NineAndOutResult.init(summary:)) }
+
+    /// What plays before the match-over card once the match is won: the 9-and-out screen, the cascade, both or neither (D69).
+    var celebrations: [Celebration] { Celebration.steps(winner: match.winner, mode: mode, nineAndOut: lastNineAndOut) }
+
     /// Every play of the finished hand alongside the standard strategy's choice; nil before the hand is scored.
     public func handReview() -> HandReview? {
         guard match.hand.phase == .finished else { return nil }
@@ -160,6 +166,9 @@ public final class GameModel: ObservableObject {
 
     /// The pair sitting as `team`: "Cheryl + Connor".
     public func teamNames(_ team: Int) -> String { "\(seatNames[team]) + \(seatNames[team + 2])" }
+
+    /// The phone holder's partner, across the table: the seat that asks before a 9-and-out bid (D70).
+    public var partnerSeat: Int { (bottomSeat + 2) % 4 }
 
     /// The team the score bar leads with as "Us": the phone holder's.
     public var ourTeam: Int { bottomSeat % 2 }
@@ -306,6 +315,13 @@ public final class GameModel: ObservableObject {
     /// The tutorial's state, sharing completion with `Settings` so it persists with the other preferences.
     public func makeTutorial() -> TutorialModel {
         TutorialModel(completed: settings.completedLessons) { [weak self] completed in self?.settings.completedLessons = completed }
+    }
+
+    /// The tip the card shows next, and the index moved on and saved, so the next visit carries on from here (D67).
+    func takeNextTip() -> TipDeck.Face {
+        let face = TipDeck.tip(settings.nextTip)
+        settings.nextTip = (settings.nextTip % TipDeck.tips.count + TipDeck.tips.count + 1) % TipDeck.tips.count
+        return face
     }
 
     /// True until the player has dismissed the tutorial once.

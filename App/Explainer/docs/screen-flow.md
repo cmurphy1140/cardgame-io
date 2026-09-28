@@ -11,7 +11,7 @@ Three kinds of surface, and the difference matters:
 |---|---|---|
 | **Screen** | Replaces everything. `RootView` owns exactly four. | login, intro, menu, table |
 | **Sheet** | Slides over, dismissed by the player, the screen beneath continues to exist | settings, statistics, how to play, hand review, scoreboard, hint detail |
-| **Cover** | Blocks play. The table underneath is neither tappable nor reachable by VoiceOver, and the scheduler holds | pause card, hand result, match over, pass-and-play curtain |
+| **Cover** | Blocks play. The table underneath is neither tappable nor reachable by VoiceOver, and the scheduler holds | pause card, tip card, 9-and-out screen, hand result, match over, pass-and-play curtain |
 
 ## The four screens
 
@@ -28,8 +28,8 @@ stateDiagram-v2
 
     intro --> table: finished or skipped
 
-    menu --> table: Continue game
-    menu --> table: New match (confirmed)
+    menu --> table: Back to the table, tip card first
+    menu --> table: Deal me in (confirmed), tip card first
 
     table --> menu: pause card, Main menu
     note right of table
@@ -50,8 +50,9 @@ match never carries a revealed seat.
 ```mermaid
 flowchart TD
     M[Main menu]
-    M -->|Continue game| T[Table]
-    M -->|New match, alert confirms| T
+    M -->|Back to the table| TC[Tip card, cover]
+    M -->|Deal me in, alert confirms| TC
+    TC -->|tap, or after its second face| T[Table]
     M -->|How to play| TU[How to play, sheet]
     M -->|hamburger| S[Settings, sheet]
     M -->|hamburger| ST[Statistics, sheet]
@@ -62,8 +63,10 @@ flowchart TD
     EX --> M
 ```
 
-Continue game is the primary action whenever a saved match exists; New match takes its place when one
-does not. Replacing a match in progress always asks first (spec R32).
+Back to the table is the primary action whenever a match is in progress, with Deal me in beside it;
+Deal me in stands alone when there is none (D67). Replacing a match in progress always asks first (spec R32).
+Either way the tip card comes up over the table first: where the game comes from, then one tip, then the
+deal. A launch that resumes onto the table skips it.
 
 ## What opens from the table
 
@@ -85,7 +88,9 @@ flowchart TD
     P -->|New match, alert confirms| T
     R -->|Deal next hand| T
     R -->|Review| RV[Hand review, sheet]
-    R -->|match won| MO[Match over]
+    T -->|match won| CE[9 and out screen, cascade, cover]
+    CE --> MO[Match over]
+    R -->|match won| MO
     RV --> R
     U --> T
     SB --> T

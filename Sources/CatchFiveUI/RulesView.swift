@@ -74,6 +74,13 @@ struct RulesView: View {
                 ScrollView {
                     // Six panels, all realised, so a jump to any chapter always has a target.
                     VStack(spacing: 20) {
+                        // Where the game comes from, before any rule (D66).
+                        Text(RulesText.origin)
+                            .font(.system(.body, design: .serif).italic())
+                            .multilineTextAlignment(.center)
+                            .opacity(0.9)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 8)
                         ForEach(Chapter.allCases) { chapter in
                             panel(chapter).id(chapter)
                         }
