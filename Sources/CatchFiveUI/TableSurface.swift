@@ -18,6 +18,8 @@ struct TableSurface: View {
     let onNineAndOut: () -> Void
     /// The deck beside the dealer's tile says where it rests, so the deal can start there.
     var onDeck: (CGPoint) -> Void = { _ in }
+    /// The side seats' lower edge in the table's space, so the score rails can start below them (N59).
+    var onSideSeats: (Double) -> Void = { _ in }
     /// A match-win celebration is playing; the hand-end card waits until it has finished (D69).
     var holdsResult = false
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
@@ -94,6 +96,8 @@ struct TableSurface: View {
                     HStack(alignment: .center) {
                         // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
                         SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
+                            // Both side tiles share a row and a height, so the left one's lower edge serves both rails.
+                            .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { onSideSeats($0) }
                             .overlay(alignment: .bottomTrailing) {
                                 if hand.phase == .bidding {
                                     bidBox(at: 1, from: CGSize(width: -Theme.Table.bidBoxWidth, height: -Theme.Table.bidBoxHeight))
@@ -535,7 +539,7 @@ struct TableSurface: View {
         .scrollBounceBehavior(.basedOnSize)
         .background(.ivory, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.Wood.header.opacity(0.45), lineWidth: 1.5))
-        .padding(8)
+        .padding(.vertical, 8).padding(.horizontal, Theme.Table.railClearance)
         .transition(reduceMotion ? .opacity : .offset(y: 12).combined(with: .opacity))
         .accessibilitySortPriority(40)
     }

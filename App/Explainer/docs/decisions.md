@@ -681,3 +681,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Only the legal bids offered in a 4 by 2 grid (B03), with the standing bid in chips and in a pill under the bidder.
 
 **Why:** Connor asked for it (N55): the numbers stayed put so the row reads like a real bidding box, and every seat's call is where that seat sits. Dropping the chips frees a row, which the one-row bid strip needs. `everySeatsBidBoxShowsItsCallBigPassOrNineOut` and `theBidRowKeepsEveryNumberAndGreysTheOnesPassed` hold it.
+
+## D82. Green score rails to 25 down both edges of the table (2026-09-28)
+
+**Chosen:** Two thick green number lines run down the table's edges in the margin beside the hand (`ScoreRail`, drawn by `TableView.scoreRails`): the phone holder's team on the left, from just below the left side seat to the bottom, labelled US; the other team on the right, from below the right side seat, labelled THEM; in pass and play each names its pair (`ScoreRail.label(us:mode:teamNames:)`). Each is a darker green track with a darker edge, a lighter green fill with a mid-green edge, ticks at 5, 10, 15, 20 and 25 (`ScoreRail.ticks`), and the score bold above it. The rails read the last finished hand's scores (`ScoreRail.shown(in:)`), so they hold still through a hand and fill to the new score when it ends, over 0.8 s (`Theme.Motion.railFill`); under Reduce Motion they jump. A score below zero leaves the bar empty and shows the negative number (`ScoreRail.fill(_:)`). The side seats report their lower edge (`TableSurface.onSideSeats`) so a rail starts below them in both the auction and play. The hand-end card stands in `Theme.Table.railClearance` (32 pt) from the table's sides so the rails' labels stay clear while they fill.
+
+**Over:** The score only in the header, or rails that move with every point taken during a hand.
+
+**Why:** Connor asked for it (N59): the race to 25 at a glance, from arm's length. `scoreRailsFillToTwentyFiveAndEmptyBelowZero` and `scoreRailsMoveOnlyWhenTheHandEnds` hold it.
