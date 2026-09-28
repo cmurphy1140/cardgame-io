@@ -74,7 +74,7 @@ struct TableSurface: View {
                         .opacity(dim)
                         .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
-                        SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
+                        SeatView(model: model, seat: model.seat(at: 2), stackWithTag: true, onDeck: onDeck).accessibilitySortPriority(20)
                             // The partner's box sits beside them on the left, in the corner the bid box will take (N55),
                             // since the scorecard holds the right (N66). Level with the top of the face.
                             .overlay(alignment: .topLeading) {
@@ -609,6 +609,8 @@ struct SeatView: View {
     let seat: Int
     /// Side tiles take the width the row can spare; the partner's tile keeps the full width.
     var width: Double = Theme.Table.seatTileWidth
+    /// The partner's stack of backs sits beside the name tag above the head, not under the face (N64).
+    var stackWithTag = false
     /// The dealer's deck says where it rests.
     var onDeck: (CGPoint) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -624,12 +626,15 @@ struct SeatView: View {
     /// The player has marked this seat as out of trump (D65).
     private var markedOut: Bool { hand.trump != nil && model.outOfTrump.contains(seat) }
 
-    /// A face over a name over one line of badges: a hint of a hand in play (the call has its own box, N55), and
+    /// A name tag over a face over one line of badges (N64): a hint of a hand in play (the call has its own box, N55), and
     /// DEALER or BIDDER when they apply. Everything a seat says sits under its own portrait, so nothing
     /// about a player floats elsewhere on the table (spec R2). The seat to act wears a gold halo that
     /// breathes; that halo is the table's only turn indicator.
     var body: some View {
         VStack(spacing: 2) {
+            // The tag floats above the head (N64).
+            NameTag(name: model.seatNames[seat], backs: stackWithTag && hand.phase != .bidding ? hand.hands[seat].count : 0)
+                .padding(.bottom, -Theme.Table.nameTagTuck)
             PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true)
                 // Big public moments show larger on the face, until the next lead (N36).
                 .scaleEffect(bigMomentScale, anchor: .bottom)
@@ -675,8 +680,8 @@ struct SeatView: View {
                 .overlay(alignment: .top) {
                     if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
                 }
-            Text(model.seatNames[seat]).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
-            badges
+            // The partner's stack rides with the tag, so the partner's tile ends at the face and the row stays short.
+            if !stackWithTag { badges }
         }
         .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
@@ -706,7 +711,7 @@ struct SeatView: View {
     private var badges: some View {
         HStack(spacing: Self.badgeSpacing) {
             // In the auction the call sits in the seat's bid box beside it (N55), so the band holds only the roles.
-            if hand.phase != .bidding {
+            if hand.phase != .bidding, !stackWithTag {
                 // The stack's thickness says roughly how many cards are left; there is no number (spec R20).
                 ZStack(alignment: .leading) {
                     ForEach(0..<min(3, max(1, hand.hands[seat].count)), id: \.self) { index in

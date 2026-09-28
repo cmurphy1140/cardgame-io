@@ -90,7 +90,7 @@ public enum Theme {
         public static let portraitHeadroom = 0.24
         /// While bidding the side seats rise this far toward the partner's row, so the bigger faces still leave the
         /// bid pills and Pass above the hand (N48); no further, since the scorecard holds the top-right corner (N66).
-        public static let biddingSideRise = 48.0
+        public static let biddingSideRise = 36.0
         /// The tutorial's lesson tiles keep the smaller face so three of them still share a row.
         public static let tutorialPortraitSize = 36.0
         /// The seat to act wears a gold halo: a ring this wide, this far outside the portrait, that pulses
@@ -131,6 +131,14 @@ public enum Theme {
         public static let dotInk = Color(red: 0.05, green: 0.17, blue: 0.10)
         public static let dotFill = Color(red: 0.52, green: 0.80, blue: 0.52)
         public static let dotFillEdge = Color(red: 0.26, green: 0.55, blue: 0.30)
+        /// The name tags above the heads (N64): the sticker's width, the handwritten name's size, and its green.
+        public static let nameTagWidth = 88.0
+        public static let nameTagSize = 20.0
+        public static let tagGreen = Color(red: 0.16, green: 0.45, blue: 0.26)
+        /// The layout runs under the bottom safe area and stops this far above the screen's edge, clear of its rounded corners.
+        public static let footInset = 16.0
+        /// How far a seat's tag tucks down into the headroom above the face; any further and the popped head hides the name.
+        public static let nameTagTuck = 2.0
         /// The scorecard (N66): the ruled line's height, the handwritten total's size, and how many lines show.
         public static let scorecardRule = 26.0
         public static let scorecardNumberSize = 22.0

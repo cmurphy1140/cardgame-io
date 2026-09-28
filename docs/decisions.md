@@ -737,3 +737,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Green rails down both edges with tabs at their feet opening one team's panel.
 
 **Why:** Connor asked for it (N66): a score kept the way the family keeps it on paper. `theScorecardWritesEachNewTotalAndStrikesThePriorOne` holds the lines after one and two hands.
+
+## D89. Name tags above every head (2026-09-28)
+
+**Chosen:** Every seat wears a "HI, MY NAME IS" sticker floating above its head, not on the body (`NameTag`): white with a green outline, the words printed on a green band, the name handwritten under it in Marker Felt, 88 pt wide. It replaces the name under the face. The partner's stack of backs rides with the tag, tucked behind its corner, so the partner's tile ends at the face; the side seats keep theirs under the face. The phone holder has no face on the table, so their tag sits under the hand on the left, in the row the deal uses when it is theirs; in pass and play every tag turns with the phone (`NameTag.names(_:)`). To keep "Your turn" on screen with the taller seats, the table's column now runs under the bottom safe area, stopping 16 pt above the screen's edge (`Theme.Table.footInset`), since the home indicator only takes the middle of that edge; and while bidding the side seats rise 36 pt (was 48, D88) so the right-hand tag stays under the scorecard.
+
+**Over:** Names in small type under the faces, and no name for the phone holder.
+
+**Why:** Connor asked for it (N64): names big enough to read from across the table, in the look of a real name sticker. `everySeatWearsANameTagWithItsName` holds the words and the names by place.

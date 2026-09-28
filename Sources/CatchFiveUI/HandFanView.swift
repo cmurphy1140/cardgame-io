@@ -54,9 +54,11 @@ struct HandFanView: View {
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TableLayout.space)) } action: { fanFrame = $0 }
-            // No "Your hand" caption (T05); the dealer badge stays when it is yours.
-            if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
-                HStack(spacing: 10) {
+            // No "Your hand" caption (T05). Under the hand, the phone holder's name tag (N64) and, when yours, the deal.
+            HStack(spacing: 10) {
+                if let seat = model.viewerSeat { NameTag(name: model.seatNames[seat]) }
+                Spacer(minLength: 0)
+                if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
                     DealerDeck(onPlaced: onDeck)
                     Text("DEALER").foregroundStyle(.gold)
                         .font(.caption2.monospaced()).tracking(1)

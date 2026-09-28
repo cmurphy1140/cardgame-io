@@ -80,3 +80,18 @@ private func playHand(_ match: inout Match) throws {
     #expect(Scorecard.label(us: false, mode: .passAndPlay, teamNames: "JC + Diane") == "JC + DIANE")
     #expect(Scorecard.label(us: true, mode: .solo, teamNames: "Cheryl + Connor") == "US")
 }
+
+@MainActor @Test func everySeatWearsANameTagWithItsName() throws {
+    // N64: a "HI, MY NAME IS" sticker above every head, the name handwritten; the phone holder's too.
+    #expect(NameTag.band == "HI, MY NAME IS")
+    #expect(NameTag.handwriting == Scorecard.handwriting)
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect(NameTag.names(solo) == solo.seatNames)
+    // Pass and play turns the table with the phone, and the tags turn with it.
+    let pass = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    pass.newGame(mode: .passAndPlay)
+    pass.dismissDealerDraw()
+    pass.ready()
+    let holder = try #require(pass.viewerSeat)
+    #expect(NameTag.names(pass) == (0..<4).map { pass.seatNames[(holder + $0) % 4] })
+}

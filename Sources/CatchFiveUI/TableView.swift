@@ -213,9 +213,12 @@ public struct TableView: View {
         .overlay { barMenu }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
-        .padding(.bottom, 6)
+        .padding(.bottom, Theme.Table.footInset)
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The row under the hand (your name tag, and the deal when it is yours) sits down beside the home indicator,
+        // which only takes the middle of the bottom edge, so the table gets that height back (N64).
+        .ignoresSafeArea(.container, edges: .bottom)
         .foregroundStyle(.ivory)
         .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
