@@ -116,6 +116,15 @@ public enum Theme {
         public static let dealerDeckWidth = 24.0
         /// How far above the fan the deck sits, for the deal-in flight.
         public static let deckRise = 520.0
+        /// Each seat's box in the auction (N55): small enough that the side seats' boxes both fit between them,
+        /// with a number big enough to read from arm's length and PASS or 9 OUT a size down so they still fit.
+        public static let bidBoxWidth = 58.0
+        public static let bidBoxHeight = 46.0
+        public static let bidBoxRadius = 10.0
+        public static let bidBoxNumberSize = 32.0
+        public static let bidBoxWordSize = 20.0
+        /// How far a side seat's box tucks into the seat's own tile, toward the empty middle of the table.
+        public static let bidBoxTuck = 14.0
         /// Bid, pass and suit pills: full column width, solid, well above the 44 pt minimum.
         public static let auctionButtonHeight = 64.0
         public static let auctionButtonSpacing = 6.0

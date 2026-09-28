@@ -673,3 +673,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A 92 pt plaque beside a shorter trump tile, the bidder named but not shown, and corners that simply appear.
 
 **Why:** Connor asked for it (N51, N52, N53): the corners are the table's scoreboard for the hand, and people who won't read small text need a big number, a big suit and a face they recognise, and a nudge to look there. `tableCornersMatchAndNearlyFillTheTopRowBesideThePartner` holds the widths, the sizes and the bidder's face.
+
+## D81. Every seat has a bid box, and the bid row keeps every number (2026-09-28)
+
+**Chosen:** While the auction runs, every seat has a small light tan box with a light brown edge beside it (`BidBox`, `Theme.Table.bidBox*`): the partner's to their right, level with the top of their face; each side seat's low beside it, toward the empty middle of the table; the phone holder's at the left of the status line, above the bid row. A box is a faint outline until its seat speaks, then shows the bid large, PASS, or 9 OUT (`BidBox.label(for:in:)`); the call grows in from where it was made, the bid row for your box and the seat for the others, and fades in under Reduce Motion. The boxes go when the auction ends and the bid corner takes over. The "Bid N" pill under a seat is gone, and so are the High and Lowest chips over the row: the boxes say who bid what, and the lowest bid still open keeps its light brown edge. The bid row is one row of every number from 2 to 9 (`TableSurface.bidRow(allows:)`, `BidPill`); a number the auction has passed stays in place, greyed and disabled. 9 and out hangs from the 9's lower edge, flush with the row's end. The `bidding` screenshot stage deals until a bid and a pass are both in the boxes before your turn.
+
+**Over:** Only the legal bids offered in a 4 by 2 grid (B03), with the standing bid in chips and in a pill under the bidder.
+
+**Why:** Connor asked for it (N55): the numbers stayed put so the row reads like a real bidding box, and every seat's call is where that seat sits. Dropping the chips frees a row, which the one-row bid strip needs. `everySeatsBidBoxShowsItsCallBigPassOrNineOut` and `theBidRowKeepsEveryNumberAndGreysTheOnesPassed` hold it.

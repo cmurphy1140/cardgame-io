@@ -69,6 +69,14 @@ struct TableSurface: View {
                         .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
                         SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
+                            // The partner's box sits beside them, in the corner the bid plaque will take (N55).
+                            // Level with the top of the face, so it stays above the right-hand seat's head as it rises.
+                            .overlay(alignment: .topTrailing) {
+                                if hand.phase == .bidding {
+                                    bidBox(at: 2, from: CGSize(width: -Theme.Table.bidBoxWidth, height: 0))
+                                        .offset(x: Theme.Table.bidBoxWidth + 4, y: Theme.Table.portraitSize * Theme.Table.portraitHeadroom)
+                                }
+                            }
                         Spacer(minLength: 0)
                         corner(width: cornerWidth) {
                             if let trump = hand.trump {
@@ -84,11 +92,24 @@ struct TableSurface: View {
                     // each beside the card its seat played.
                     let sideWidth = inAuction ? Theme.Table.seatTileWidth : TableLayout.sideSeatWidth(available: geometry.size.width)
                     HStack(alignment: .center) {
+                        // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
                         SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
+                            .overlay(alignment: .bottomTrailing) {
+                                if hand.phase == .bidding {
+                                    bidBox(at: 1, from: CGSize(width: -Theme.Table.bidBoxWidth, height: -Theme.Table.bidBoxHeight))
+                                        .offset(x: Theme.Table.bidBoxWidth - Theme.Table.bidBoxTuck)
+                                }
+                            }
                         Spacer(minLength: TableLayout.seatGap)
                         if !inAuction { centre(reach: reach) }
                         Spacer(minLength: TableLayout.seatGap)
                         SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
+                            .overlay(alignment: .bottomLeading) {
+                                if hand.phase == .bidding {
+                                    bidBox(at: 3, from: CGSize(width: Theme.Table.bidBoxWidth, height: -Theme.Table.bidBoxHeight))
+                                        .offset(x: Theme.Table.bidBoxTuck - Theme.Table.bidBoxWidth)
+                                }
+                            }
                     }
                     // While bidding there is no pile between them and no corner above them, so the side seats rise
                     // beside the partner and the bigger faces leave the bid pills their room (N48).
@@ -148,6 +169,11 @@ struct TableSurface: View {
         guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
         return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder],
                                        portrait: Cast.opponent(at: bidder)?.portrait ?? model.settings.playerPortrait)
+    }
+
+    /// The box of the seat at `place` round the table (N55), its call arriving from `from`.
+    private func bidBox(at place: Int, from: CGSize) -> some View {
+        BidBox(label: BidBox.label(for: model.seat(at: place), in: hand.auction), from: from)
     }
 
     /// A top corner of the table: a fixed width, top-aligned, empty until it has something to show.
@@ -272,8 +298,11 @@ struct TableSurface: View {
                     .accessibilityFocused(statusFocus)
                 Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
             } else {
-                // Left: reopen the last trick when the pile is clear. Right: the hint on your turn.
-                if pile.plays.isEmpty, hand.completedTricks.last != nil, hand.phase == .playing {
+                // Left: your own box in the auction, its call rising from the bid row (N55); in play, reopen the
+                // last trick when the pile is clear. Right: the hint on your turn.
+                if hand.phase == .bidding {
+                    bidBox(at: 0, from: CGSize(width: 0, height: Theme.Table.auctionButtonHeight + Theme.Table.bidBoxHeight))
+                } else if pile.plays.isEmpty, hand.completedTricks.last != nil, hand.phase == .playing {
                     smallButton("rectangle.stack", label: "Show the last hand", action: onReopenTrick)
                 } else {
                     Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
@@ -285,6 +314,8 @@ struct TableSurface: View {
                     .accessibilityFocused(statusFocus)
                 if model.isHumanTurn, hand.phase != .finished, coaching {
                     smallButton("lightbulb", label: "Hint") { model.showHint() }
+                } else if hand.phase == .bidding {
+                    Spacer().frame(width: Theme.Table.bidBoxWidth, height: Theme.Table.bidBoxHeight)
                 } else {
                     Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
                 }
@@ -390,41 +421,47 @@ struct TableSurface: View {
 
     // MARK: Phase controls
 
-    /// The bids still open to the seat to act, lowest first; bids the auction has passed are not offered (B03).
-    nonisolated static func bidOptions(allows: (Int) -> Bool) -> [Int] {
-        HouseRules.bidRange.filter(allows)
+    /// One pill of the bid row: its number, and whether the seat to act may still bid it.
+    struct BidPill: Equatable {
+        let bid: Int
+        let enabled: Bool
     }
 
-    /// The auction at a glance (B04, B05): the standing bid and who holds it, the lowest bid left, only the
-    /// bids still legal, Pass as the one wide secondary action, and 9 and out tucked under the 9.
+    /// Every bid from 2 to 9, lowest first; the ones the auction has passed stay in place, greyed (N55, over B03).
+    nonisolated static func bidRow(allows: (Int) -> Bool) -> [BidPill] {
+        HouseRules.bidRange.map { BidPill(bid: $0, enabled: allows($0)) }
+    }
+
+    /// The auction's controls (B05, N55): every number in one row, the lowest you may bid edged in light brown,
+    /// 9 and out tucked under the 9, and Pass as the one wide secondary action. The seats' boxes carry who bid
+    /// what, so there are no High and Lowest chips.
     private var bidding: some View {
-        let options = Self.bidOptions { model.allows(.bid($0)) }
+        let row = Self.bidRow { model.allows(.bid($0)) }
+        let lowest = row.first(where: \.enabled)?.bid
         let nineAndOut = model.allows(.nineAndOut)
         return VStack(spacing: Theme.Table.auctionButtonSpacing) {
             if let context = model.auctionContext {
                 Text(context).font(.footnote).opacity(0.85).multilineTextAlignment(.center).padding(.bottom, 2)
             }
-            auctionState(lowest: options.first)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Theme.Table.auctionButtonSpacing), count: 4),
-                      alignment: .center, spacing: Theme.Table.auctionButtonSpacing) {
-                ForEach(options, id: \.self) { bid in
-                    actionButton(String(bid), action: .bid(bid), fill: .ivory,
+            HStack(spacing: Theme.Table.auctionButtonSpacing) {
+                ForEach(row, id: \.bid) { pill in
+                    actionButton(String(pill.bid), action: .bid(pill.bid), fill: .ivory,
                                  font: .title2.weight(.bold), labelColor: .suitRed)
-                        // The lowest legal bid wears the one light-brown edge (B05).
                         .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
-                            .stroke(Theme.Wood.light, lineWidth: bid == options.first ? 3 : 0))
-                        // 9 and out hangs from the 9's lower edge, taking no row of its own.
-                        .overlay(alignment: .bottom) {
-                            if bid == HouseRules.bidRange.upperBound, nineAndOut { nineAndOutButton.offset(y: 11) }
+                            .stroke(Theme.Wood.light, lineWidth: pill.bid == lowest ? 3 : 0))
+                        // 9 and out hangs from the 9's lower edge, flush with the row's end so it stays on screen.
+                        .overlay(alignment: .bottomTrailing) {
+                            if pill.bid == HouseRules.bidRange.upperBound, nineAndOut { nineAndOutButton.offset(y: 11) }
                         }
-                        .zIndex(bid == HouseRules.bidRange.upperBound ? 1 : 0)
+                        .zIndex(pill.bid == HouseRules.bidRange.upperBound ? 1 : 0)
                 }
-                if nineAndOut, !options.contains(HouseRules.bidRange.upperBound) { nineAndOutButton }
             }
+            .dynamicTypeSize(...Theme.Card.maximumTypeSize)
             actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
                          font: .body.weight(.semibold), labelColor: .ivory)
+                .padding(.top, nineAndOut ? 8 : 0)
         }
-        .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: options)
+        .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: row)
     }
 
     /// The rare bid, small and set apart under the 9 it belongs to (B02).
@@ -438,26 +475,6 @@ struct TableSurface: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint("Take all nine points or lose the match; asks you to confirm")
-    }
-
-    /// High bid and its holder, then the lowest bid you can make, in light browns and outlines (B04, B05).
-    private func auctionState(lowest: Int?) -> some View {
-        let auction = hand.auction
-        let high: String = if auction.isNineAndOut { "9 and out" } else { auction.highestBid.map(String.init) ?? "none" }
-        let holder = auction.winner.map { model.seatNames[$0] }
-        return HStack(spacing: 8) {
-            chip(holder.map { "High \(high) · \(String($0))" } ?? "No bid yet", filled: true)
-            if let lowest { chip("Lowest \(lowest)", filled: false) }
-        }
-        .font(.footnote.weight(.semibold))
-        .accessibilityElement(children: .combine)
-    }
-
-    private func chip(_ text: String, filled: Bool) -> some View {
-        Text(text).lineLimit(1).minimumScaleFactor(0.7)
-            .padding(.horizontal, 10).padding(.vertical, 3)
-            .background(filled ? Theme.Wood.dark.opacity(0.8) : .clear, in: Capsule())
-            .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1))
     }
 
     /// Four suit pills, each named for newcomers and captioned with what choosing it keeps and draws.
@@ -580,7 +597,7 @@ struct SeatView: View {
     /// The player has marked this seat as out of trump (D65).
     private var markedOut: Bool { hand.trump != nil && model.outOfTrump.contains(seat) }
 
-    /// A face over a name over one line of badges: the call in the auction, a hint of a hand in play, and
+    /// A face over a name over one line of badges: a hint of a hand in play (the call has its own box, N55), and
     /// DEALER or BIDDER when they apply. Everything a seat says sits under its own portrait, so nothing
     /// about a player floats elsewhere on the table (spec R2). The seat to act wears a gold halo that
     /// breathes; that halo is the table's only turn indicator.
@@ -661,16 +678,8 @@ struct SeatView: View {
     /// One band, always the same height, so the tiles do not jump when a call lands or the phase turns.
     private var badges: some View {
         HStack(spacing: Self.badgeSpacing) {
-            if hand.phase == .bidding {
-                // The call as a badge on the same dark pill as the auction's own buttons; a pass is muted
-                // so the bids stand out. No badge until the seat has spoken: the halo says who is deciding.
-                if let call = hand.auction.calls.last(where: { $0.seat == seat }), let label = model.latestCall(for: seat) {
-                    Text(label).font(.caption.weight(.semibold)).foregroundStyle(.ivory)
-                        .padding(.horizontal, 8).padding(.vertical, 2)
-                        .background(Theme.Wood.inlay, in: Capsule())
-                        .opacity(call.bid == nil ? 0.7 : 1)
-                }
-            } else {
+            // In the auction the call sits in the seat's bid box beside it (N55), so the band holds only the roles.
+            if hand.phase != .bidding {
                 // The stack's thickness says roughly how many cards are left; there is no number (spec R20).
                 ZStack(alignment: .leading) {
                     ForEach(0..<min(3, max(1, hand.hands[seat].count)), id: \.self) { index in
