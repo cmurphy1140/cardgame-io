@@ -27,7 +27,7 @@ public struct RootView: View {
     /// `stage` opens a named state directly, for headless screenshots: `picker` (the New match question),
     /// `curtain` (a fresh pass-and-play match waiting for its first player) or `seat` (that player's table);
     /// `pass-table` (pass and play mid-hand, a player other than the first holding the phone);
-    /// solo `draw` (the draw for dealer), `bidding` (your bid), `trump` (your trump choice), `table` (your play,
+    /// solo `draw` (the draw for dealer), `bidding` (your bid, a bid and a pass already in the boxes), `trump` (your trump choice), `table` (your play,
     /// cards on the pile), `dealer-bidder` (the same, a side seat having dealt and won the bid), `pause` (the
     /// pause card over it), `result` (the hand's result), `review` (with Review hand open) or `over` (the match
     /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
@@ -50,14 +50,19 @@ public struct RootView: View {
         case "draw":
             model.newGame(mode: .solo)
         case "bidding", "table", "pause", "result", "review", "home", "home-tips", "home-whywe", "confirm9":
-            model.newGame(mode: .solo)
-            model.dismissDealerDraw()
-            Self.play(model) { hand, humanTurn in
-                switch stage {
-                case "bidding", "home", "home-tips", "home-whywe", "confirm9": humanTurn && hand.phase == .bidding
-                case "table", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
-                default: hand.phase == .finished
+            // The `bidding` stage deals until a bid and a pass are both in the seats' boxes before your turn (N55).
+            for _ in 0..<200 {
+                model.newGame(mode: .solo)
+                model.dismissDealerDraw()
+                Self.play(model) { hand, humanTurn in
+                    switch stage {
+                    case "bidding", "home", "home-tips", "home-whywe", "confirm9": humanTurn && hand.phase == .bidding
+                    case "table", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
+                    default: hand.phase == .finished
+                    }
                 }
+                let calls = model.match.hand.auction.calls
+                if stage != "bidding" || calls.contains(where: { $0.bid == nil }) && calls.contains(where: { $0.bid != nil }) { break }
             }
         case "trump", "dealer-bidder":
             // Deal until the hand reaches the wanted auction: you naming trump, or a side seat that dealt and won the bid.

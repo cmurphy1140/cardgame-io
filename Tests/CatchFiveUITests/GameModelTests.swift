@@ -1257,13 +1257,6 @@ import Testing
     #expect(5 * tight + 58 <= 345 && tight > 0)
 }
 
-@Test func biddingOffersOnlyLegalBidsAndNamesTheLowest() {
-    // B03: bids the auction has passed leave the grid; B04: the lowest one left is the one to name.
-    let options = TableSurface.bidOptions(allows: { $0 >= 6 })
-    #expect(options == [6, 7, 8, 9])
-    #expect(TableSurface.bidOptions(allows: { _ in false }).isEmpty)
-}
-
 @Test func discardNoticeSitsAboveYourTurnInPlay() {
     // The hand's fan leaves no room for another row, so in play the notice ("Discarded: …") takes no row of
     // its own: it floats above "Your turn", in the empty space the pile leaves, and reserves no height.

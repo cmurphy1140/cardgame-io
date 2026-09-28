@@ -116,6 +116,31 @@ public enum Theme {
         public static let dealerDeckWidth = 24.0
         /// How far above the fan the deck sits, for the deal-in flight.
         public static let deckRise = 520.0
+        /// Each seat's box in the auction (N55): small enough that the side seats' boxes both fit between them,
+        /// with a number big enough to read from arm's length and PASS or 9 OUT a size down so they still fit.
+        public static let bidBoxWidth = 58.0
+        public static let bidBoxHeight = 46.0
+        public static let bidBoxRadius = 10.0
+        public static let bidBoxNumberSize = 32.0
+        public static let bidBoxWordSize = 20.0
+        /// How far a side seat's box tucks into the seat's own tile, toward the empty middle of the table.
+        public static let bidBoxTuck = 14.0
+        /// The score rails down both edges of the table (N59): a bar thin enough to sit in the margin beside the
+        /// hand, the score bold above it, and the label (US, THEM or a pair's names) above that.
+        public static let railWidth = 11.0
+        public static let railInset = 2.0
+        public static let railNumberSize = 26.0
+        public static let railLabelWidth = 44.0
+        /// The hand-end card stands in this far from the table's sides, so the rails' labels and numbers stay clear
+        /// of it while the rails fill (N59).
+        public static let railClearance = 32.0
+        /// Air between a side seat and the top of its rail.
+        public static let railGap = 6.0
+        /// Layered green: a dark track with a darker edge, a light fill with a mid-green edge.
+        public static let railTrack = Color(red: 0.12, green: 0.30, blue: 0.19)
+        public static let railEdge = Color(red: 0.05, green: 0.17, blue: 0.10)
+        public static let railFill = Color(red: 0.52, green: 0.80, blue: 0.52)
+        public static let railFillEdge = Color(red: 0.26, green: 0.55, blue: 0.30)
         /// Bid, pass and suit pills: full column width, solid, well above the 44 pt minimum.
         public static let auctionButtonHeight = 64.0
         public static let auctionButtonSpacing = 6.0
@@ -166,6 +191,8 @@ public enum Theme {
         public static let toastSeconds = 4.0
         /// How long the table's "bidding bolder" note stays before it fades (D71).
         public static let boldNoteSeconds = 3.0
+        /// The score rails fill to a new score when a hand ends (N59); Reduce Motion jumps there instead.
+        public static let railFill = Animation.easeOut(duration: 0.8)
         /// After trump is named: discards rise toward the table and fade, then the refill deals in
         /// from the dealer's seat one card at a time.
         public static let discardRise = 240.0

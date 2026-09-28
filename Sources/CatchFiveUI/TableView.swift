@@ -24,6 +24,8 @@ public struct TableView: View {
     /// What the last revision changed, reduced to the one cue worth a haptic.
     @State private var cue: (id: Int, cue: TableFeedback.Cue)?
     @State private var seen: TableFeedback.Snapshot
+    /// The side seats' lower edge in the table's space: the score rails start below it (N59).
+    @State private var sideSeatsBottom = 0.0
     /// Where the deck beside the dealer rests on the table; the refill deals in from here (T12).
     @State private var dealerDeck: CGPoint?
     /// Counts hands dealt while the table is up; each one riffles once at the dealer's deck (D68).
@@ -161,6 +163,7 @@ public struct TableView: View {
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
                          onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
+                         onSideSeats: { sideSeatsBottom = $0 },
                          holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -178,6 +181,8 @@ public struct TableView: View {
                 RiffleShuffle().id(shuffles).position(dealerDeck)
             }
         }
+        // The score rails run down both edges, in the margin beside the hand, from below the side seats (N59).
+        .overlay(alignment: .topLeading) { scoreRails }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
         .padding(.bottom, 6)
@@ -186,6 +191,29 @@ public struct TableView: View {
         .foregroundStyle(.ivory)
         .background(WoodGrainView().ignoresSafeArea())
         .preferredColorScheme(.dark)
+    }
+
+    /// Your team's rail on the left, the other team's on the right, each showing the score as the last hand left it.
+    private var scoreRails: some View {
+        let scores = ScoreRail.shown(in: model.match)
+        let top = sideSeatsBottom + Theme.Table.railGap
+        return GeometryReader { geometry in
+            HStack(alignment: .top, spacing: 0) {
+                rail(team: model.ourTeam, scores: scores, leading: true)
+                Spacer(minLength: 0)
+                rail(team: 1 - model.ourTeam, scores: scores, leading: false)
+            }
+            .padding(.horizontal, Theme.Table.railInset)
+            .frame(width: geometry.size.width, height: max(0, geometry.size.height - top))
+            .offset(y: top)
+        }
+        .opacity(sideSeatsBottom > 0 ? 1 : 0)
+        .allowsHitTesting(false)
+    }
+
+    private func rail(team: Int, scores: [Int], leading: Bool) -> some View {
+        ScoreRail(score: scores[team], label: ScoreRail.label(us: team == model.ourTeam, mode: model.mode, teamNames: model.teamNames(team)),
+                  leading: leading)
     }
 
     /// One animation for the whole table per accepted action, so cards fly between hand and pile in one
