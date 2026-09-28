@@ -649,3 +649,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Faces sized to sit wholly inside their discs, or a larger disc, which the side tiles beside the pile cannot hold.
 
 **Why:** Connor asked for bigger faces that pop out of their circles (N48, N49). At rest face and halo fit a side tile on iPhone 16 and 16 Pro, and at full breath or a big moment they stay within the gap beside it, never the pile's reservation; `seatTilesHoldTheLargerFaceAndItsHaloOnEveryVerifiedWidth` and `tableFacesAreBiggerAndTheirHeadsPopOutOfTheirDiscs` hold the sizes.
+
+## D78. Two hands reach for the five on the home screen (2026-09-28)
+
+**Chosen:** The home screen's five of hearts gains two hands, one reaching down from above for its top-right corner and one reaching up from below for its bottom-left, as if two players were going for the same card. Each is a `ReachingHand` (`MainMenuView.swift`): flat shapes in the cast's style, a palm, four fingers and a thumb in a portrait skin tone (tan above, brown below), a sleeve (the olive shirt colour above, `Theme.Wood.dark` below) with an ivory cuff. They drift 5 pt toward the card and back with its sway; under Reduce Motion the card and the hands hold still. The card keeps `HomeFiveCard.handRoom` (44 pt) above and below so the hands clear the title and the player card. They are decoration: no hit testing, hidden from VoiceOver.
+
+**Over:** The card alone, or photographic or emoji hands.
+
+**Why:** Connor asked for it (N47): "like catch five", the game's name in a picture.
