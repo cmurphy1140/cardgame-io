@@ -102,7 +102,7 @@ struct MainMenuView: View {
             switch ScreenshotStage.name {
             case "stats": showStatistics = true
             case "settings": showSettings = true
-            case "howto", "rules": showTutorial = true
+            case "howto", "rules", "signoff": showTutorial = true
             default: break
             }
         }

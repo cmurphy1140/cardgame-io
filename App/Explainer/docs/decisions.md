@@ -602,3 +602,26 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 
 **Measured** (`boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt` with `CATCH5_FULL_BENCHMARK=1`: Standard with the rule against Standard with the score hidden, every seed played twice with the teams swapped). Seeds 1..<601: win rate 0.503, margin +0.06 per match; seeds 601..<1201: 0.496, margin −0.14. All 2400 matches: win rate 0.499, margin −0.04, which is no measurable change in strength. Contracts bid by a team down 10 or more were made 682 of 921 times with the rule (0.740) against 693 of 868 without (0.798): the rule takes more contracts from behind and makes a smaller share of them. The sin hunt measures card play, which D71 does not change, so it plays with the score hidden: its seeded matches stay the ones its ceilings were set on. The full measurement runs with `CATCH5_FULL_BENCHMARK=1`; by default a 40-match sample keeps `swift test` quick. The threshold and the step are Connor's and were not tuned to these numbers.
 
+## D72. The rules sheet ends with the family's note and a way to write to us (2026-09-27)
+
+**Chosen:** After the last chapter of "How to play Catch 5" (`RulesView`), a sign-off in the display serif's italic: "We're honored you took a seat at our table. This game has been part of my family for generations. Always will be. The rules stay as they are, but if you have ideas for the app, email me. I'd love to hear them." Below it, cmurphy1140@gmail.com as an underlined ivory `Link` that opens a new mail with the subject "Catch 5". The words and the address live in `RulesText` beside `origin` (`signOff`, `contactEmail`, `contactURL`), outside the rule sections, so the verbatim check against `docs/catch-five-rules.md` is unchanged. The link is ivory, not gold, because gold keeps its established meanings.
+
+**Over:** No way for a player to reach the family from the app, or a contact line inside the rules themselves.
+
+**Why:** Connor asked for it (N34): the rules are the family's and stay as they are, but ideas for the app are welcome. `rulesSheetEndsWithTheFamilysNoteAndAMailLink` holds the wording and the link.
+
+## D73. Bigger faces for big moments, and one line after the hand (2026-09-27)
+
+**Chosen:** Two public moments get louder faces, ahead of the turn face, and the portrait grows to `Theme.Table.bigMomentScale` (1.3) while they last: the trick that caught the five of trump, while it lies on the table (the takers triumphant, the other team dismayed), and a 9-and-out declaration, from the call until the first lead (the declarer's partner `surprised`, a new `Portrait.Expression` drawn in the same style: raised brows, wider eyes, a small round mouth). Both end at the next lead. Seats say nothing while a hand is played. Once it is over, in solo, the hand-end card opens with one line from one seat, its portrait and table name above the result: the first of four lines in `HandEndLine.lines` that fits the public result (your team set: partner, "We'll get it back."; the other team set: its bidder, "Ouch."; your team caught the five: partner, "Nice catch on the five."; your team made its bid: partner, "That's how it's done."), or none. Pass and play shows no line: every seat is a person holding the phone in turn, and nobody should be spoken for. Everything is read from `Hand` in public (the trick's plays, the trump, the auction's calls) and the finished `HandSummary`.
+
+**Over:** The same pleased or rueful face for every trick, no reaction to a 9 and out, and a silent hand-end card.
+
+**Why:** Connor asked for it (N36): the five and a 9 and out are what the table reacts to, and a word from your partner after the hand is how a real table sounds. Words stay off the table during play so they can never read as a signal.
+
+## D74. Why we play closes each round of tips (2026-09-27)
+
+**Chosen:** The tip card's rotation (D67) gains one face after the eleventh tip, labelled "WHY WE PLAY": "52 cards. Endless ways to play. But at the end of the day, it brings people together." It is not numbered, so the tips keep "TIP n OF 11". One full cycle is twelve faces (`TipDeck.cycle`); `TipDeck.face(_:)` reads `Settings.nextTip` round it and `takeNextTip()` wraps at twelve, so the card shows once per cycle, then tip 1 again. A saved index from before (0 to 10) lands on the same tip as it did.
+
+**Over:** Adding it as a twelfth numbered tip, or showing it on every visit.
+
+**Why:** Connor asked for it (N38): it is the reason behind the game, not advice about it, so it sits apart from the tips and comes round once.

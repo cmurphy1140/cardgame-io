@@ -31,6 +31,8 @@ import Testing
     let reloaded = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), settings: try SettingsStore.read(from: url), settingsURL: url)
     #expect(reloaded.takeNextTip().label == "TIP 3 OF 11")
     for _ in 3..<11 { _ = reloaded.takeNextTip() }
+    // After the eleventh tip comes the why-we-play card, then the cycle starts again (N38).
+    #expect(reloaded.takeNextTip().label == "WHY WE PLAY")
     #expect(reloaded.takeNextTip().label == "TIP 1 OF 11")
     // A settings file from before the tip card starts at the first tip.
     let old = try JSONDecoder().decode(Settings.self, from: Data(#"{"haptics": false}"#.utf8))

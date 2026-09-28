@@ -84,6 +84,7 @@ struct RulesView: View {
                         ForEach(Chapter.allCases) { chapter in
                             panel(chapter).id(chapter)
                         }
+                        signOff
                     }
                     .scrollTargetLayout()
                     .frame(maxWidth: 640).frame(maxWidth: .infinity)
@@ -97,6 +98,11 @@ struct RulesView: View {
                 .safeAreaInset(edge: .top, spacing: 0) { rail(proxy) }
                 // The jump waits one beat so every panel has laid out and the target exists.
                 .task {
+                    if ScreenshotStage.name == "signoff" {
+                        try? await Task.sleep(for: .milliseconds(900))
+                        proxy.scrollTo("signoff", anchor: .bottom)
+                        return
+                    }
                     guard let initial else { return }
                     chosen = initial
                     try? await Task.sleep(for: .milliseconds(80))
@@ -113,6 +119,25 @@ struct RulesView: View {
             .compactOpaqueBar()
         }
         .preferredColorScheme(.dark)
+    }
+
+    /// The family's note after the last chapter, and a link that opens a new mail (N34).
+    private var signOff: some View {
+        VStack(spacing: 10) {
+            Text(RulesText.signOff)
+                .font(.system(.body, design: .serif).italic())
+                .multilineTextAlignment(.center)
+                .opacity(0.9)
+                .fixedSize(horizontal: false, vertical: true)
+            Link(destination: RulesText.contactURL) {
+                Text(RulesText.contactEmail).font(.body.weight(.semibold)).underline()
+            }
+            .foregroundStyle(.ivory)
+                .accessibilityHint("Opens a new email")
+        }
+        .padding(.horizontal, 8)
+        .padding(.top, 8)
+        .id("signoff")
     }
 
     // MARK: Rail
