@@ -705,3 +705,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A tip in How to play, or captions that stay until dismissed.
 
 **Why:** Connor asked for it (N61): the tally and the out-of-trump badge are invisible until someone shows them. `theTallyDemoShowsOnceAndTheFlagPersists` and `theTallyDemoLeavesTheTallyAndBadgesAlone` hold it.
+
+## D85. 9 and out takes its own line under the bid row (2026-09-28)
+
+**Chosen:** When 9 and out may be bid, its small dark pill sits on a short line of its own between the numbers and Pass, flush right under the 9 (`TableSurface.auctionRows(nineAndOut:)`). The numbers stay one row across the screen.
+
+**Over:** The pill hanging from the 9's lower edge (D81), where it covered the bottom of the 8 and the 9.
+
+**Why:** Connor asked for it: no pill may cover a number. `nineAndOutTakesItsOwnLineUnderTheBidRow` holds the order.
