@@ -212,6 +212,13 @@ public struct TableView: View {
                 guard !Task.isCancelled else { return }
                 withAnimation(motion(Theme.Motion.overlay)) { toast = nil }
             }
+            // The bold note says its piece once and fades; the `bold` screenshot stage holds it.
+            .task(id: model.boldNote) {
+                guard model.boldNote != nil, ScreenshotStage.name != "bold" else { return }
+                try? await Task.sleep(for: .seconds(Theme.Motion.boldNoteSeconds))
+                guard !Task.isCancelled else { return }
+                withAnimation(motion(Theme.Motion.overlay)) { model.clearBoldNote() }
+            }
             .onChange(of: scenePhase) { _, phase in if phase != .active { model.persist() } }
     }
 

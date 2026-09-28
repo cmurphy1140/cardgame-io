@@ -57,11 +57,13 @@ classDiagram
         +[Play] trick
         +[AuctionCall] calls
         +[CompletedTrick] completedTricks
+        +[Int] scores
         +public facts…
     }
     class ComputerPlayer {
         +decide(PlayerView) PlayerAction?
         +estimate(cards, suit) Double
+        +isTrailingBadly(PlayerView) Bool
     }
     class Knowledge {
         +Set~Card~ unseen
@@ -168,6 +170,7 @@ classDiagram
 | Name | Purpose | Proven by |
 |---|---|---|
 | `PlayerView` | own cards plus public facts, including every auction call, every completed trick and every seat's discard count; `init(match:seat:)` copies only what the seat may know — the counts cross the boundary, the discarded cards never do | `changingHiddenCardsDoesNotChangeComputerDecision`, `computerSeesPublicAuctionCalls`, `computerSeesCompletedTricksButNotHiddenHands` |
+| `PlayerView.scores`, `Match.scoresBeforeHand` | the match score, team 0 then team 1, as it stood when the current hand was dealt; public at a real table, so it crosses the boundary (D6, D71). Once a hand is scored `Match.scores` already includes it, so `scoresBeforeHand` takes the one before from the history | `playerViewCarriesTheScoreTheHandWasDealtAt` |
 | `PlayerView.init(match:replaying:inCompletedTrick:)` | rebuilds the view a seat had just before an earlier play, from public information and that seat's remaining cards | `replayedViewExplainsEveryComputerPlayExactly` |
 | `PlayerAction` | nineAndOut, bid(Int?), chooseTrump(Suit), play(Card) | |
 | `Advice` | an action plus its reasoning in plain words | `adviceNamesTheActionAndExplainsIt` |
@@ -176,7 +179,8 @@ classDiagram
 | `Difficulty`, `ComputerPlayer.decide(_:difficulty:)` | `easy` routes to `EasyPlayer`, `standard` to `decide(_:)`; hints and explanations always use standard | `easyDifficultyPlaysTheFrozenPlayerAndStandardTheCurrentOne` |
 | `EasyPlayer` (`Sources/CatchFive/EasyPlayer.swift`) | the "Easy" computer: a frozen copy of the PR #2 player, also the benchmark's fixed opponent, never to be improved | `computerPlayerBeatsFrozenBaseline` |
 | `ComputerPlayer.estimate(_:suit:)` | expected hand points if that suit were trump | `estimateRanksControlAndTheFiveAboveScatteredCards` |
-| bidding (private `bidAmount`) | bid the minimum needed if it is at most the whole-point estimate; never outbid partner; dealer takes forced 2 | `computerPassesWeakHandButDealerTakesForcedTwo`, `computerRaisesWithStrongSuitAndChoosesIt`, `computerBiddingIsCompetitiveAndUsuallyMakesContract` |
+| bidding (private `bidAdvice`) | bid the minimum needed if it is at most the whole-point estimate; never outbid partner; dealer takes forced 2 | `computerPassesWeakHandButDealerTakesForcedTwo`, `computerRaisesWithStrongSuitAndChoosesIt`, `computerBiddingIsCompetitiveAndUsuallyMakesContract` |
+| `ComputerPlayer.isTrailingBadly(_:)`, `deficit(_:)`, `boldDeficit` | true when the seat's team is `boldDeficit` (10) or more match points behind; `bidAdvice` then lets the most it will bid rise by one, never past 9 and never to a 9 and out, and says so in the advice. The table's note asks the same function (D71). Easy never sees it | `trailingBadlyStartsAtExactlyTenBehind`, `trailingBadlyRaisesTheBidCeilingByOne`, `trailingBadlyNeverBidsAboveNineOrNineAndOut`, `easyIgnoresTheMatchScore`, `boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt` |
 | `ComputerPlayer.Knowledge` | built from a `PlayerView`: the set of unseen cards (other hands or stock), `unbeatable(_:led:)` (no unseen card can beat it), `pointValue(_:)` (five 5, jack 1, certain High 1, certain Low 1, plus 0.06 per Game point) and `controlValue(_:)` (what holding a trump is worth for later tricks; 0.8 extra when unbeatable, 0 on the last trick) | `computerSpendsTheAceToCaptureTheFive`, `computerDumpsTheTrickWhenItIsWorthlessAndNoTrumpIsFree` |
 | card play (private `chooseCard`) | scores every legal card: chance our side wins the trick × (points on the table + this card's stake) − chance we lose × this card's stake − control given up; picks the best, ties to least control then lowest rank | `computerFollowsSuitInsteadOfTrumping`, `computerUsesLowestWinningCardAgainstOpponentWhenNothingIsAtStake`, `computerFeedsFiveToPartnerWhenLastToPlay`, `computerPreservesFiveWhenItCannotWin` |
 | leads (private `chooseLead`) | an unbeatable trump if held; the best side card when no trumps can be against us; otherwise the cheapest exit, never the five | `computerLeadsHighestTrumpButKeepsTheFiveBack` |
@@ -247,6 +251,7 @@ The sin hunt (D58): a sweep that finds the computer's bad decisions so each one 
 | `canUndo`, `undo()` | take back the human's latest action this hand and every computer reply after it; saves and bumps `revision` | `undoneMatchSavesAndReloads` |
 | `lastHumanAction`, `describe(_ action:)` | the human's latest accepted action and its toast wording ("9♣ played", "Bid 3", "Bid 9 and out"); cleared by undo and new hands; also the trigger for the play and selection haptics | `lastHumanActionDescribesThePlayAndClearsOnUndo` |
 | `notice` | the discard-and-draw line after trump is named; it survives the computers' replies and clears when the human next acts, undoes, or a new hand starts | `noticeSurvivesComputerRepliesUntilTheHumanActs` |
+| `boldNote`, `boldNote(for:)`, `clearBoldNote()`, `boldNoteText(team:deficit:names:solo:)` | the table's note when a Standard computer seat calls in the auction while its team is down 10 or more: "JC and Diane are down 12, bidding bolder." (in solo, "You and Connor are down 11; Connor is bidding bolder."). Set by `stepComputer()` once per hand, shown in the commentary line under the status, faded by `TableView` after `Theme.Motion.boldNoteSeconds` (3 s); decided by `ComputerPlayer.isTrailingBadly` (D71) | `aComputerTeamDownTenSaysItIsBiddingBolderOncePerHand`, `theBoldNoteNamesYouWhenYourPartnerIsTheComputerBiddingBolder` |
 | `hint`, `showHint()` | the strategy's advice for seat 0 on request; cleared by the next accepted action | `hintMatchesTheComputerStrategyAndClearsAfterActing` |
 | `explanation(for:inLastTrick:)`, `explain(_:inLastTrick:)`, `explanation` | why a card on the table or in the last trick was played; for the human's own card it compares with what the strategy preferred | `explanationsNameTheSeatAndCompareTheHumanToTheStrategy` |
 | `nextHand()`, `newGame()`, `dealerDraw`, `dismissDealerDraw()`, `freshMatch()` | fresh shuffled deck via `deck()`; a new game and a fresh install both draw for dealer first and keep the draw until the first action | `newGameDrawsForDealerAndTheMatchUsesIt` |

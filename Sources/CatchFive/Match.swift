@@ -85,6 +85,13 @@ public struct Match: Sendable {
 extension Match {
     public var actionCount: Int { actions.count }
 
+    /// The score as it stood when the current hand was dealt: once a hand is scored, `scores` already
+    /// includes it, so the one before it comes from the history.
+    public var scoresBeforeHand: [Int] {
+        guard hand.phase == .finished else { return scores }
+        return history.dropLast().last?.scores ?? [0, 0]
+    }
+
     /// Rebuilds a match from the same first deal by replaying only the first `count` accepted actions.
     public func rewound(toActionCount count: Int) throws -> Match {
         guard count <= actions.count else { throw MatchError.handInProgress }

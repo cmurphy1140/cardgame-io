@@ -591,3 +591,14 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The confirmation dialog, which on iOS 26 anchors to its button as a popover and drops its Cancel button (D57), and whose red button put the suit colour on a control.
 
 **Why:** At a real table it is the partner who says "are you sure?"; the card makes that the voice of the check and keeps an explicit way out on every system.
+
+## D71. A team down 10 bids one step bolder (2026-09-27)
+
+**Chosen:** When a Standard computer's team trails the other team by 10 match points or more (`ComputerPlayer.boldDeficit`), the most it will bid rises by one: `bidAdvice` adds one to its whole-point ceiling (estimate or house floor, whichever is higher), capped at 9. Nothing else in the bid changes: the house floors, the dealer's match, never outbidding a partner. The rule never produces a 9 and out and never bids above 9. The advice ends "Your team is down 12, so the table bids one step bolder." when the extra step is what made the bid. One pure function, `ComputerPlayer.isTrailingBadly(_:)`, decides it for the bidding and for the table's note ("JC and Diane are down 12, bidding bolder."), shown once per hand when one of that team's computer seats calls and faded after 3 s. To see the score the computer now receives it: `PlayerView.scores`, the score as it stood when the hand was dealt. Easy (the frozen `EasyPlayer`) is untouched, and so are card play, trump choice, discards, scoring and every rule.
+
+**Over:** Bidding the same whatever the score. At Connor's table a team that is down a lot bids bolder, and he set "a lot" at 10.
+
+**Why:** It is a character rule, the way his family plays, not a strength tune: the computers should feel like that table. The score is written down in front of everyone, so passing it across the `PlayerView` boundary keeps D6.
+
+**Measured** (`boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt`: Standard with the rule against Standard with the score hidden, every seed played twice with the teams swapped). Seeds 1..<601: win rate 0.503, margin +0.06 per match; seeds 601..<1201: 0.496, margin −0.14. All 2400 matches: win rate 0.499, margin −0.04, which is no measurable change in strength. Contracts bid by a team down 10 or more were made 682 of 921 times with the rule (0.740) against 693 of 868 without (0.798): the rule takes more contracts from behind and makes a smaller share of them. The sin-hunt ceilings for surrendered tens and low trumps rose from 12 and 17 to 15 and 18 (the counts now found) because the seeded matches now play differently; card play itself did not change. The threshold and the step are Connor's and were not tuned to these numbers.
+

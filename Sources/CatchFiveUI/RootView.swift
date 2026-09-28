@@ -33,7 +33,7 @@ public struct RootView: View {
     /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
     /// progress) or `home-tips` (the tip card over the table, held); `ninewin`, `ninelose` (a 9 and out made or missed,
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
-    /// (How to play with the full rules sheet open over it).
+    /// (How to play with the full rules sheet open over it); `bold` (a computer team down 10 or more, its note held on the table).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         var model = model
@@ -86,6 +86,16 @@ public struct RootView: View {
                     if model.match.winner == nil { model.nextHand() }
                 }
             }
+        case "bold":
+            // Play whole matches until a computer team down 10 calls in the auction and the table says so.
+            for _ in 0..<40 where model.boldNote == nil {
+                model.newGame(mode: .solo)
+                model.dismissDealerDraw()
+                for _ in 0..<60 where model.match.winner == nil && model.boldNote == nil {
+                    Self.play(model) { hand, _ in model.boldNote != nil || hand.phase == .finished }
+                    if model.boldNote == nil, model.match.winner == nil { model.nextHand() }
+                }
+            }
         case "over":
             model.newGame(mode: .solo)
             model.dismissDealerDraw()
@@ -100,7 +110,7 @@ public struct RootView: View {
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto", "rules", "home": .menu
         case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
-             "home-tips", "ninewin", "ninelose", "won", "confirm9": .table
+             "home-tips", "ninewin", "ninelose", "won", "confirm9", "bold": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
         _screen = State(initialValue: screen)

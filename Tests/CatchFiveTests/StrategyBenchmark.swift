@@ -59,3 +59,56 @@ func mirroredBenchmark(seeds: Range<Int>, candidate: @escaping Strategy, baselin
     #expect(result.candidateWinRate >= 0.58)
     #expect(result.marginPerMatch >= 2)
 }
+
+/// The same view with the match score hidden, so `isTrailingBadly` never fires: Standard with the D71 rule off.
+func withoutScores(_ view: PlayerView) -> PlayerView {
+    PlayerView(seat: view.seat, cards: view.cards, phase: view.phase, nextSeat: view.nextSeat, dealer: view.dealer,
+               highestBid: view.highestBid, bidder: view.bidder, trump: view.trump, trick: view.trick, calls: view.calls,
+               completedTricks: view.completedTricks, discardCounts: view.discardCounts)
+}
+
+/// Contracts bid by a team that was down `ComputerPlayer.boldDeficit` or more when the hand was dealt.
+struct TrailingContracts {
+    var bid = 0
+    var made = 0
+    var rate: Double { bid == 0 ? 0 : Double(made) / Double(bid) }
+
+    mutating func count(_ match: Match, team: Int) {
+        var before = [0, 0]
+        for summary in match.history {
+            if summary.bidder % 2 == team, before[1 - team] - before[team] >= ComputerPlayer.boldDeficit {
+                bid += 1
+                if summary.contractMade { made += 1 }
+            }
+            before = summary.scores
+        }
+    }
+}
+
+/// D71 is a character rule, not a strength tune: this records what bidding one step bolder when down 10
+/// does against the same strategy without it, and holds nothing to a bar beyond the harness being whole.
+@Test func boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt() throws {
+    let off: Strategy = { ComputerPlayer.decide(withoutScores($0)) }
+    var lines = ["D71, rule on vs off, mirrored:"]
+    var total = BenchmarkResult(), onTrailing = TrailingContracts(), offTrailing = TrailingContracts()
+    for seeds in [1..<601, 601..<1201] {
+        var result = BenchmarkResult(), on = TrailingContracts(), without = TrailingContracts()
+        for seed in seeds {
+            let first = try playSeededMatch(seed: seed, teamZero: ComputerPlayer.decide, teamOne: off)
+            if first.winner == 0 { result.candidateWins += 1 } else { result.baselineWins += 1 }
+            result.margin += first.scores[0] - first.scores[1]
+            on.count(first, team: 0); without.count(first, team: 1)
+            let second = try playSeededMatch(seed: seed, teamZero: off, teamOne: ComputerPlayer.decide)
+            if second.winner == 1 { result.candidateWins += 1 } else { result.baselineWins += 1 }
+            result.margin += second.scores[1] - second.scores[0]
+            on.count(second, team: 1); without.count(second, team: 0)
+        }
+        lines.append("  seeds \(seeds.lowerBound)..<\(seeds.upperBound): \(result.matches) matches, on wins \(result.candidateWinRate), margin \(result.marginPerMatch); contracts bid down 10+: on \(on.made)/\(on.bid), off \(without.made)/\(without.bid)")
+        total.candidateWins += result.candidateWins; total.baselineWins += result.baselineWins; total.margin += result.margin
+        onTrailing.bid += on.bid; onTrailing.made += on.made; offTrailing.bid += without.bid; offTrailing.made += without.made
+    }
+    lines.append("  all: \(total.matches) matches, on wins \(total.candidateWinRate), margin \(total.marginPerMatch); down 10+ made: on \(onTrailing.rate) of \(onTrailing.bid), off \(offTrailing.rate) of \(offTrailing.bid)")
+    print(lines.joined(separator: "\n"))
+    #expect(total.matches == 2400)
+    #expect(onTrailing.bid > 0 && offTrailing.bid > 0)
+}

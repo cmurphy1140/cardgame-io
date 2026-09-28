@@ -147,6 +147,8 @@ public enum Theme {
         public static let pulse = Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true)
         public static let shakeAmplitude = 6.0
         public static let toastSeconds = 4.0
+        /// How long the table's "bidding bolder" note stays before it fades (D71).
+        public static let boldNoteSeconds = 3.0
         /// After trump is named: discards rise toward the table and fade, then the refill deals in
         /// from the dealer's seat one card at a time.
         public static let discardRise = 240.0

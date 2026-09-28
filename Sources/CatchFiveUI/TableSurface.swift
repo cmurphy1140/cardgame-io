@@ -308,7 +308,7 @@ struct TableSurface: View {
     }
 
     /// One line under the status: a refusal, else a hint reason or explanation, else the notice (no undo
-    /// toast on the play surface, T07), else your standing call in the auction, else a
+    /// toast on the play surface, T07), else the note that a team down 10 is bidding bolder (D71), else your standing call in the auction, else a
     /// placeholder in play. Reserves no space in the auction while the controls need it.
     @ViewBuilder private var commentary: some View {
         ZStack {
@@ -339,6 +339,9 @@ struct TableSurface: View {
                     .padding(.horizontal, 8)
             } else if let notice = model.notice {
                 Text(notice).font(.footnote).opacity(0.85)
+            } else if let note = model.boldNote {
+                Text(note).font(.footnote).opacity(0.85)
+                    .transition(.opacity)
             } else if hand.phase == .bidding, !model.isHumanTurn, let seat = model.viewerSeat, let call = model.latestCall(for: seat) {
                 Text("You: \(call)").font(.footnote).opacity(0.85)
             } else if !inAuction {
