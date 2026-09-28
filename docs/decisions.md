@@ -617,3 +617,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** The same pleased or rueful face for every trick, no reaction to a 9 and out, and a silent hand-end card.
 
 **Why:** Connor asked for it (N36): the five and a 9 and out are what the table reacts to, and a word from your partner after the hand is how a real table sounds. Words stay off the table during play so they can never read as a signal.
+
+## D74. Why we play closes each round of tips (2026-09-27)
+
+**Chosen:** The tip card's rotation (D67) gains one face after the eleventh tip, labelled "WHY WE PLAY": "52 cards. Endless ways to play. But at the end of the day, it brings people together." It is not numbered, so the tips keep "TIP n OF 11". One full cycle is twelve faces (`TipDeck.cycle`); `TipDeck.face(_:)` reads `Settings.nextTip` round it and `takeNextTip()` wraps at twelve, so the card shows once per cycle, then tip 1 again. A saved index from before (0 to 10) lands on the same tip as it did.
+
+**Over:** Adding it as a twelfth numbered tip, or showing it on every visit.
+
+**Why:** Connor asked for it (N38): it is the reason behind the game, not advice about it, so it sits apart from the tips and comes round once.

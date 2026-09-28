@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The words on the tip card between the home screen and the table (D67): where the game comes from, then
-/// the tips in a fixed order. `GameModel.takeNextTip()` keeps the place across visits in `Settings.nextTip`.
+/// the tips in a fixed order, then why we play. `GameModel.takeNextTip()` keeps the place across visits in `Settings.nextTip`.
 enum TipDeck {
     struct Face: Hashable {
         let label: String
@@ -24,6 +24,18 @@ enum TipDeck {
 
     /// The first face of every visit.
     static let origin = Face(label: "WHERE IT COMES FROM", text: RulesText.origin)
+
+    /// Not a numbered tip: it closes each full cycle, after the eleventh (N38).
+    static let whyWePlay = Face(label: "WHY WE PLAY", text: "52 cards. Endless ways to play. But at the end of the day, it brings people together.")
+
+    /// The faces in one full cycle: every tip, then why we play.
+    static let cycle = tips.count + 1
+
+    /// Face `index` of the cycle, counted from 0 and read modulo `cycle`: the tips in order, then `whyWePlay`.
+    static func face(_ index: Int) -> Face {
+        let wrapped = (index % cycle + cycle) % cycle
+        return wrapped == tips.count ? whyWePlay : tip(wrapped)
+    }
 
     /// Tip `index`, counted from 0 and read modulo the number of tips.
     static func tip(_ index: Int) -> Face {

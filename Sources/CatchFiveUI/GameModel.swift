@@ -358,8 +358,8 @@ public final class GameModel: ObservableObject {
 
     /// The tip the card shows next, and the index moved on and saved, so the next visit carries on from here (D67).
     func takeNextTip() -> TipDeck.Face {
-        let face = TipDeck.tip(settings.nextTip)
-        settings.nextTip = (settings.nextTip % TipDeck.tips.count + TipDeck.tips.count + 1) % TipDeck.tips.count
+        let face = TipDeck.face(settings.nextTip)
+        settings.nextTip = (settings.nextTip % TipDeck.cycle + TipDeck.cycle + 1) % TipDeck.cycle
         return face
     }
 

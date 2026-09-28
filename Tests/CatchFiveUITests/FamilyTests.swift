@@ -98,3 +98,14 @@ import Testing
     #expect(passed.match.hand.phase == .finished)
     #expect(passed.handEndLine == nil)
 }
+
+@Test func whyWePlayClosesEachCycleAfterTheEleventhTip() {
+    #expect(TipDeck.whyWePlay == TipDeck.Face(label: "WHY WE PLAY", text: "52 cards. Endless ways to play. But at the end of the day, it brings people together."))
+    #expect(TipDeck.cycle == 12)
+    #expect(TipDeck.face(0) == TipDeck.tip(0))
+    #expect(TipDeck.face(10) == TipDeck.Face(label: "TIP 11 OF 11", text: TipDeck.tips[10]))
+    #expect(TipDeck.face(11) == TipDeck.whyWePlay)
+    #expect(TipDeck.face(12) == TipDeck.tip(0))
+    #expect(TipDeck.face(-1) == TipDeck.whyWePlay)
+    #expect(!TipDeck.tips.contains(TipDeck.whyWePlay.text))
+}
