@@ -37,7 +37,7 @@ public final class GameModel: ObservableObject {
     @Published public var settings: Settings { didSet { persistSettings() } }
     /// Every finished match, oldest first.
     @Published public private(set) var records: [MatchRecord]
-    /// The human's record for a finished match, computed once when it is recorded or restored.
+    /// The human's record for a finished solo match, computed once when it is recorded or restored.
     @Published public private(set) var finalPerformance: SeatPerformance?
     private let saveURL: URL?
     private let settingsURL: URL?
@@ -57,7 +57,7 @@ public final class GameModel: ObservableObject {
         self.records = records
         self.historyURL = historyURL
         recordedCurrentMatch = match.winner != nil
-        if match.winner != nil { finalPerformance = try? match.performance(forSeat: 0) }
+        if match.winner != nil, mode == .solo { finalPerformance = try? match.performance(forSeat: 0) }
     }
 
     public var statistics: Statistics { Statistics(records) }
@@ -85,9 +85,11 @@ public final class GameModel: ObservableObject {
         return try? HandReview(match: match)
     }
 
+    /// Statistics are the phone owner's solo record, so a pass-and-play match is never recorded.
     private func recordMatchIfFinished() {
         guard match.winner != nil, !recordedCurrentMatch else { return }
         recordedCurrentMatch = true
+        guard mode == .solo else { return }
         let performance = (try? match.performance(forSeat: 0)) ?? SeatPerformance(plays: 0, playsAgreed: 0, bids: 0, bidsMade: 0)
         finalPerformance = performance
         records.append(MatchRecord(date: now(), scores: match.scores, winner: match.winner ?? 0, hands: match.history.count,
@@ -109,7 +111,22 @@ public final class GameModel: ObservableObject {
     }
 
     /// The player the phone was passed to says so; their hand appears.
-    public func ready() { revealedSeat = curtainSeat ?? revealedSeat }
+    public func ready() {
+        revealedSeat = curtainSeat ?? revealedSeat
+        if let revealedSeat { lastRevealedSeat = revealedSeat }
+    }
+
+    /// The seat drawn at the bottom of the table: the phone holder's. In pass and play the table turns to the
+    /// next holder while their curtain is up, and stays with the last one between hands.
+    public var bottomSeat: Int { viewerSeat ?? curtainSeat ?? lastRevealedSeat }
+    private var lastRevealedSeat = 0
+
+    /// The seat at a place round the table, counted from the bottom: 1 on the left, 2 across, 3 on the right.
+    /// Play passes to the left, so the seat after the phone holder sits on their left.
+    public func seat(at place: Int) -> Int { (bottomSeat + place) % 4 }
+
+    /// Where `seat` sits round the table as the phone holder sees it: 0 at the bottom, 1 left, 2 across, 3 right.
+    public func place(of seat: Int) -> Int { (seat - bottomSeat + 4) % 4 }
 
     public var isHumanTurn: Bool { match.winner == nil && match.hand.nextSeat != nil && match.hand.nextSeat == viewerSeat }
     /// In pass and play every seat is a family member, so seat 0 drops the phone holder's own name.
@@ -131,7 +148,20 @@ public final class GameModel: ObservableObject {
         case .playing: "playing"
         case .finished: "hand scored"
         }
-        return "Hand \(match.handNumber) · Your team \(match.scores[0]), their team \(match.scores[1]) · \(phase)"
+        let scores = mode == .solo ? "Your team \(match.scores[0]), their team \(match.scores[1])"
+            : "\(teamNames(0)) \(match.scores[0]), \(teamNames(1)) \(match.scores[1])"
+        return "Hand \(match.handNumber) · \(scores) · \(phase)"
+    }
+
+    /// The pair sitting as `team`: "Cheryl + Connor".
+    public func teamNames(_ team: Int) -> String { "\(seatNames[team]) + \(seatNames[team + 2])" }
+
+    /// The team the score bar leads with as "Us": the phone holder's.
+    public var ourTeam: Int { bottomSeat % 2 }
+
+    /// The status line once `team` has won: yours in solo, and by name otherwise.
+    public func winnerHeadline(_ team: Int) -> String {
+        mode == .solo && team == 0 ? "Your team wins the match" : "\(teamNames(team)) win the match"
     }
 
     /// The login screen's one write: the trimmed name becomes seat 0's name unless another seat has it.
@@ -148,7 +178,7 @@ public final class GameModel: ObservableObject {
     public func seatSummary(for seat: Int) -> String {
         let hand = match.hand
         var parts = [seatNames[seat]]
-        if seat != 0 { parts.append(Cast.seatWords[seat]) }
+        if place(of: seat) != 0 { parts.append(Cast.seatWords[place(of: seat)]) }
         if hand.phase == .bidding { parts.append(latestCall(for: seat) ?? "waiting") }
         else if hand.auction.winner == seat { parts.append("bidder") }
         if hand.auction.dealer == seat { parts.append("dealer") }

@@ -98,7 +98,15 @@ struct MainMenuView: View {
             Button("Pass and play", role: model.matchInProgress ? .destructive : nil) { model.newGame(mode: .passAndPlay); onPlay() }
             Button("Cancel", role: .cancel) {}
         } message: { Text((model.matchInProgress ? "This replaces your saved game. " : "") + PlayMode.choiceMessage) }
-        .onAppear { if choosingMode { confirmNewMatch = true } }
+        .onAppear {
+            if choosingMode { confirmNewMatch = true }
+            switch ScreenshotStage.name {
+            case "stats": showStatistics = true
+            case "settings": showSettings = true
+            case "howto": showTutorial = true
+            default: break
+            }
+        }
     }
 }
 

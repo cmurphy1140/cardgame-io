@@ -16,6 +16,8 @@ struct TableSurface: View {
     let onCloseTrick: () -> Void
     /// The 9-and-out pill asks the table to confirm before the bid is sent.
     let onNineAndOut: () -> Void
+    /// The deck beside the dealer's tile says where it rests, so the deal can start there.
+    var onDeck: (CGPoint) -> Void = { _ in }
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
     let statusFocus: AccessibilityFocusState<Bool>.Binding
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -52,17 +54,18 @@ struct TableSurface: View {
             let fits = contentHeight <= geometry.size.height + 0.5
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 6) {
-                    SeatView(model: model, seat: 2).accessibilitySortPriority(20)
+                    // The phone holder sits at the bottom; in pass and play the table turns with the phone.
+                    SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
                     // each beside the card its seat played.
                     let sideWidth = inAuction ? Theme.Table.seatTileWidth : TableLayout.sideSeatWidth(available: geometry.size.width)
                     HStack(alignment: .center) {
-                        SeatView(model: model, seat: 1, width: sideWidth).accessibilitySortPriority(30)
+                        SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
                         Spacer(minLength: TableLayout.seatGap)
                         if !inAuction { centre(reach: reach) }
                         Spacer(minLength: TableLayout.seatGap)
-                        SeatView(model: model, seat: 3, width: sideWidth).accessibilitySortPriority(10)
+                        SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
                     }
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
@@ -119,7 +122,7 @@ struct TableSurface: View {
                 .accessibilityLabel(model.spokenDescription(of: play, winner: pile.winner))
                 .accessibilityHint(coaching ? "Explains why this card was played" : "")
                 .rotationEffect(.degrees(toss(for: play).rotation))
-                .offset(Self.pileOffset(for: play.seat) + toss(for: play).offset)
+                .offset(Self.pileOffset(for: model.place(of: play.seat)) + toss(for: play).offset)
                 .matchedGeometryEffect(id: play.card, in: namespace)
                 .transition(transition(for: play, winner: pile.winner, reach: reach))
                 .zIndex(Double(pile.plays.firstIndex(where: { $0.card == play.card }) ?? 0))
@@ -137,9 +140,10 @@ struct TableSurface: View {
         CardToss.pose(for: play.card, hand: model.match.handNumber, trick: hand.completedTricks.count)
     }
 
-    /// Where each seat's card rests on the pile: nudged toward the seat that played it.
-    static func pileOffset(for seat: Int) -> CGSize {
-        switch seat {
+    /// Where each card rests on the pile: nudged toward the place (0 bottom, 1 left, 2 across, 3 right) of the
+    /// seat that played it.
+    static func pileOffset(for place: Int) -> CGSize {
+        switch place {
         case 1: CGSize(width: -Theme.Table.sideNudge, height: 0)
         case 2: CGSize(width: 0, height: -Theme.Table.partnerNudge)
         case 3: CGSize(width: Theme.Table.sideNudge, height: 0)
@@ -147,9 +151,9 @@ struct TableSurface: View {
         }
     }
 
-    /// Unit direction from the pile toward a seat.
-    static func direction(for seat: Int) -> CGSize {
-        switch seat {
+    /// Unit direction from the pile toward a place round the table.
+    static func direction(for place: Int) -> CGSize {
+        switch place {
         case 1: CGSize(width: -1, height: 0)
         case 2: CGSize(width: 0, height: -1)
         case 3: CGSize(width: 1, height: 0)
@@ -157,13 +161,13 @@ struct TableSurface: View {
         }
     }
 
-    /// A computer's card arrives from its seat; a finished trick leaves toward the winner's seat.
-    /// The human's own card is moved by `matchedGeometryEffect` from the hand instead.
+    /// Another seat's card arrives from its place; a finished trick leaves toward the winner's place.
+    /// The phone holder's own card is moved by `matchedGeometryEffect` from the hand instead.
     private func transition(for play: Play, winner: Int?, reach: CGSize) -> AnyTransition {
         if reduceMotion { return .opacity }
-        let from = Self.direction(for: play.seat)
-        let to = Self.direction(for: winner ?? play.seat)
-        let insertion: AnyTransition = play.seat == 0 ? .identity
+        let from = Self.direction(for: model.place(of: play.seat))
+        let to = Self.direction(for: model.place(of: winner ?? play.seat))
+        let insertion: AnyTransition = model.place(of: play.seat) == 0 ? .identity
             : .offset(x: from.width * reach.width, y: from.height * reach.height).combined(with: .opacity)
         let removal: AnyTransition = .offset(x: to.width * reach.width, y: to.height * reach.height)
             .combined(with: .scale(scale: 0.5)).combined(with: .opacity)
@@ -244,7 +248,7 @@ struct TableSurface: View {
 
     private var statusText: Text {
         if let winner = model.match.winner {
-            return Text(winner == 0 ? "Your team wins the match" : "\(model.seatNames[1]) + \(model.seatNames[3]) win the match")
+            return Text(model.winnerHeadline(winner))
         }
         let actor = hand.nextSeat.map { model.seatNames[$0] } ?? ""
         switch hand.phase {
@@ -466,7 +470,7 @@ struct TableSurface: View {
     /// The card shown once a team reaches 25 or a 9-and-out resolves.
     private func matchOver(_ winner: Int) -> some View {
         VStack(spacing: 6) {
-            Text(winner == 0 ? "YOU WIN THE MATCH" : "\(model.seatNames[1]) + \(model.seatNames[3]) WIN")
+            Text(model.mode == .solo && winner == 0 ? "YOU WIN THE MATCH" : "\(model.teamNames(winner)) WIN")
                 .font(.system(.subheadline, design: .monospaced).weight(.bold)).tracking(2)
             Text("\(model.match.scores[0]) – \(model.match.scores[1]) after \(model.match.history.count) hands").font(.title3.weight(.semibold))
             if let performance = model.finalPerformance {
@@ -484,6 +488,8 @@ struct SeatView: View {
     let seat: Int
     /// Side tiles take the width the row can spare; the partner's tile keeps the full width.
     var width: Double = Theme.Table.seatTileWidth
+    /// The dealer's deck says where it rests.
+    var onDeck: (CGPoint) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The halo's breathing, driven by a repeating animation while this seat is deciding.
     @State private var pulsing = false
@@ -516,7 +522,7 @@ struct SeatView: View {
                 .padding(.vertical, Theme.Table.activeRingGap)
                 // The dealer owns the deck: it rests beside their face, static, never a control (T12, T13).
                 .overlay(alignment: .bottomTrailing) {
-                    if hand.auction.dealer == seat { DealerDeck().offset(x: 16, y: -2) }
+                    if hand.auction.dealer == seat { DealerDeck(onPlaced: onDeck).offset(x: 16, y: -2) }
                 }
                 // A computer deciding shows calm dots above its tile instead of a status line (T04).
                 .overlay(alignment: .top) {
@@ -525,15 +531,28 @@ struct SeatView: View {
             Text(model.seatNames[seat]).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
             badges
         }
-        .padding(.horizontal, 4).padding(.vertical, 1)
+        .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.seatSummary(for: seat))
     }
 
-    /// One line, always the same height, so the tiles do not jump when a call lands or the phase turns.
+    /// Room the tile keeps on each side, the stack of backs with its trailing air, and the gap between badges.
+    nonisolated static let tilePadding = 4.0
+    nonisolated static let backsWidth = Theme.Table.seatBackWidth + 2 * 3 + 6
+    nonisolated static let badgeSpacing = 6.0
+    /// The most the badge text may shrink to fit the narrowest tile.
+    nonisolated static let roleShrink = 0.6
+
+    /// The seat's roles, one per line: DEALER, and BIDDER once the auction is over. A seat that deals and wins
+    /// the bid stacks the two, since side by side they clip to "DEA… BIDD…" on the narrowest tile.
+    nonisolated static func roles(seat: Int, dealer: Int, bidder: Int?, bidding: Bool) -> [String] {
+        (dealer == seat ? ["DEALER"] : []) + (bidder == seat && !bidding ? ["BIDDER"] : [])
+    }
+
+    /// One band, always the same height, so the tiles do not jump when a call lands or the phase turns.
     private var badges: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Self.badgeSpacing) {
             if hand.phase == .bidding {
                 // The call as a badge on the same dark pill as the auction's own buttons; a pass is muted
                 // so the bids stand out. No badge until the seat has spoken: the halo says who is deciding.
@@ -553,10 +572,16 @@ struct SeatView: View {
                 .padding(.trailing, 6)
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
             }
-            if hand.auction.dealer == seat { Text("DEALER").foregroundStyle(.gold) }
-            if hand.auction.winner == seat, hand.phase != .bidding { Text("BIDDER").opacity(0.7) }
+            let roles = Self.roles(seat: seat, dealer: hand.auction.dealer, bidder: hand.auction.winner, bidding: hand.phase == .bidding)
+            if !roles.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(roles, id: \.self) { role in
+                        if role == "DEALER" { Text(role).foregroundStyle(.gold) } else { Text(role).opacity(0.7) }
+                    }
+                }
+            }
         }
-        .font(.system(.caption2, design: .monospaced)).lineLimit(1).minimumScaleFactor(0.6)
+        .font(.system(.caption2, design: .monospaced)).lineLimit(1).minimumScaleFactor(Self.roleShrink)
         .frame(height: backWidth * Theme.Card.ratio + 2)
     }
 
@@ -566,12 +591,19 @@ struct SeatView: View {
 /// The dealer's deck: a small squared stack of backs with no plate, edge or tap, so it reads as a thing on
 /// the table and not a button (T13).
 struct DealerDeck: View {
+    /// Told the deck's centre in the table's coordinate space whenever it moves; the deal starts there.
+    var onPlaced: (CGPoint) -> Void = { _ in }
+
     var body: some View {
         ZStack {
             ForEach(0..<3, id: \.self) { index in
                 CardBackView(width: Theme.Table.dealerDeckWidth).offset(x: Double(index) * -1.5, y: Double(index) * -1.5)
             }
         }
+        .onGeometryChange(for: CGPoint.self) { proxy in
+            let frame = proxy.frame(in: .named(TableLayout.space))
+            return CGPoint(x: frame.midX, y: frame.midY)
+        } action: { onPlaced($0) }
         .rotationEffect(.degrees(-8))
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
         .allowsHitTesting(false)

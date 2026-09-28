@@ -8,11 +8,17 @@ struct HandFanView: View {
     /// Called with the card when a tap is refused, so the table can shake it and buzz.
     let onIllegal: (Card) -> Void
     @Binding var shakes: [Card: Int]
+    /// The centre of the deck beside the dealer, in the table's coordinate space; the refill deals in from it.
+    var deck: CGPoint? = nil
+    /// Your own deck, under the fan when you deal, says where it rests.
+    var onDeck: (CGPoint) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .title2) private var scaledStandard = Theme.Card.handWidth
     @ScaledMetric(relativeTo: .title2) private var scaledWide = Theme.Card.handWidthWide
     /// The width the hand was actually given, so the arrangement is decided from a measurement.
     @State private var measuredWidth = 0.0
+    /// Where the hand sits on the table, so a dealt card knows how far it has come from the deck.
+    @State private var fanFrame = CGRect.zero
 
     private var wide: Bool { measuredWidth + 32 >= Theme.Card.wideScreenWidth }
     private var cardWidth: Double { wide ? Theme.Card.handWidthWide : Theme.Card.handWidth }
@@ -47,10 +53,11 @@ struct HandFanView: View {
             .frame(maxWidth: .infinity, alignment: .bottom)
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TableLayout.space)) } action: { fanFrame = $0 }
             // No "Your hand" caption (T05); the dealer badge stays when it is yours.
             if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
                 HStack(spacing: 10) {
-                    DealerDeck()
+                    DealerDeck(onPlaced: onDeck)
                     Text("DEALER").foregroundStyle(.gold)
                         .font(.caption2.monospaced()).tracking(1)
                 }
@@ -98,7 +105,7 @@ struct HandFanView: View {
                 .allowsHitTesting(playing)
                 .accessibilityValue(model.accessibilityValue(for: card))
                 .modifier(MatchedCard(card: card, namespace: namespace, enabled: !reduceMotion))
-                .transition(handTransition(index: index, width: measuredWidth))
+                .transition(handTransition(index: index, slot: indices.firstIndex(of: index) ?? 0, count: indices.count, strip: strip))
                 .zIndex(isSelected ? 100 : Double(index))
             }
         }
@@ -107,30 +114,39 @@ struct HandFanView: View {
     /// How a card enters or leaves the fan. A played card leaves by `matchedGeometryEffect` (identity
     /// here). While trump is being chosen, a leaving card is a discard: it rises toward the table and
     /// fades, one after another. At the start of play, an arriving card is part of the refill: it
-    /// deals in from the dealer's seat, small and faint, after the discards have gone.
-    private func handTransition(index: Int, width: Double) -> AnyTransition {
+    /// deals in from the deck beside the dealer, deck-sized and faint, after the discards have gone.
+    private func handTransition(index: Int, slot: Int, count: Int, strip: Double) -> AnyTransition {
         if reduceMotion { return .opacity }
         let hand = model.match.hand
         let dealing = hand.phase == .playing && hand.currentTrick.isEmpty && hand.completedTricks.isEmpty
+        // Until the deck has said where it rests, a refill card fades in where it lands.
+        let flight = deck.map { Self.dealOrigin(slot: slot, count: count, strip: strip, cardWidth: scaledWidth, in: fanFrame, deck: $0) } ?? .zero
         let insertion: AnyTransition = dealing
-            ? .offset(Self.dealOrigin(index: index, count: model.humanCards.count, width: width))
-                .combined(with: .scale(scale: 0.6)).combined(with: .opacity)
+            ? .offset(flight)
+                .combined(with: .scale(scale: Theme.Table.dealerDeckWidth / scaledWidth)).combined(with: .opacity)
                 .animation(Theme.Motion.flight.delay(Theme.Motion.dealDelay + Double(index) * Theme.Motion.dealStagger))
             : .identity
         // A discard flies to the pile in the top-left corner, shrinking to a card back.
         let removal: AnyTransition = hand.phase == .choosingTrump
-            ? .offset(Self.discardTarget(index: index, count: model.humanCards.count, width: width))
+            ? .offset(Self.discardTarget(index: index, count: model.humanCards.count, width: measuredWidth))
                 .combined(with: .scale(scale: Theme.Table.deckWidth / scaledWidth)).combined(with: .opacity)
                 .animation(Theme.Motion.collapse.delay(Double(index) * Theme.Motion.discardStagger))
             : .identity
         return .asymmetric(insertion: insertion, removal: removal)
     }
 
-    /// Where a dealt card starts, relative to its place in the fan: the deck in the table's top-right
-    /// corner. Cards sit evenly across the fan, so each one's flight starts a different distance away.
-    nonisolated static func dealOrigin(index: Int, count: Int, width: Double) -> CGSize {
-        let cardCentre = (Double(index) + 0.5) * width / Double(max(count, 1))
-        return CGSize(width: width - Theme.Table.deckWidth / 2 - cardCentre, height: -Theme.Table.deckRise)
+    /// Where a card of a row comes to rest: `strip` apart around the middle of the hand's `frame`, on its
+    /// bottom edge. `slot` counts from the left of the row.
+    nonisolated static func cardCentre(slot: Int, count: Int, strip: Double, cardWidth: Double, in frame: CGRect) -> CGPoint {
+        CGPoint(x: frame.midX + (Double(slot) - Double(count - 1) / 2) * strip,
+                y: frame.maxY - cardWidth * Theme.Card.ratio / 2)
+    }
+
+    /// Where a dealt card starts, relative to its place in the fan: the deck beside the dealer (T12), wherever
+    /// that seat sits. `frame` and `deck` share the table's coordinate space.
+    nonisolated static func dealOrigin(slot: Int, count: Int, strip: Double, cardWidth: Double, in frame: CGRect, deck: CGPoint) -> CGSize {
+        let centre = cardCentre(slot: slot, count: count, strip: strip, cardWidth: cardWidth, in: frame)
+        return CGSize(width: deck.x - centre.x, height: deck.y - centre.y)
     }
 
     /// Where a discard lands: the pile in the top-left corner, level with the deck (spec R3).

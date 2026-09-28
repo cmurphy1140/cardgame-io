@@ -8,6 +8,8 @@ struct DealerDrawView: View {
     let draw: DealerDraw
     let names: [String]
     let portraits: [Portrait]
+    /// Seat 0 is "You" in solo; pass and play names it like every other seat.
+    var saysYou = true
     let onDismiss: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
@@ -20,7 +22,7 @@ struct DealerDrawView: View {
                 seat(2)
                 HStack(spacing: 24) { seat(1); seat(3) }
                 seat(0)
-                Text(draw.sentence(names: names)).font(.system(.title3, design: .serif).weight(.semibold))
+                Text(draw.sentence(names: names, you: saysYou)).font(.system(.title3, design: .serif).weight(.semibold))
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 Button(action: onDismiss) {
                     Text("Deal").font(.headline).frame(maxWidth: .infinity).frame(minHeight: 48)
@@ -44,14 +46,16 @@ struct DealerDrawView: View {
         }
     }
 
+    private func label(_ index: Int) -> String { index == 0 && saysYou ? "You" : names[index] }
+
     /// A seat's portrait and its drawn card; the dealer's card wears the gold ring.
     private func seat(_ index: Int) -> some View {
         HStack(spacing: 10) {
             PortraitView(portrait: portraits[index], size: 30)
             CardView(card: draw.cards[index], width: 40, style: .rest, ring: index == draw.dealer ? .gold : nil)
-            Text(index == 0 ? "You" : names[index]).font(.subheadline.weight(.semibold)).lineLimit(1).fixedSize()
+            Text(label(index)).font(.subheadline.weight(.semibold)).lineLimit(1).fixedSize()
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(index == 0 ? "You" : names[index]): the \(draw.cards[index].name)\(index == draw.dealer ? ", deals" : "")")
+        .accessibilityLabel("\(label(index)): the \(draw.cards[index].name)\(index == draw.dealer ? ", deals" : "")")
     }
 }

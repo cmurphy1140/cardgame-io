@@ -1,5 +1,6 @@
 import CatchFive
 @testable import CatchFiveUI
+import CoreText
 import Foundation
 import SwiftUI
 import Testing
@@ -510,12 +511,28 @@ import Testing
     #expect(DynamicTypeSize.xLarge.boosted(by: Theme.textBoostSteps) == Theme.Card.maximumTypeSize)
 }
 
-@Test func dealtCardsComeFromTheDeckInTheCornerAndTheBandFrowns() {
-    // The leftmost card has the longest flight from the top-right deck; the rightmost the shortest, still upward.
-    let left = HandFanView.dealOrigin(index: 0, count: 6, width: 360)
-    let right = HandFanView.dealOrigin(index: 5, count: 6, width: 360)
-    #expect(left.width > right.width && right.width > 0)
-    #expect(left.height < 0 && left.height == right.height)
+@Test func dealtCardsStartAtTheDealersDeckAndTheBandFrowns() {
+    // Every refill card starts on the deck beside the dealer (T12), wherever that dealer sits, and lands
+    // on its own place in the fan: the flight is the deck's centre less the card's resting centre.
+    let fan = CGRect(x: 16, y: 600, width: 360, height: 110)
+    let strip = 48.0, width = 58.0
+    let west = CGPoint(x: 70, y: 250), north = CGPoint(x: 196, y: 90), mine = CGPoint(x: 150, y: 740)
+    for deck in [west, north, mine] {
+        for slot in 0..<6 {
+            let centre = HandFanView.cardCentre(slot: slot, count: 6, strip: strip, cardWidth: width, in: fan)
+            let origin = HandFanView.dealOrigin(slot: slot, count: 6, strip: strip, cardWidth: width, in: fan, deck: deck)
+            #expect(abs(centre.x + origin.width - deck.x) < 0.001 && abs(centre.y + origin.height - deck.y) < 0.001)
+        }
+    }
+    // The cards spread one strip apart around the fan's middle and rest on its bottom edge.
+    let first = HandFanView.cardCentre(slot: 0, count: 6, strip: strip, cardWidth: width, in: fan)
+    let last = HandFanView.cardCentre(slot: 5, count: 6, strip: strip, cardWidth: width, in: fan)
+    #expect(abs((first.x + last.x) / 2 - fan.midX) < 0.001 && abs(last.x - first.x - 5 * strip) < 0.001)
+    #expect(abs(first.y - (fan.maxY - width * Theme.Card.ratio / 2)) < 0.001)
+    // A dealer on the left deals in from the left and above; your own deck, under the fan, deals up into it.
+    #expect(HandFanView.dealOrigin(slot: 0, count: 6, strip: strip, cardWidth: width, in: fan, deck: west).width < 0)
+    #expect(HandFanView.dealOrigin(slot: 5, count: 6, strip: strip, cardWidth: width, in: fan, deck: north).height < 0)
+    #expect(HandFanView.dealOrigin(slot: 2, count: 6, strip: strip, cardWidth: width, in: fan, deck: mine).height > 0)
     // The frown's middle sits `dip` above its corners.
     let band = HeaderBandShape(dip: 20).path(in: CGRect(x: 0, y: 0, width: 300, height: 100)).boundingRect
     #expect(band.maxY == 100 && band.minY == 0)
@@ -523,8 +540,37 @@ import Testing
 }
 
 @MainActor @Test func rootOpensOnLoginUntilSignedInThenOnTheTable() {
-    #expect(RootView.initialScreen(for: Settings()) == .login)
-    #expect(RootView.initialScreen(for: Settings(hasSeenRules: true, playerName: "Connor")) == .menu)
+    #expect(RootView.initialScreen(for: Settings(), matchInProgress: false) == .login)
+    #expect(RootView.initialScreen(for: Settings(hasSeenRules: true, playerName: "Connor"), matchInProgress: false) == .menu)
+}
+
+@MainActor @Test func rootNeverSignedInAlwaysGoesToLoginEvenWithAMatchInProgress() {
+    #expect(RootView.initialScreen(for: Settings(), matchInProgress: true) == .login)
+}
+
+@MainActor @Test func rootResumesAMatchInProgressOntoTheTable() {
+    let settings = Settings(hasSeenRules: true, playerName: "Connor")
+    #expect(RootView.initialScreen(for: settings, matchInProgress: true) == .table)
+    #expect(RootView.initialScreen(for: settings, matchInProgress: false) == .menu)   // finished or no match: unchanged
+}
+
+@MainActor @Test func rootResumesPassAndPlayWithTheCurtainDown() throws {
+    // A restored pass-and-play match resumes onto the table, but nobody's hand is showing: the curtain
+    // is down for whoever is next, exactly as a fresh restore leaves `revealedSeat`.
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let model = GameModel.loadDefault(in: directory)
+    model.newGame(mode: .passAndPlay)
+    model.dismissDealerDraw()
+    model.ready()
+    model.send(.bid(nil))
+    var settings = model.settings
+    settings.setPlayerName("Connor")
+    settings.hasSeenRules = true
+    model.settings = settings
+    let restored = GameModel.loadDefault(in: directory)
+    #expect(restored.revealedSeat == nil)
+    #expect(RootView.initialScreen(for: restored.settings, matchInProgress: restored.matchInProgress) == .table)
 }
 
 
@@ -816,10 +862,10 @@ import Testing
 
 @Test func rootRoutesSignedInPlayersWhoSkippedTheIntroBackToIt() {
     var settings = Settings(playerName: "Connor")
-    #expect(RootView.initialScreen(for: settings) == .intro)   // signed in, never saw the intro or rules
+    #expect(RootView.initialScreen(for: settings, matchInProgress: false) == .intro)   // signed in, never saw the intro or rules
     settings.hasSeenRules = true
-    #expect(RootView.initialScreen(for: settings) == .menu)
-    #expect(RootView.initialScreen(for: Settings()) == .login)
+    #expect(RootView.initialScreen(for: settings, matchInProgress: false) == .menu)
+    #expect(RootView.initialScreen(for: Settings(), matchInProgress: false) == .login)
 }
 
 @Test func signingInKeepsAMatchAnExistingInstallLeftInProgress() {
@@ -964,12 +1010,10 @@ import Testing
 }
 
 @Test func discardsFlyToThePileOnTheLeft() {
-    // Discards head for the top-left corner, level with the deck in the top-right; the two never share a corner.
+    // Discards head for the top-left corner of the table, every one to the same height.
     for index in 0..<6 {
-        let deal = HandFanView.dealOrigin(index: index, count: 6, width: 360)
         let discard = HandFanView.discardTarget(index: index, count: 6, width: 360)
-        #expect(discard.width < deal.width)              // the other side of the table
-        #expect(discard.height == deal.height)           // the same height, the top of the table
+        #expect(discard.height < 0 && discard.height == HandFanView.discardTarget(index: 0, count: 6, width: 360).height)
     }
     // The leftmost card barely moves sideways; the rightmost crosses most of the table.
     #expect(HandFanView.discardTarget(index: 0, count: 6, width: 360).width > -40)
@@ -1246,4 +1290,92 @@ import Testing
     // Names the player typed stay.
     try Data(#"{"playerName":"Mum","seatNames":["Mum","Hazel","Dad","Rue"]}"#.utf8).write(to: url)
     #expect(try SettingsStore.read(from: url).seatNames == ["Mum", "Hazel", "Dad", "Rue"])
+}
+
+@Test func aSeatThatDealsAndBidsReadsBothRolesInFull() {
+    // DEALER and BIDDER stack, one per line, rather than sharing one line that the narrowest tile clips.
+    #expect(SeatView.roles(seat: 1, dealer: 1, bidder: 1, bidding: false) == ["DEALER", "BIDDER"])
+    #expect(SeatView.roles(seat: 1, dealer: 1, bidder: 1, bidding: true) == ["DEALER"])
+    #expect(SeatView.roles(seat: 2, dealer: 1, bidder: 2, bidding: false) == ["BIDDER"])
+    #expect(SeatView.roles(seat: 3, dealer: 1, bidder: 2, bidding: false).isEmpty)
+    // The widest role, in the tile's caption (caption2 two steps up: 15 pt monospaced), beside the stack of
+    // backs, fits the side tile on iPhone SE (375 − 32) within the text's allowed shrink; both roles on one
+    // line would not.
+    // Menlo stands in for SF Mono: both advance 0.6 em a character.
+    let font = CTFontCreateWithName("Menlo" as CFString, 15, nil)
+    let word = { (text: String) -> Double in
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [.init(kCTFontAttributeName as String): font]))
+        return CTLineGetTypographicBounds(line, nil, nil, nil)
+    }
+    let room = TableLayout.sideSeatWidth(available: 343) - 2 * SeatView.tilePadding - SeatView.backsWidth - SeatView.badgeSpacing
+    #expect(word("DEALER") * SeatView.roleShrink <= room && word("BIDDER") * SeatView.roleShrink <= room)
+    #expect(word("DEALER") + SeatView.badgeSpacing + word("BIDDER") > room / SeatView.roleShrink)
+}
+
+@MainActor @Test func passAndPlayTurnsTheTableToThePhoneHolder() throws {
+    // Solo: you are always at the bottom, West on the left, your partner across, East on the right.
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect((0..<4).map(solo.seat(at:)) == [0, 1, 2, 3])
+    // Pass and play: whoever holds the phone sits at the bottom, and play goes round to their left, so the
+    // next seat sits on the left, their partner across and the seat before them on the right.
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay)
+    var seen = Set<Int>()
+    for _ in 0..<12 {
+        let seat = try #require(model.match.hand.nextSeat)
+        // The table is already turned for the next holder while the curtain is up.
+        #expect(model.curtainSeat == nil || model.seat(at: 0) == seat)
+        model.ready()
+        #expect((0..<4).map(model.seat(at:)) == (0..<4).map { (seat + $0) % 4 })
+        #expect((0..<4).allSatisfy { model.place(of: model.seat(at: $0)) == $0 })
+        #expect(model.seatSummary(for: (seat + 2) % 4).contains("Partner"))
+        seen.insert(seat)
+        let view = try PlayerView(match: model.match, seat: seat)
+        model.send(try #require(ComputerPlayer.decide(view, difficulty: .standard)))
+    }
+    #expect(seen == [0, 1, 2, 3])
+}
+
+@MainActor @Test func passAndPlayMatchesStayOutOfStatistics() throws {
+    // Statistics are the phone owner's solo record: a pass-and-play match leaves them and the history file alone.
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: url) }
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay, historyURL: url)
+    for _ in 0..<2_000 where model.match.winner == nil {
+        guard model.match.hand.nextSeat != nil else { model.nextHand(); continue }
+        model.ready()
+        let view = try PlayerView(match: model.match, seat: try #require(model.viewerSeat))
+        model.send(try #require(ComputerPlayer.decide(view, difficulty: .standard)))
+    }
+    #expect(model.match.winner != nil)
+    #expect(model.records.isEmpty && model.finalPerformance == nil && model.statistics == Statistics([]))
+    #expect(!FileManager.default.fileExists(atPath: url.path))
+    // A pass-and-play match restored after it was won stays out too.
+    #expect(GameModel(match: model.match, mode: .passAndPlay).finalPerformance == nil)
+    // The next solo match counts as before.
+    model.newGame(mode: .solo)
+    try finishMatch(model)
+    #expect(model.records.count == 1 && model.finalPerformance != nil)
+}
+
+@MainActor @Test func passAndPlayNamesTeamsInsteadOfYou() throws {
+    // Solo speaks to you; pass and play has no single "you", so the score bar leads with the phone holder's
+    // team, and the menu line and the match's winner are named.
+    let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
+    #expect(solo.ourTeam == 0 && solo.teamNames(1) == "JC + Diane")
+    let model = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3), mode: .passAndPlay)
+    model.ready()
+    model.send(.bid(nil))
+    #expect(model.ourTeam == 1)   // seat 1 is about to take the phone
+    model.ready()
+    #expect(model.ourTeam == 1)
+    let context = try #require(model.resumeContext)
+    #expect(!context.contains("Your team") && context.contains("Cheryl + Connor 0") && context.contains("JC + Diane 0"))
+    solo.send(.bid(nil))
+    #expect(try #require(solo.resumeContext).contains("Your team 0, their team 0"))
+    #expect(model.winnerHeadline(0) == "Cheryl + Connor win the match" && model.winnerHeadline(1) == "JC + Diane win the match")
+    #expect(solo.winnerHeadline(0) == "Your team wins the match" && solo.winnerHeadline(1) == "JC + Diane win the match")
+    // The draw for dealer names seat 0 too.
+    let draw = DealerDraw(cards: [Card(.spades, .ace), Card(.clubs, .two), Card(.clubs, .three), Card(.clubs, .four)], dealer: 0)
+    #expect(draw.sentence(names: Settings.defaultSeatNames) == "You draw the ace of spades and deal.")
+    #expect(draw.sentence(names: Settings.defaultSeatNames, you: false) == "Cheryl draws the ace of spades and deals.")
 }

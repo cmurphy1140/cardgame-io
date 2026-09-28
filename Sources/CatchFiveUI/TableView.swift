@@ -24,6 +24,8 @@ public struct TableView: View {
     /// What the last revision changed, reduced to the one cue worth a haptic.
     @State private var cue: (id: Int, cue: TableFeedback.Cue)?
     @State private var seen: TableFeedback.Snapshot
+    /// Where the deck beside the dealer rests on the table; the refill deals in from here (T12).
+    @State private var dealerDeck: CGPoint?
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
@@ -73,7 +75,7 @@ public struct TableView: View {
             }
             .overlay {
                 if drawShown, let draw = model.dealerDraw {
-                    DealerDrawView(draw: draw, names: model.seatNames, portraits: portraits) {
+                    DealerDrawView(draw: draw, names: model.seatNames, portraits: portraits, saysYou: model.mode == .solo) {
                         withAnimation(motion(Theme.Motion.overlay)) { model.dismissDealerDraw() }
                     }
                     .transition(.opacity)
@@ -89,8 +91,9 @@ public struct TableView: View {
     /// Score bar, table and hand in one non-scrolling column.
     private var layout: some View {
         VStack(spacing: 6) {
-            ScoreBarView(us: model.match.scores[0], them: model.match.scores[1],
-                         usLabel: teamLabel(0), themLabel: teamLabel(1),
+            // "Us" is the phone holder's team; in pass and play that turns with the phone, as the table does.
+            ScoreBarView(us: model.match.scores[model.ourTeam], them: model.match.scores[1 - model.ourTeam],
+                         usLabel: teamLabel(model.ourTeam), themLabel: teamLabel(1 - model.ourTeam),
                          contract: contractChip,
                          canUndo: model.canUndo,
                          onScores: { showScoreboard = true }, onPause: onLeave)
@@ -107,15 +110,18 @@ public struct TableView: View {
                          onReopenTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = model.match.hand.completedTricks.count } },
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
                          onNineAndOut: { confirmNineAndOut = true },
+                         onDeck: { dealerDeck = $0 },
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 16)
             // Cards stop growing at XXXL so the fan keeps six cards on screen; the cap must sit above the
             // fan's own scaled metrics, which read it from the environment.
-            HandFanView(model: model, namespace: cards, onIllegal: shake, shakes: $shakes)
+            HandFanView(model: model, namespace: cards, onIllegal: shake, shakes: $shakes,
+                        deck: dealerDeck, onDeck: { dealerDeck = $0 })
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
                 .padding(.horizontal, 16)
         }
+        .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
         .padding(.bottom, 6)
         .frame(maxWidth: 640)
@@ -207,9 +213,7 @@ public struct TableView: View {
                                      bidder: model.seatNames[bidder])
     }
 
-    private func teamLabel(_ team: Int) -> String {
-        "\(model.seatNames[team]) + \(model.seatNames[team + 2])".uppercased()
-    }
+    private func teamLabel(_ team: Int) -> String { model.teamNames(team).uppercased() }
 
     private func motion(_ animation: Animation) -> Animation { reduceMotion ? Theme.Motion.reduced : animation }
 

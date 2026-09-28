@@ -518,3 +518,27 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Why:** The bots' valuations were never the problem. They bid the cheapest raise that cleared the auction, so ace-king opened at 2 and handed the hand to anyone willing to say 3. A floor is a statement about the *shape*, independent of what the auction currently costs, and no per-hand point estimate contains that.
 
 **Measured, two independent seed ranges.** Win rate 0.647 → 0.675 and 0.625 → 0.653; margin 5.050 → 5.727 and 4.785 → 5.357. Underbids against the table's floors fell 481 → 84. The cost is real and recorded in the ratchets: badly-missed contracts 71 → 88, surrendered counters 14 → 19, because winning more auctions means playing more contracts.
+
+## D62. In pass and play the table turns to the phone holder (2026-09-26)
+
+**Chosen:** The seat holding the phone is drawn at the bottom, with the next seat in turn on the left, their partner across and the seat before them on the right (`GameModel.bottomSeat`, `seat(at:)`, `place(of:)`). While the curtain is up the table has already turned to the next holder; between hands it stays with the last one. Cards on the pile, their flights and the VoiceOver direction words follow the place, not the seat number. Solo is unchanged: seat 0 is always at the bottom.
+
+**Over:** Fixed seats with only the hand changing (the first pass-and-play build), which put a player's own tile across the table from them.
+
+**Why:** Each player should see the table as they would sit at it: their partner opposite, and play passing to their left.
+
+## D63. Pass-and-play matches stay out of Statistics (2026-09-26)
+
+**Chosen:** Only solo matches are recorded in the match history, so Statistics stay the phone owner's own record. A finished pass-and-play match writes nothing to `history.json` and shows no personal line on the match-over card (`finalPerformance` stays nil).
+
+**Over:** Recording every match with seat 0's performance, which credited the phone owner with a match four people played.
+
+**Why:** In pass and play seat 0 is whoever sat there, not the owner.
+
+## D64. A launch with a match in progress opens onto the table, and "How Catch 5 is built" keeps one entry (2026-09-27)
+
+**Chosen:** `RootView.initialScreen(for:matchInProgress:)` sends a signed-in player who has seen the rules straight to `.table` when the saved match has no winner yet, instead of the main menu; a finished match or no match falls back to the menu as before (spec R31/R32 and the `RootView` doc comment, overridden by Connor for this case). In pass and play the curtain stays down: a restored `GameModel` never carries a revealed seat, so the resumed table shows nobody's hand until Ready is pressed. Separately, "How Catch 5 is built" now opens only from the main menu's hamburger (spec R29); the entries in `SettingsView` and the tutorial's "More" menu are gone, and the tutorial's toolbar carries a single "Full rules" button in their place.
+
+**Over:** Leaving the returning-player rule as it stood, which put Connor back at the menu every time iOS suspended and ended the app mid-hand, one extra tap from the game he was already in.
+
+**Why:** The main menu is for starting or resuming a choice, not for a match that is already running; a background-killed app should feel like nothing happened. The explainer only needs to live where a player goes looking for it, and duplicating it in Settings and the tutorial added menu weight without adding a use.

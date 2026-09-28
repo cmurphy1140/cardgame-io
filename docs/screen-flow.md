@@ -19,7 +19,8 @@ Three kinds of surface, and the difference matters:
 stateDiagram-v2
     [*] --> login: no name saved
     [*] --> intro: name saved, rules unseen
-    [*] --> menu: name saved, rules seen
+    [*] --> table: name saved, rules seen, match in progress
+    [*] --> menu: name saved, rules seen, no match or match finished
 
     login --> menu: sign in with a match already in progress
     login --> intro: sign in, no match, rules unseen
@@ -37,9 +38,12 @@ stateDiagram-v2
     end note
 ```
 
-`RootView.initialScreen(for:)` decides the first of these, and
+`RootView.initialScreen(for:matchInProgress:)` decides the first of these, and
 `RootView.destinationAfterSignIn(matchInProgress:hasSeenRules:)` decides where signing in leads. Both
-are `nonisolated` and tested directly, so the routing can be checked without building a view.
+are `nonisolated` and tested directly, so the routing can be checked without building a view. A launch
+with a match in progress (no winner yet) opens straight onto the table instead of the main menu
+(decision D64); in pass and play the curtain still comes down for whoever is next, since a restored
+match never carries a revealed seat.
 
 ## What opens from the main menu
 
