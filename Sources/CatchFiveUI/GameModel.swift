@@ -84,6 +84,12 @@ public final class GameModel: ObservableObject {
         return HandOutcome(summary: last, before: before, names: seatNames)
     }
 
+    /// The last hand read as a 9 and out, when it was one: who bid it and which points were missed (D69).
+    var lastNineAndOut: NineAndOutResult? { match.history.last.flatMap(NineAndOutResult.init(summary:)) }
+
+    /// What plays before the match-over card once the match is won: the 9-and-out screen, the cascade, both or neither (D69).
+    var celebrations: [Celebration] { Celebration.steps(winner: match.winner, mode: mode, nineAndOut: lastNineAndOut) }
+
     /// Every play of the finished hand alongside the standard strategy's choice; nil before the hand is scored.
     public func handReview() -> HandReview? {
         guard match.hand.phase == .finished else { return nil }

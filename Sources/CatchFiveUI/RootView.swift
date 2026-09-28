@@ -31,9 +31,11 @@ public struct RootView: View {
     /// cards on the pile), `dealer-bidder` (the same, a side seat having dealt and won the bid), `pause` (the
     /// pause card over it), `result` (the hand's result), `review` (with Review hand open) or `over` (the match
     /// won); `stats`, `settings` or `howto` (the menu with that sheet open); `home` (the menu with a match in
-    /// progress) or `home-tips` (the tip card over the table, held).
+    /// progress) or `home-tips` (the tip card over the table, held); `ninewin`, `ninelose` (a 9 and out made or missed,
+    /// its screen up) or `won` (a solo match won, the cascade falling).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
+        var model = model
         switch stage {
         case "curtain", "seat":
             model.newGame(mode: .passAndPlay)
@@ -68,6 +70,21 @@ public struct RootView: View {
             if stage == "dealer-bidder" {
                 Self.play(model) { hand, humanTurn in humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty }
             }
+        case "ninewin", "ninelose":
+            // A 9 and out bid from the first seat, on a deck that makes it or one that does not; nothing is saved.
+            let deck = stage == "ninewin" ? Self.nineAndOutDeck() : Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+            model = GameModel(match: try! Match(deck: deck, dealer: 3), settings: model.settings)
+            model.send(.nineAndOut)
+            Self.play(model) { hand, _ in hand.phase == .finished }
+        case "won":
+            for _ in 0..<20 where model.match.winner != 0 {
+                model.newGame(mode: .solo)
+                model.dismissDealerDraw()
+                for _ in 0..<60 where model.match.winner == nil {
+                    Self.play(model) { hand, _ in hand.phase == .finished }
+                    if model.match.winner == nil { model.nextHand() }
+                }
+            }
         case "over":
             model.newGame(mode: .solo)
             model.dismissDealerDraw()
@@ -82,7 +99,7 @@ public struct RootView: View {
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto", "home": .menu
         case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
-             "home-tips": .table
+             "home-tips", "ninewin", "ninelose", "won": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }
         _screen = State(initialValue: screen)
@@ -90,6 +107,21 @@ public struct RootView: View {
         _showTips = State(initialValue: stage == "home-tips")
         holdTips = stage == "home-tips"
         choosingMode = stage == "picker"
+    }
+
+    /// A deck that deals you, with seat 3 dealing, the ace, king, queen, jack, five and two of hearts, and leaves
+    /// every other heart undealt at the bottom of the stock: bid 9 and out, name hearts and lead them, and all
+    /// nine points are yours. For the `ninewin` stage and its test.
+    static func nineAndOutDeck() -> [Card] {
+        let yours: [Card] = [.init(.hearts, .ace), .init(.hearts, .king), .init(.hearts, .queen),
+                             .init(.hearts, .jack), .init(.hearts, .five), .init(.hearts, .two)]
+        let otherHearts = Rank.allCases.map { Card(.hearts, $0) }.filter { !yours.contains($0) }
+        var rest = Suit.allCases.filter { $0 != .hearts }.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+        var deck = Array(yours[0..<3])
+        deck += rest.prefix(9); rest.removeFirst(9)
+        deck += yours[3..<6]
+        deck += rest + otherHearts
+        return deck
     }
 
     /// Plays every seat of a pass-and-play match, each through its curtain, until `stop` holds; screenshots only.

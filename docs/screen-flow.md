@@ -11,7 +11,7 @@ Three kinds of surface, and the difference matters:
 |---|---|---|
 | **Screen** | Replaces everything. `RootView` owns exactly four. | login, intro, menu, table |
 | **Sheet** | Slides over, dismissed by the player, the screen beneath continues to exist | settings, statistics, how to play, hand review, scoreboard, hint detail |
-| **Cover** | Blocks play. The table underneath is neither tappable nor reachable by VoiceOver, and the scheduler holds | pause card, tip card, hand result, match over, pass-and-play curtain |
+| **Cover** | Blocks play. The table underneath is neither tappable nor reachable by VoiceOver, and the scheduler holds | pause card, tip card, 9-and-out screen, hand result, match over, pass-and-play curtain |
 
 ## The four screens
 
@@ -88,7 +88,9 @@ flowchart TD
     P -->|New match, alert confirms| T
     R -->|Deal next hand| T
     R -->|Review| RV[Hand review, sheet]
-    R -->|match won| MO[Match over]
+    T -->|match won| CE[9 and out screen, cascade, cover]
+    CE --> MO[Match over]
+    R -->|match won| MO
     RV --> R
     U --> T
     SB --> T

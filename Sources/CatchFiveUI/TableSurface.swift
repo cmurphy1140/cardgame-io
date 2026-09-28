@@ -18,6 +18,8 @@ struct TableSurface: View {
     let onNineAndOut: () -> Void
     /// The deck beside the dealer's tile says where it rests, so the deal can start there.
     var onDeck: (CGPoint) -> Void = { _ in }
+    /// A match-win celebration is playing; the hand-end card waits until it has finished (D69).
+    var holdsResult = false
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
     let statusFocus: AccessibilityFocusState<Bool>.Binding
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -120,7 +122,7 @@ struct TableSurface: View {
             // accessibility tree, so VoiceOver meets the card and nothing behind it.
             .opacity(hand.phase == .finished ? 0.12 : 1)
             .accessibilityHidden(hand.phase == .finished)
-            .overlay { if hand.phase == .finished { finishedCard } }
+            .overlay { if hand.phase == .finished, !holdsResult { finishedCard } }
         }
         .accessibilityElement(children: .contain)
     }

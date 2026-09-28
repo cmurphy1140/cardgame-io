@@ -28,6 +28,10 @@ public struct TableView: View {
     @State private var dealerDeck: CGPoint?
     /// Counts hands dealt while the table is up; each one riffles once at the dealer's deck (D68).
     @State private var shuffles = 0
+    /// What still plays before the match-over card: the 9-and-out screen and the cascade (D69).
+    @State private var celebrating: [Celebration] = []
+    /// Counts cascades begun, for their success haptic.
+    @State private var cascades = 0
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
@@ -83,7 +87,42 @@ public struct TableView: View {
                     .transition(.opacity)
                 }
             }
+            .overlay { celebration }
             .transformEnvironment(\.dynamicTypeSize) { $0 = $0.boosted(by: Theme.textBoostSteps) }
+            .onAppear {
+                // The screenshot stages open on a match already won, so nothing announced the win.
+                if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
+            }
+    }
+
+    /// The next celebration step over the table, each moving on by itself or at a tap (D69).
+    @ViewBuilder private var celebration: some View {
+        switch celebrating.first {
+        case .cascade:
+            CardCascade()
+                .transition(.opacity)
+                .task {
+                    cascades += 1
+                    try? await Task.sleep(for: .seconds(Celebration.cascadeSeconds))
+                    guard !Task.isCancelled else { return }
+                    nextCelebration()
+                }
+        case let .nineAndOut(result):
+            NineAndOutScreen(result: result, bidderName: model.seatNames[result.bidder], onDone: nextCelebration)
+                .transition(.opacity)
+                .task {
+                    try? await Task.sleep(for: .seconds(Celebration.nineSeconds))
+                    guard !Task.isCancelled else { return }
+                    nextCelebration()
+                }
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private func nextCelebration() {
+        guard !celebrating.isEmpty else { return }
+        withAnimation(motion(Theme.Motion.overlay)) { _ = celebrating.removeFirst() }
     }
 
     private var portraits: [Portrait] {
@@ -112,6 +151,7 @@ public struct TableView: View {
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
                          onNineAndOut: { confirmNineAndOut = true },
                          onDeck: { dealerDeck = $0 },
+                         holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 16)
@@ -170,12 +210,14 @@ public struct TableView: View {
         withScheduling
             .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.4), trigger: shakeCount) { _, _ in model.settings.haptics }
             .sensoryFeedback(cue?.cue.feedback ?? .selection, trigger: cue?.id ?? 0) { _, _ in model.settings.haptics && cue != nil }
+            .sensoryFeedback(.success, trigger: cascades) { _, _ in model.settings.haptics }
     }
 
     /// After each accepted action, work out what it did and pick the one cue and announcement for it.
     private func noteChanges(_ revision: Int) {
         let now = TableFeedback.Snapshot(model)
         if let picked = TableFeedback.cue(from: seen, to: now) { cue = (revision, picked) }
+        if now.winner != nil, seen.winner == nil { celebrating = model.celebrations }
         let handEnded = now.hands > seen.hands
         if now.tricks > seen.tricks, !handEnded, let winner = now.lastTrickWinner {
             AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the hand").post()

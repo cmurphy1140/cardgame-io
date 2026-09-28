@@ -62,3 +62,49 @@ import Testing
     #expect(!TablePause(sceneActive: true, welcomeShown: false, sheetShown: false, dialogShown: false,
                         inspectingTrick: false, drawShown: false).isPaused)
 }
+
+@Test func nineAndOutIsMadeOnlyWithAllFivePointsAndNamesWhatWasMissed() {
+    let made = NineAndOutResult(bidder: 1, highTeam: 1, lowTeam: 1, jackTeam: 1, fiveTeam: 1, gameTeam: 1)
+    #expect(made.made && made.missed.isEmpty)
+    let missed = NineAndOutResult(bidder: 2, highTeam: 0, lowTeam: 1, jackTeam: nil, fiveTeam: 0, gameTeam: 1)
+    #expect(!missed.made)
+    // An undealt Jack is a point the bidders could not catch, so it counts as missed.
+    #expect(missed.missed == [.low, .jack, .game])
+    #expect(NineAndOutResult.Point.allCases.map(\.rawValue) == ["High", "Low", "Jack", "Five", "Game"])
+}
+
+@MainActor @Test func aRealNineAndOutIsClassifiedFromTheHandResult() throws {
+    let model = GameModel(match: try Match(deck: RootView.nineAndOutDeck(), dealer: 3))
+    model.send(.nineAndOut)
+    try playOut(model)
+    let result = try #require(model.lastNineAndOut)
+    #expect(result.bidder == 0 && result.made)
+    #expect(model.match.winner == 0)
+    #expect(model.celebrations == [.nineAndOut(result), .cascade])
+
+    let failing = GameModel(match: try Match(deck: Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }, dealer: 3))
+    failing.send(.nineAndOut)
+    try playOut(failing)
+    let missed = try #require(failing.lastNineAndOut)
+    #expect(!missed.made && !missed.missed.isEmpty)
+    #expect(failing.match.winner == 1)
+    #expect(failing.celebrations == [.nineAndOut(missed)])
+}
+
+@Test func onlyAWinForThePhoneOrAnyPassAndPlayWinCascades() {
+    #expect(Celebration.steps(winner: nil, mode: .solo, nineAndOut: nil) == [])
+    #expect(Celebration.steps(winner: 0, mode: .solo, nineAndOut: nil) == [.cascade])
+    #expect(Celebration.steps(winner: 1, mode: .solo, nineAndOut: nil) == [])
+    #expect(Celebration.steps(winner: 1, mode: .passAndPlay, nineAndOut: nil) == [.cascade])
+    #expect(Celebration.steps(winner: 0, mode: .passAndPlay, nineAndOut: nil) == [.cascade])
+    let theirs = NineAndOutResult(bidder: 1, highTeam: 1, lowTeam: 1, jackTeam: 1, fiveTeam: 1, gameTeam: 1)
+    #expect(Celebration.steps(winner: 1, mode: .solo, nineAndOut: theirs) == [.nineAndOut(theirs)])
+    #expect(Celebration.steps(winner: 1, mode: .passAndPlay, nineAndOut: theirs) == [.nineAndOut(theirs), .cascade])
+}
+
+@MainActor private func playOut(_ model: GameModel) throws {
+    for _ in 0..<400 where model.match.hand.phase != .finished {
+        if model.isHumanTurn { model.showHint(); model.send(try #require(model.hint).action) } else { model.stepComputer() }
+    }
+    #expect(model.match.hand.phase == .finished)
+}

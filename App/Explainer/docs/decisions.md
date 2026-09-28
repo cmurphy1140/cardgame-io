@@ -575,3 +575,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** No shuffle, or a shuffle the table waits for.
 
 **Why:** A hand at a real table starts with the dealer shuffling; showing it marks the new hand without costing a beat.
+
+## D69. A won match is celebrated, and a 9 and out gets its own moment (2026-09-27)
+
+**Chosen:** When an action wins the match, `TableView` plays `GameModel.celebrations` before the hand-end card shows (`TableSurface.holdsResult`): first, if the deciding hand was bid 9 and out, `NineAndOutScreen`, full screen, "9 and out" large in the display serif and gold with the bidder's name and High, Low, Jack, Five and Game each ticked, or, if it was missed, a quieter ivory "9 and out missed" naming the points missed with those rows crossed and dimmed; then, for a win worth cheering (your team in solo, any team in pass and play), `CardCascade`, sixteen cards tumbling across the table for 2 s with a success haptic when haptics are on. A lost solo match has no cascade. The 9-and-out screen moves on after 3.5 s or at a tap; the cascade takes no taps. Everything is read from the engine's finished hand (`NineAndOutResult(summary:)`, from `HandScore`'s point owners, an undealt Jack or Five counting as missed) and `Match.winner`; the engine is unchanged. Under Reduce Motion the cascade is a still spread of five cards and the steps crossfade.
+
+**Over:** Going straight to the match-over card, as before.
+
+**Why:** Winning a match, and above all making 9 and out, is the moment the family talks about afterwards; the table should mark it. The existing match-won cue (D-series haptics, `TableFeedback`) still fires when the match is won, so a win that cascades straight away feels two success taps close together.
