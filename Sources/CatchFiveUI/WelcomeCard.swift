@@ -46,8 +46,9 @@ struct WelcomeCard: View {
     }
 }
 
-/// The menu's two buttons, shared by the pause card and the main menu: one warm oak primary per screen
-/// (P01: red read as leaving), and bordered ivory for the rest. On the main actor because the button styles are (CI's Swift 6.1 checks this).
+/// The menu's two buttons, shared by the pause card and the main menu: both solid brown with ivory
+/// labels (D75: no see-through pills), so nothing on the wood ever shows felt through it. On the main
+/// actor because the button styles are (CI's Swift 6.1 checks this).
 @MainActor enum MenuButtons {
     static func prominent(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(label).font(.headline).frame(maxWidth: .infinity).frame(minHeight: 48) }
@@ -56,7 +57,7 @@ struct WelcomeCard: View {
 
     static func plain(_ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(label).frame(maxWidth: .infinity).frame(minHeight: 44) }
-            .buttonStyle(.bordered).tint(.ivory.opacity(0.8))
+            .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
     }
 }
 

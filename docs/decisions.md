@@ -625,3 +625,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Adding it as a twelfth numbered tip, or showing it on every visit.
 
 **Why:** Connor asked for it (N38): it is the reason behind the game, not advice about it, so it sits apart from the tips and comes round once.
+
+## D75. No see-through pills; the home menu is a bare, bigger icon (2026-09-27)
+
+**Chosen:** `MenuButtons.plain` (the pause card's "Main menu" and the home screen's "Deal me in", "How to play") now matches `MenuButtons.prominent`'s solid `Theme.Wood.dark` fill and ivory label, instead of `.buttonStyle(.bordered).tint(.ivory.opacity(0.8))`, which let the wood show through. The same fix applies to the intro's "Learn the game" (`IntroView.swift`) and the build explainer's "Previous" (`ExplainerView.swift`). `MainMenuView`'s hamburger drops `Menu`'s implicit chrome with `.menuStyle(.borderlessButton)` and grows from `.title2` to a 33 pt glyph (about 1.5x), ivory with a shadow, still inside the 44×44 pt hit area and the "Menu" accessibility label. In `RulesView`, the chapter rail's `.ultraThinMaterial` backing becomes a solid `Theme.Wood.inlay`, and its chip fills drop their `.opacity` (solid `Theme.Wood.dark` when active, `Theme.Wood.inlay` otherwise), the gold ring alone marking the active chapter.
+
+**Over:** Translucent bordered buttons and a glass-backed menu icon, both of which let the felt or wood grain show through a control (R19: no translucent borders or plates on icons).
+
+**Why:** Connor marked up a screenshot of the home screen (N39, N40): every button reads as one solid piece of the table's wood, and the menu is a glyph, not a plate floating on glass.

@@ -56,7 +56,7 @@ struct IntroView: View {
                     Button { showTutorial = true } label: {
                         Text("Learn the game").frame(maxWidth: .infinity).frame(minHeight: 44)
                     }
-                    .buttonStyle(.bordered).tint(.ivory.opacity(0.8))
+                    .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
                     Button(action: onDone) {
                         Text("Deal me in").font(.headline).frame(maxWidth: .infinity).frame(minHeight: 50)
                     }

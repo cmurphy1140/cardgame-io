@@ -165,7 +165,7 @@ struct RulesView: View {
                         }
                         .lineLimit(1).minimumScaleFactor(0.7)
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(active ? .gold.opacity(0.18) : Theme.Wood.inlay.opacity(0.6), in: Capsule())
+                        .background(active ? Theme.Wood.dark : Theme.Wood.inlay, in: Capsule())
                         .overlay(Capsule().stroke(active ? .gold : .ivory.opacity(0.12)))
                     }
                     .buttonStyle(.plain)
@@ -178,7 +178,7 @@ struct RulesView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 8)
         }
-        .background(.ultraThinMaterial)
+        .background(Theme.Wood.inlay)
     }
 
     // MARK: Panels

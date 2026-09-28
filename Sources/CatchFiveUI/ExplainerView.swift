@@ -317,7 +317,7 @@ struct DocumentReaderView: View {
         return HStack {
             if let previous {
                 Button { openChapter(previous) } label: { Label("Previous", systemImage: "chevron.left") }
-                    .buttonStyle(.bordered).tint(.ivory.opacity(0.8))
+                    .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
             }
             Spacer()
             if let next {
