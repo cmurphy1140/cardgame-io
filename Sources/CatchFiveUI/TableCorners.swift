@@ -1,9 +1,11 @@
 import CatchFive
 import SwiftUI
 
-/// The table's top-left corner once the auction resolves: who bid and how much (D65). The bidder's own face
-/// beside the number, large in the display serif, under a small BID eyebrow, and the bidder's name small
-/// underneath (N52); 9 and out reads as a 9 with "and out".
+/// The bid box in the table's top-left corner once the auction resolves (D65, D87): Connor's three biggest things,
+/// who bid (their own face), the bid large in the display serif under a small BID eyebrow (9 and out reads as a 9
+/// with "and out"), and trump, the suit big in its own colour once it is named (N63, N67). The suit is also the
+/// player's tally of trumps played: tap adds a mark, press and hold takes one back; the app never counts for the
+/// player (spec R4), it only keeps the marks they make. The separate trump tile is gone.
 struct ContractPlaque: View {
     struct Contract: Equatable {
         let bid: Int
@@ -11,6 +13,8 @@ struct ContractPlaque: View {
         let bidder: String
         /// The bidder's face, the same as at their seat.
         let portrait: Portrait
+        /// Trump, once the bidder has named it.
+        var trump: Suit? = nil
 
         /// The big figure: the bid, or 9 for 9 and out.
         var number: String { isNineAndOut ? "9" : String(bid) }
@@ -19,19 +23,47 @@ struct ContractPlaque: View {
         var spoken: String { "\(bidder) bid \(isNineAndOut ? "9 and out" : String(bid))" }
     }
 
+    /// The contract once the auction has resolved: the bid, who holds it, and trump when it is named.
+    static func contract(in model: GameModel) -> Contract? {
+        let auction = model.match.hand.auction
+        guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
+        return Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder],
+                        portrait: Cast.opponent(at: bidder)?.portrait ?? model.settings.playerPortrait,
+                        trump: model.match.hand.trump)
+    }
+
+    /// The box as the table shows it: the player's tally on the suit, and the demo's pulse on it (N61).
+    static func onTable(_ model: GameModel, contract: Contract, width: Double) -> ContractPlaque {
+        ContractPlaque(contract: contract, width: width, tally: model.trumpTally, demo: model.tallyDemo == .trump,
+                       onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
+    }
+
     let contract: Contract
     /// The corner's width, from `TableLayout.cornerWidth(available:)`; the height is `Theme.Table.cornerHeight`.
     let width: Double
+    var tally = 0
+    /// The tally demo is pointing at the suit.
+    var demo = false
+    var onAdd: () -> Void = {}
+    var onTakeBack: () -> Void = {}
 
-    /// The light tan of both corners, and the dark wood browns the plaque's words are set in (D76).
+    /// The light tan of both corners, and the dark wood browns the box's words are set in (D76).
     static let fill = Theme.Table.cornerFill
     static let eyebrowInk = Theme.Wood.dark
     static let numberInk = Theme.Wood.streakDark
-    static let nameInk = Theme.Wood.dark
+
+    /// Red for hearts and diamonds, black for spades and clubs: the suit's own colour, never a control's.
+    nonisolated static func glyphColor(_ suit: Suit) -> Color { suit.isRed ? .suitRed : .black }
+
+    /// "Diane bid 4, hearts are trump, 3 trump played".
+    static func spoken(_ contract: Contract, tally: Int) -> String {
+        guard let trump = contract.trump else { return contract.spoken }
+        return "\(contract.spoken), \(trump.rawValue) are trump, \(tally) trump played"
+    }
 
     var body: some View {
-        VStack(spacing: 2) {
-            HStack(alignment: .bottom, spacing: 6) {
+        VStack(spacing: 0) {
+            HStack(alignment: .bottom, spacing: 4) {
                 PortraitView(portrait: contract.portrait, size: Theme.Table.plaquePortraitSize, popsOut: true)
                     .padding(.top, Theme.Table.plaquePortraitSize * Theme.Table.portraitHeadroom)
                 VStack(spacing: -6) {
@@ -44,66 +76,47 @@ struct ContractPlaque: View {
                     }
                 }
             }
-            Text(contract.bidder).font(.subheadline.weight(.semibold)).foregroundStyle(Self.nameInk)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(contract.spoken)
+            suit
         }
         .lineLimit(1).minimumScaleFactor(0.6)
-        .padding(8)
+        .padding(.horizontal, 6).padding(.vertical, 4)
         .frame(width: width, height: Theme.Table.cornerHeight)
         .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
         .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(contract.spoken)
-    }
-}
-
-/// The table's top-right corner once trump is named: the suit big on a light tan tile (D76) the same size as the
-/// bid's (N51), and under it the player's own tally of trumps played (D65). Tap adds a mark, press and hold takes
-/// one back; the app never counts for the player (spec R4), it only keeps the marks they make.
-struct TrumpTile: View {
-    let trump: Suit
-    let tally: Int
-    /// The corner's width, from `TableLayout.cornerWidth(available:)`; the height is `Theme.Table.cornerHeight`.
-    let width: Double
-    let onAdd: () -> Void
-    let onTakeBack: () -> Void
-
-    static let fill = Theme.Table.cornerFill
-
-    /// Red for hearts and diamonds, black for spades and clubs: the suit's own colour, never a control's.
-    nonisolated static func glyphColor(_ suit: Suit) -> Color { suit.isRed ? .suitRed : .black }
-
-    /// "Hearts are trump, 4 trump played".
-    nonisolated static func spoken(trump: Suit, tally: Int) -> String {
-        "\(trump.rawValue.capitalized) are trump, \(tally) trump played"
+        .accessibilityElement(children: .contain)
     }
 
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(trump.glyph).font(.system(size: Theme.Table.trumpGlyphSize))
-                .foregroundStyle(Self.glyphColor(trump))
-                .frame(width: width, height: Theme.Table.cornerHeight)
-                .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
-                .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
-                .dynamicTypeSize(...Theme.Card.maximumTypeSize)
-            TallyMarks(count: tally).frame(width: width, height: Theme.Table.tallyHeight)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onAdd)
-        .onLongPressGesture(perform: onTakeBack)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Self.spoken(trump: trump, tally: tally))
-        .accessibilityHint("Tap when a trump is played; swipe up or down to change the count")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { onAdd() }
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: onAdd()
-            case .decrement: onTakeBack()
-            @unknown default: break
+    /// Trump and its tally strokes, the tap target; an empty line of the same height until trump is named.
+    @ViewBuilder private var suit: some View {
+        if let trump = contract.trump {
+            HStack(spacing: 6) {
+                Text(trump.glyph).font(.system(size: Theme.Table.bidBoxSuitSize))
+                    .foregroundStyle(Self.glyphColor(trump))
+                    .modifier(DemoTap(active: demo))
+                TallyMarks(count: tally).frame(maxWidth: .infinity).frame(height: Theme.Table.tallyHeight)
             }
+            .frame(height: Theme.Table.bidBoxSuitSize * 1.15)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onAdd)
+            .onLongPressGesture(perform: onTakeBack)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Self.spoken(contract, tally: tally))
+            .accessibilityHint("Tap when a trump is played; swipe up or down to change the count")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onAdd() }
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: onAdd()
+                case .decrement: onTakeBack()
+                @unknown default: break
+                }
+            }
+        } else {
+            Color.clear.frame(height: Theme.Table.bidBoxSuitSize * 1.15)
         }
     }
 }
@@ -132,7 +145,8 @@ struct CornerArrival: ViewModifier {
     }
 }
 
-/// Tally strokes in groups of five, the fifth drawn across the four before it, as on paper.
+/// Tally strokes in groups of five, the fifth drawn across the four before it, as on paper, in dark brown beside
+/// the suit in the bid box.
 struct TallyMarks: View {
     let count: Int
 
@@ -157,7 +171,7 @@ struct TallyMarks: View {
                     path.move(to: CGPoint(x: x - 2, y: size.height - 3))
                     path.addLine(to: CGPoint(x: x + groupWidth + 2, y: 3))
                 }
-                context.stroke(path, with: .color(.ivory), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                context.stroke(path, with: .color(Theme.Wood.streakDark), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
                 x += groupWidth + gap
             }
         }

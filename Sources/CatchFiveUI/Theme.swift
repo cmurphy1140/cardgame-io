@@ -161,15 +161,15 @@ public enum Theme {
         /// Both corners sit on a very light tan (D76), so they read as paper laid on the felt, not holes in it.
         public static let cornerFill = Color(red: 0.91, green: 0.84, blue: 0.70)
         /// Big for people who won't read small text (N52): the bid's number in the display serif, the bidder's
-        /// face beside it, and the trump glyph on its tan tile.
-        public static let plaqueNumberSize = 56.0
-        public static let plaquePortraitSize = 50.0
-        public static let trumpGlyphSize = 80.0
+        /// face beside it, and trump under them in the same box (N63).
+        public static let plaqueNumberSize = 52.0
+        public static let plaquePortraitSize = 46.0
+        public static let bidBoxSuitSize = 48.0
         /// A corner arrives (N53): it grows from this scale with a glow that fades over `cornerGlowSeconds`.
         public static let cornerArrivalScale = 0.6
         public static let cornerGlowSeconds = 0.9
-        /// Tally strokes under the tile: height, the step between strokes, and the gap between groups of five.
-        public static let tallyHeight = 16.0
+        /// Tally strokes beside the suit in the bid box: height, the step between strokes, and the gap between groups of five.
+        public static let tallyHeight = 24.0
         public static let tallyStep = 4.0
         public static let tallyGroupGap = 7.0
         /// The bidder's seat wears a dashed light-brown ring on the portrait's own edge, inside where the

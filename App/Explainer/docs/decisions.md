@@ -721,3 +721,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A bare pause glyph, with New game and Home only on the pause card and the main menu, and the table's taps explained nowhere on the table.
 
 **Why:** Connor asked for it (N68): the controls and the answers should be where the players are looking. `theTableBarHasTableAndClarifyWithTheirDropDowns` holds the boxes, their contents and the pause.
+
+## D87. The bid box holds who bid, the bid and trump (2026-09-28)
+
+**Chosen:** The bid box in the top-left corner (`ContractPlaque`) carries Connor's three biggest things: the bidder's face, the bid, and trump. The face (46 pt) and the bid (52 pt serif under BID) share the top of the box; trump, once named, sits under them at 48 pt in its suit's colour (`Theme.Table.bidBoxSuitSize`), with the player's tally strokes beside it in dark brown. The separate trump tile is gone. The suit is where the tally lives now: tap adds a mark, press and hold takes one back, VoiceOver adjusts it, and the one-time tally demo (D84) pulses the suit. The bidder's name leaves the box; VoiceOver still reads it, and the name tags carry names (D89).
+
+**Over:** A bid plaque in one corner and a trump tile with the tally in the other (D65, D80).
+
+**Why:** Connor asked for it (N63, N67): one place to look for the hand's contract, and the top-right corner freed for the scorecard. `theBidBoxShowsTheFaceTheBidAndTrumpAndTheSuitKeepsTheTally` holds the contents and the tally.

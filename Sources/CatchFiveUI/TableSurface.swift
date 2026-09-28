@@ -59,14 +59,15 @@ struct TableSurface: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 6) {
                     // The phone holder sits at the bottom; in pass and play the table turns with the phone.
-                    // Who bid and for how much in the top-left corner, trump and the player's tally in the
-                    // top-right, either side of the partner and no taller than the partner's tile (D65).
-                    // Both corners share one size and, with the partner, nearly fill the row (N51); each pops in
-                    // the first time it fills (N53).
+                    // The bid box in the top-left corner: who bid, the bid and trump with the player's tally on
+                    // the suit (D65, N63), beside the partner and no taller than the partner's tile. It pops in the
+                    // first time it fills (N53).
                     let cornerWidth = TableLayout.cornerWidth(available: geometry.size.width)
                     HStack(alignment: .top, spacing: 0) {
                         corner(width: cornerWidth) {
-                            if let contract { ContractPlaque(contract: contract, width: cornerWidth).modifier(CornerArrival()) }
+                            if let contract = ContractPlaque.contract(in: model) {
+                                ContractPlaque.onTable(model, contract: contract, width: cornerWidth).modifier(CornerArrival())
+                            }
                         }
                         .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
@@ -80,15 +81,8 @@ struct TableSurface: View {
                                 }
                             }
                         Spacer(minLength: 0)
-                        corner(width: cornerWidth) {
-                            if let trump = hand.trump {
-                                TrumpTile(trump: trump, tally: model.trumpTally, width: cornerWidth,
-                                          onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
-                                    .modifier(CornerArrival())
-                                    .modifier(DemoTap(active: model.tallyDemo == .trump))
-                            }
-                        }
-                        .accessibilitySortPriority(24)
+                        corner(width: cornerWidth) {}
+                            .accessibilitySortPriority(24)
                     }
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
@@ -177,14 +171,6 @@ struct TableSurface: View {
             }
         }
         .accessibilityElement(children: .contain)
-    }
-
-    /// The contract once the auction has resolved: the bid and who holds it.
-    private var contract: ContractPlaque.Contract? {
-        let auction = hand.auction
-        guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
-        return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder],
-                                       portrait: Cast.opponent(at: bidder)?.portrait ?? model.settings.playerPortrait)
     }
 
     /// The box of the seat at `place` round the table (N55), its call arriving from `from`.

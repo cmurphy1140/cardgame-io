@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The table showing its two taps by itself, once per install, the first time trump is named (N61): the trump tile
-/// pulses as if tapped, then one opponent's face does, each under a big caption. It is only a show: no tally mark
+/// The table showing its two taps by itself, once per install, the first time trump is named (N61): the suit in the
+/// bid box pulses as if tapped, then one opponent's face does, each under a big caption. It is only a show: no tally mark
 /// or badge is made. Under Reduce Motion the captions come without the pulse.
 public enum TallyDemo: Equatable, Sendable {
     case trump
