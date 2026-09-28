@@ -55,7 +55,20 @@ struct TableSurface: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 6) {
                     // The phone holder sits at the bottom; in pass and play the table turns with the phone.
-                    SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
+                    // Who bid and for how much in the top-left corner, trump and the player's tally in the
+                    // top-right, either side of the partner and no taller than the partner's tile (D65).
+                    HStack(alignment: .top, spacing: 0) {
+                        corner { if let contract { ContractPlaque(contract: contract) } }.accessibilitySortPriority(25)
+                        Spacer(minLength: 0)
+                        SeatView(model: model, seat: model.seat(at: 2), onDeck: onDeck).accessibilitySortPriority(20)
+                        Spacer(minLength: 0)
+                        corner {
+                            if let trump = hand.trump {
+                                TrumpTile(trump: trump, tally: model.trumpTally, onAdd: model.tallyTrump, onTakeBack: model.untallyTrump)
+                            }
+                        }
+                        .accessibilitySortPriority(24)
+                    }
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
                     // each beside the card its seat played.
@@ -93,6 +106,15 @@ struct TableSurface: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(width: geometry.size.width, height: geometry.size.height)
+            // Trump, very large and faint behind the play area: there when you look for it, never in the way.
+            .background {
+                if let trump = hand.trump {
+                    Text(trump.glyph).font(.system(size: Theme.Table.watermarkSize))
+                        .foregroundStyle(.ivory.opacity(Theme.Table.watermarkOpacity))
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
             // No corner deck or discard pile (T12): the deck sits beside the dealer's tile instead.
             // The finished hand's card takes over the table; what is underneath fades back and leaves the
             // accessibility tree, so VoiceOver meets the card and nothing behind it.
@@ -101,6 +123,22 @@ struct TableSurface: View {
             .overlay { if hand.phase == .finished { finishedCard } }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    /// The contract once the auction has resolved: the bid and who holds it.
+    private var contract: ContractPlaque.Contract? {
+        let auction = hand.auction
+        guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
+        return ContractPlaque.Contract(bid: bid, isNineAndOut: auction.isNineAndOut, bidder: model.seatNames[bidder])
+    }
+
+    /// A top corner of the table: a fixed width, top-aligned, empty until it has something to show.
+    private func corner(@ViewBuilder _ content: () -> some View) -> some View {
+        // The clear strut holds the width while the corner is empty, so the partner stays centred.
+        ZStack(alignment: .top) {
+            Color.clear.frame(width: Theme.Table.cornerWidth, height: 0)
+            content()
+        }
     }
 
     // MARK: Pile
@@ -498,6 +536,10 @@ struct SeatView: View {
     private var hand: Hand { model.match.hand }
     private var active: Bool { hand.nextSeat == seat && model.match.winner == nil }
     private var thinking: Bool { active && !model.isHuman(seat) && hand.phase != .finished }
+    /// This seat won the auction, once the auction is over.
+    private var isBidder: Bool { hand.auction.nextSeat == nil && hand.auction.winner == seat }
+    /// The player has marked this seat as out of trump (D65).
+    private var markedOut: Bool { hand.trump != nil && model.outOfTrump.contains(seat) }
 
     /// A face over a name over one line of badges: the call in the auction, a hint of a hand in play, and
     /// DEALER or BIDDER when they apply. Everything a seat says sits under its own portrait, so nothing
@@ -506,6 +548,18 @@ struct SeatView: View {
     var body: some View {
         VStack(spacing: 2) {
             PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: SeatMood.expression(for: seat, in: model.match))
+                // The bidder's ring: dashed, light brown, on the portrait's own edge, never the gold halo (D65).
+                .overlay {
+                    Circle().strokeBorder(Theme.Wood.streakLight,
+                                          style: StrokeStyle(lineWidth: Theme.Table.bidderRingWidth, dash: Theme.Table.bidderRingDash))
+                        .opacity(isBidder ? 1 : 0)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    if markedOut, let trump = hand.trump { OutOfTrumpBadge(trump: trump).offset(x: -8, y: 2) }
+                }
+                // Tapping a face marks that seat out of trump, or clears the mark; the player's note, not the game's.
+                .contentShape(Circle())
+                .onTapGesture { model.toggleOutOfTrump(seat) }
                 .overlay {
                     Circle().stroke(.gold, lineWidth: Theme.Table.activeRingWidth)
                         .padding(-Theme.Table.activeRingGap)
@@ -534,7 +588,12 @@ struct SeatView: View {
         .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(model.seatSummary(for: seat))
+        .accessibilityLabel(model.seatSummary(for: seat) + (markedOut ? ", out of trump" : ""))
+        .accessibilityActions {
+            if hand.trump != nil {
+                Button(markedOut ? "Clear out of trump" : "Mark out of trump") { model.toggleOutOfTrump(seat) }
+            }
+        }
     }
 
     /// Room the tile keeps on each side, the stack of backs with its trailing air, and the gap between badges.

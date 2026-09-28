@@ -39,6 +39,11 @@ public final class GameModel: ObservableObject {
     @Published public private(set) var records: [MatchRecord]
     /// The human's record for a finished solo match, computed once when it is recorded or restored.
     @Published public private(set) var finalPerformance: SeatPerformance?
+    /// The player's own count of trumps played this hand, kept by tapping the trump tile (D65). View state
+    /// only: the engine, the computers and the save never see it, and it clears when the next hand starts.
+    @Published public private(set) var trumpTally = 0
+    /// Seats the player has marked as out of trump this hand, by tapping their portrait (D65); view state only.
+    @Published public private(set) var outOfTrump: Set<Int> = []
     private let saveURL: URL?
     private let settingsURL: URL?
     private let historyURL: URL?
@@ -283,6 +288,8 @@ public final class GameModel: ObservableObject {
         perform { match = try match.rewound(toActionCount: point) }
         lastHumanAction = nil
         notice = nil
+        // Taking back the trump call takes the tally with it; there is no trump left to count.
+        if match.hand.trump == nil { clearTrumpTally() }
     }
 
     /// Short wording for the undo toast: "9♣ played", "Bid 3", "Passed".
@@ -404,11 +411,36 @@ public final class GameModel: ObservableObject {
         return "Everyone passed, so as dealer you must bid at least 2."
     }
 
+    /// The most trumps a hand holds: the thirteen of the suit.
+    public static let trumpTallyCap = 13
+
+    /// One more trump played, as the player counts it; stops at thirteen. Only once trump is named.
+    public func tallyTrump() {
+        guard match.hand.trump != nil else { return }
+        trumpTally = min(trumpTally + 1, Self.trumpTallyCap)
+    }
+
+    /// Takes back a mis-tapped tally mark; never below zero.
+    public func untallyTrump() { trumpTally = max(trumpTally - 1, 0) }
+
+    /// Marks `seat` as out of trump, or clears the mark. Only once trump is named.
+    public func toggleOutOfTrump(_ seat: Int) {
+        guard match.hand.trump != nil else { return }
+        if outOfTrump.remove(seat) == nil { outOfTrump.insert(seat) }
+    }
+
+    /// The player's tally and marks belong to one hand.
+    private func clearTrumpTally() {
+        trumpTally = 0
+        outOfTrump = []
+    }
+
     public func nextHand() {
         perform { try match.startNextHand(deck: Self.deck()) }
         revealedSeat = nil
         lastHumanAction = nil
         notice = nil
+        clearTrumpTally()
     }
     /// A fresh match in `mode`, or in the current mode when none is given (Play again keeps it).
     public func newGame(mode: PlayMode? = nil) {
@@ -421,6 +453,7 @@ public final class GameModel: ObservableObject {
         finalPerformance = nil
         lastHumanAction = nil
         notice = nil
+        clearTrumpTally()
     }
 
     /// Applies a rule action. Returns true when the engine accepted it; a save failure afterwards is

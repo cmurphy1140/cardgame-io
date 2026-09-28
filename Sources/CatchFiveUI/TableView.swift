@@ -94,7 +94,6 @@ public struct TableView: View {
             // "Us" is the phone holder's team; in pass and play that turns with the phone, as the table does.
             ScoreBarView(us: model.match.scores[model.ourTeam], them: model.match.scores[1 - model.ourTeam],
                          usLabel: teamLabel(model.ourTeam), themLabel: teamLabel(1 - model.ourTeam),
-                         contract: contractChip,
                          canUndo: model.canUndo,
                          onScores: { showScoreboard = true }, onPause: onLeave)
                 .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 8)
@@ -203,14 +202,6 @@ public struct TableView: View {
                 Button("Pass and play", role: .destructive) { model.newGame(mode: .passAndPlay) }
                 Button("Cancel", role: .cancel) {}
             } message: { Text("This replaces your saved game. " + PlayMode.choiceMessage) }
-    }
-
-    /// The header's contract chip: the bid and bidder once the auction has resolved, trump once named.
-    private var contractChip: ScoreBarView.Contract? {
-        let auction = model.match.hand.auction
-        guard auction.nextSeat == nil, let bidder = auction.winner, let bid = auction.highestBid else { return nil }
-        return ScoreBarView.Contract(trump: model.match.hand.trump, bid: bid, isNineAndOut: auction.isNineAndOut,
-                                     bidder: model.seatNames[bidder])
     }
 
     private func teamLabel(_ team: Int) -> String { model.teamNames(team).uppercased() }
