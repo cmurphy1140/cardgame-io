@@ -5,7 +5,7 @@ import Testing
 
 @MainActor @Test func theTopRowHasHomeLeftAndRulesRightAndNothingThatPauses() {
     // D93: the Table / Clarify bar is gone; Home goes back to the menu (the game is already saved), Rules opens the rulebook.
-    #expect(TableTopRow.home == TableTopRow.Button(title: "Home", symbol: "house"))
+    #expect(TableTopRow.home == TableTopRow.Button(title: "Home", symbol: "arrow.backward", showsTitle: false))
     #expect(TableTopRow.rules == TableTopRow.Button(title: "Rules", symbol: "book"))
     // No drop-down is left to hold play up.
     #expect(!TablePause().isPaused)

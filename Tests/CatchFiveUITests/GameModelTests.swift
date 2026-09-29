@@ -1537,8 +1537,9 @@ private func matchWithTeamOneDownTen() throws -> Match {
         #expect(row <= available && row >= available * 0.95)
     }
     #expect(2 * TableLayout.cornerWidth(available: 343) + Theme.Table.seatTileWidth <= 343)
-    // Big number, big suit (N52), the suit now inside the bid box (N63).
+    // Big number (N52); the suit inside the bid box (N63) sits on one line with the word Trump since D95.
     #expect(Theme.Table.plaqueNumberSize >= 52 && Theme.Table.bidBoxSuitSize >= 40)
+    #expect(Theme.Table.trumpLineSuitSize > Theme.Table.trumpWordSize)
     // The bid corner carries the bidder's own face (N52).
     let face = try #require(Cast.opponent(at: 1)?.portrait)
     let contract = ContractPlaque.Contract(bid: 4, isNineAndOut: false, bidder: "JC", portrait: face)

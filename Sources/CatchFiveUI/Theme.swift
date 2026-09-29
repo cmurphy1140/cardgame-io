@@ -171,6 +171,11 @@ public enum Theme {
         public static let plaqueNumberSize = 52.0
         public static let plaquePortraitSize = 46.0
         public static let bidBoxSuitSize = 48.0
+        /// Trump set with its word on one line in the bid corner, "♠ Trump" (D95), the tally under the line; the line and
+        /// the tally together keep the `bidBoxSuitSize` row.
+        public static let trumpLineSuitSize = 28.0
+        /// The carved back arrow that stands for Home in the top row (D95).
+        public static let homeArrowSize = 26.0
         /// The word Trump over the tally, beside the suit (D93), and BID over the number, both carved and readable (D94).
         public static let trumpWordSize = 16.0
         public static let bidEyebrowSize = 15.0
