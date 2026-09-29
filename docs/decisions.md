@@ -785,3 +785,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Embroidering names on the shirts, which would not read at 15 pt or more on a 68 pt face; suit-coloured red carvings, which reach only about 1.2:1 on the wood; dropping the discard notice, which nothing else on the table shows.
 
 **Why:** Connor: "no more small white lettering, no more boxes in the game page, it should look like a table and the boxes look amature." `carvingsReadOnTheWood`, `nothingAPlayerMustReadIsSmallerThanFifteenPoints`, `trumpIsCarvedBesideTheBiddersNameAndBesideTheBid`, `theDealerButtonRestsInFrontOfTheDealersSeat`, `theCarvedNameStillRenamesItsSeat`, `theScorePadLiesOnTheTableAtASlightTurn` and `theRulesOpenLikeABook` hold it.
+
+## D95. Home is a back arrow; the suits are carved too (2026-09-29)
+
+**Chosen:** Connor's direction on the D94 build. (a) Home is a single carved back arrow, top left above the bid corner, with no house and no word beside it (`TableTopRow.home`, `showsTitle` false); VoiceOver still reads "Home" and the target stays 44 pt. (b) The suits were cut with the letters' 1 pt shadow, which vanishes on a 28 to 48 pt glyph, so they read as flat solid shapes. A carving's shadow and lit lip now grow with its size (`Carving.depth(size:)`, 1 at the name size and below), and a suit's recess is shaded from the ink at its top to a lighter floor at its foot (`Carving.floor(for:)`), both still 3:1 on the wood. This covers the trump in the bid corner and beside the bidder's name. (c) The bid corner sets the suit and the word together on one line, "♠ Trump" (`ContractPlaque.trumpLine(_:)`, the suit at `Theme.Table.trumpLineSuitSize`), with the tally chalked under the line instead of the suit sitting apart bottom-left.
+
+**Over:** A chevron, which reads as a list disclosure as often as a way back; keeping the 48 pt suit apart from the word.
+
+**Why:** Connor: "you dont need yo write home next to a icon of a home", "use and arrow", "above it", and "yes carve the spade too". `homeIsACarvedBackArrowWithNoWord`, `carvedSuitsAreCutConcaveLikeTheLetters` and `theBidCornerSetsTheSuitAndTrumpOnOneLine` hold it.

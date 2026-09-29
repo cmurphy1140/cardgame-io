@@ -54,6 +54,9 @@ struct ContractPlaque: View {
     /// The word printed beside the suit, so the glyph reads as trump and not as a card (D93).
     nonisolated static let trumpWord = "Trump"
 
+    /// The trump line as it reads in the corner (D95): the suit and the word together, "♠ Trump".
+    nonisolated static func trumpLine(_ suit: Suit) -> String { "\(suit.glyph) \(trumpWord)" }
+
     /// Red for hearts and diamonds, black for spades and clubs: the suit's own colour, never a control's.
     nonisolated static func glyphColor(_ suit: Suit) -> Color { suit.isRed ? .suitRed : .black }
 
@@ -91,19 +94,19 @@ struct ContractPlaque: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// Trump carved beside the bid, and the player's tally chalked by it, the tap target; an empty line of the same
+    /// Trump carved under the bid with its word, and the player's tally chalked under them, the tap target; an empty line of the same
     /// height until trump is named.
     @ViewBuilder private var suit: some View {
         if let trump = contract.trump {
-            HStack(spacing: 6) {
-                CarvedSuit(suit: trump, size: Theme.Table.bidBoxSuitSize)
-                    .modifier(DemoTap(active: demo))
-                // The word sits over the tally, the way BID sits over the number, so the row keeps its height.
-                VStack(alignment: .leading, spacing: 0) {
+            // "♠ Trump" on one line (D95), the tally chalked under it.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    CarvedSuit(suit: trump, size: Theme.Table.trumpLineSuitSize)
+                        .modifier(DemoTap(active: demo))
                     Text(Self.trumpWord).font(.system(size: Theme.Table.trumpWordSize, weight: .heavy, design: .serif))
                         .carved()
-                    TallyMarks(count: tally).frame(maxWidth: .infinity).frame(height: Theme.Table.tallyHeight)
                 }
+                TallyMarks(count: tally).frame(maxWidth: .infinity).frame(height: Theme.Table.tallyHeight)
             }
             .frame(height: Theme.Table.bidBoxSuitSize * 1.15)
             .contentShape(Rectangle())

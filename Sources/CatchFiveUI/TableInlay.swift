@@ -13,6 +13,16 @@ enum Carving {
 
     static func ink(for suit: Suit) -> Color { suit.isRed ? redInk : ink }
 
+    /// The floor of a big recess (D95): a shade lighter than its top, where the light falls in, still 3:1 on the wood.
+    static let floor = Color(red: 0.15, green: 0.09, blue: 0.045)
+    static let redFloor = Color(red: 0.25, green: 0.01, blue: 0.03)
+
+    static func floor(for suit: Suit) -> Color { suit.isRed ? redFloor : floor }
+
+    /// How deep a cut of this size reads (D95): 1 for the carved names and smaller, growing with the size above
+    /// them, so a big suit's shadowed upper edge and lit lip scale with it instead of vanishing into the fill.
+    static func depth(size: Double) -> Double { max(1, size / Theme.Table.carvedNameSize) }
+
     /// Relative luminance (WCAG) of a colour as drawn over `ground` (its opacity blended in), from sRGB components.
     static func luminance(_ color: Color, over ground: Color = .black) -> Double {
         let top = color.resolve(in: EnvironmentValues()), under = ground.resolve(in: EnvironmentValues())
@@ -32,13 +42,18 @@ enum Carving {
 }
 
 /// Cuts text or a glyph into the wood: the ink with an inner shadow on its upper edge, and a lit lower edge.
+/// A big cut (`floor` set, D95) is shaded from the ink at its top to the lighter floor at its foot, and `depth` scales the
+/// shadow and the lip with it.
 struct Carved: ViewModifier {
     var ink: Color = Carving.ink
+    var floor: Color? = nil
+    var depth = 1.0
 
     func body(content: Content) -> some View {
         content
-            .foregroundStyle(ink.shadow(.inner(color: .black.opacity(0.85), radius: 1, x: 0, y: 1.5)))
-            .shadow(color: Carving.litEdge, radius: 0, x: 0, y: 1)
+            .foregroundStyle(LinearGradient(colors: [ink, floor ?? ink], startPoint: .top, endPoint: .bottom)
+                .shadow(.inner(color: .black.opacity(0.85), radius: depth, x: 0, y: 1.5 * depth)))
+            .shadow(color: Carving.litEdge, radius: 0, x: 0, y: depth)
     }
 }
 
@@ -46,13 +61,15 @@ extension View {
     func carved(_ ink: Color = Carving.ink) -> some View { modifier(Carved(ink: ink)) }
 }
 
-/// A suit cut into the wood, in its own dark colour (D94).
+/// A suit cut into the wood, in its own dark colour (D94), as concave as the letters: a floor lighter than its top,
+/// and the shadow and lit lip cut as deep as its size (D95).
 struct CarvedSuit: View {
     let suit: Suit
     let size: Double
 
     var body: some View {
-        Text(suit.glyph).font(.system(size: size)).carved(Carving.ink(for: suit))
+        Text(suit.glyph).font(.system(size: size))
+            .modifier(Carved(ink: Carving.ink(for: suit), floor: Carving.floor(for: suit), depth: Carving.depth(size: size)))
             .accessibilityHidden(true)
     }
 }
