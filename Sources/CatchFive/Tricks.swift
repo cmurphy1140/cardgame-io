@@ -8,8 +8,13 @@ public struct Play: Equatable, Sendable {
     }
 }
 
-public func legalCards(in hand: [Card], led: Suit?) -> [Card] {
-    guard let led else { return hand }
+/// Pass `openingTrump` for the bid winner's opening lead of the hand: they must lead a trump if they
+/// hold one (house rule, D91). Every later lead is free; following suit is unchanged.
+public func legalCards(in hand: [Card], led: Suit?, openingTrump: Suit? = nil) -> [Card] {
+    guard let led else {
+        let trumps = hand.filter { $0.suit == openingTrump }
+        return trumps.isEmpty ? hand : trumps
+    }
     let following = hand.filter { $0.suit == led }
     return following.isEmpty ? hand : following
 }

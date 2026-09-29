@@ -152,6 +152,7 @@ import Testing
     model.send(.play(Card(.clubs, .two)))   // not held
     #expect(model.errorMessage?.contains("not in your hand") == true)
     #expect(GameModel.message(for: HandError.mustFollowSuit).contains("follow suit"))
+    #expect(GameModel.message(for: HandError.mustLeadTrump).contains("lead a trump"))
     #expect(GameModel.message(for: RuleError.invalidBid).contains("bid"))
 }
 

@@ -299,7 +299,8 @@ public enum ComputerPlayer {
         guard let trump = view.trump else { return nil }
         let knowledge = Knowledge(view: view, trump: trump)
         // Canonical order makes the choice independent of how the hand happens to be arranged.
-        let legal = legalCards(in: view.cards, led: view.trick.first?.card.suit).sorted {
+        let opening = view.completedTricks.isEmpty && view.trick.isEmpty ? trump : nil
+        let legal = legalCards(in: view.cards, led: view.trick.first?.card.suit, openingTrump: opening).sorted {
             (Suit.allCases.firstIndex(of: $0.suit)!, $0.rank.rawValue) < (Suit.allCases.firstIndex(of: $1.suit)!, $1.rank.rawValue)
         }
         guard let lead = view.trick.first else { return chooseLead(legal, knowledge) }
@@ -356,8 +357,11 @@ public enum ComputerPlayer {
         let trump = knowledge.trump
         let trumps = legal.filter { $0.suit == trump }
         let others = legal.filter { $0.suit != trump }
+        // The bidder's opening lead must be a trump when one is held (D91), so side cards are not legal.
+        let forced = !trumps.isEmpty && others.isEmpty && knowledge.hand.contains { $0.suit != trump }
         // A trump nobody can beat draws trumps from the other hands, which is how a five gets caught.
         if let boss = trumps.filter({ knowledge.unbeatable($0, led: trump) }).max(by: { $0.rank.rawValue < $1.rank.rawValue }) {
+            if forced { return (boss, "Lead the \(boss.name): the bidder opens with trump, and no trump left can beat it.") }
             return (boss, "Lead the \(boss.name): no trump left can beat it, and leading trumps draws them out, which is how a five gets caught.")
         }
         // With no trumps left against us, the highest side card usually wins the trick.
@@ -372,6 +376,7 @@ public enum ComputerPlayer {
             (knowledge.pointValue($0) + knowledge.controlValue($0), $0.rank.rawValue)
                 < (knowledge.pointValue($1) + knowledge.controlValue($1), $1.rank.rawValue)
         }) else { return nil }
+        if forced { return (exit, "Lead the \(exit.name): the bidder opens with trump.") }
         let five = trumps.contains(Card(trump, .five)) && exit != Card(trump, .five) ? " and the five" : ""
         return (exit, "Lead the \(exit.name): without a commanding trump, the card that risks least goes, keeping the trumps\(five) back.")
     }

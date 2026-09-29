@@ -107,7 +107,9 @@ public mutating func play(seat: Int, card: Card) throws {
     guard phase == .playing else { throw HandError.wrongPhase }
     guard seat == nextSeat else { throw RuleError.outOfTurn }
     guard let index = hands[seat].firstIndex(of: card) else { throw HandError.cardNotHeld }
-    guard legalMoves(seat: seat).contains(card) else { throw HandError.mustFollowSuit }
+    guard legalMoves(seat: seat).contains(card) else {
+        throw currentTrick.isEmpty ? HandError.mustLeadTrump : HandError.mustFollowSuit
+    }
     var updated = self          // work on a copy
     ...                         // mutate the copy
     if updated.currentTrick.count == 4 { try updated.finishTrick() }

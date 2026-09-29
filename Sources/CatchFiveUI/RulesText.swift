@@ -26,7 +26,7 @@ public enum RulesText {
             "Deal six cards each. Bidding starts left of dealer and ends with dealer. Minimum 2, maximum normal bid 9. Non-dealers must raise; dealer may match the highest bid and must bid 2 if everyone passes. Bid winner chooses trump. Discard all non-trumps and replenish each hand to six. Undealt cards remain out of play, including scoring cards.",
         ]),
         Section(title: "Play", paragraphs: [
-            "Bid winner leads any suit. Players must follow suit if able; otherwise any card is legal. Highest trump wins, otherwise highest card of the led suit. Trick winner leads next.",
+            "Bid winner leads the first trick and must lead a trump if holding one; with no trump, any card may lead. Later leads are free. Players must follow suit if able; otherwise any card is legal. Highest trump wins, otherwise highest card of the led suit. Trick winner leads next.",
         ]),
         Section(title: "Scoring", paragraphs: [
             "Points are awarded to capturing teams: highest trump played (1), lowest trump played (1), trump Jack (1), trump Five (5). High/Low are relative to cards actually played, not necessarily Ace/2. Missing Jack/Five contribute no points.",

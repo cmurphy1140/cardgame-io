@@ -148,3 +148,35 @@ private func allCards(_ hand: Hand) -> [Card] {
         #expect(6 - hand.discardCounts[seat] == held[seat].filter { $0.suit == .spades }.count)
     }
 }
+
+@Test func bidderHoldingTrumpMustOpenWithTrump() throws {
+    var hand = try startHand(trump: .hearts)
+    let bidder = try #require(hand.auction.winner)
+    #expect(hand.hands[bidder].contains { $0.suit == .hearts })
+    let offSuit = try #require(hand.hands[bidder].first { $0.suit != .hearts })
+    #expect(hand.legalMoves(seat: bidder) == hand.hands[bidder].filter { $0.suit == .hearts })
+    let before = hand.hands
+    #expect(throws: HandError.mustLeadTrump) { try hand.play(seat: bidder, card: offSuit) }
+    #expect(hand.hands == before)
+    #expect(hand.currentTrick.isEmpty)
+}
+
+@Test func bidderWithoutTrumpMayOpenWithAnyCard() throws {
+    // Spades trump on the ordered deck: the bidder throws all six and draws no spade.
+    let hand = try startHand(trump: .spades)
+    let bidder = try #require(hand.auction.winner)
+    #expect(!hand.hands[bidder].contains { $0.suit == .spades })
+    #expect(hand.legalMoves(seat: bidder) == hand.hands[bidder])
+}
+
+@Test func leadsAfterTheFirstTrickAreFree() throws {
+    var hand = try startHand(trump: .hearts)
+    for _ in 0..<4 {
+        let seat = try #require(hand.nextSeat)
+        try hand.play(seat: seat, card: try #require(hand.legalMoves(seat: seat).first))
+    }
+    let leader = try #require(hand.nextSeat)
+    #expect(hand.hands[leader].contains { $0.suit == .hearts })
+    #expect(hand.hands[leader].contains { $0.suit != .hearts })
+    #expect(hand.legalMoves(seat: leader) == hand.hands[leader])
+}

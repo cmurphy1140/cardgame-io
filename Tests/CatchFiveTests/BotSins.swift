@@ -300,9 +300,11 @@ private func setSins(_ summary: HandSummary, seed: Int) -> [BotSin] {
     #expect(counters.count <= 19, "regression: \(counters.count) counters thrown away")
 
     // Tens and low trumps have their own floors, kept apart because they are worth different points.
+    // They rose from 12 and 17 when the bidder had to open with trump (D91): every seeded match
+    // plays differently from its first card, and these are the counts measured on the new games.
     let all = try huntBotSins(seeds: 1..<121)
-    #expect(all.filter { $0.kind == .surrenderedATen }.count <= 12)
-    #expect(all.filter { $0.kind == .surrenderedTheLow }.count <= 17)
+    #expect(all.filter { $0.kind == .surrenderedATen }.count <= 18)
+    #expect(all.filter { $0.kind == .surrenderedTheLow }.count <= 21)
 }
 
 @Test func theHouseBidLadderReadsAHandTheWayConnorsTableDoes() {
