@@ -761,3 +761,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Any card on every lead; a separate check for the bots; a settings toggle.
 
 **Why:** Connor's table plays it this way. One legality function means the human, both bots, hints and saves cannot disagree about it. `bidderHoldingTrumpMustOpenWithTrump`, `bidderWithoutTrumpMayOpenWithAnyCard`, `leadsAfterTheFirstTrickAreFree`, `bothBotsOpenTheHandWithTrump` and the two version 1 save tests hold it.
+
+## D92. The cast dresses as scholars (2026-09-29)
+
+**Chosen:** The game is a gift for an 8th-grade teacher who loves reading, so the faces turn bookish. `Portrait` gains cases only: round reading `spectacles` (smaller, finer and lower than `glasses`, with a lens glint and arms), a `mortarboard` hat (skullcap, flat board, brick-red tassel off the right corner, its top at `tallestTop` so popped heads still fit the seat's headroom) and `tweed`, `oxford` and `burgundy` shirts that show at the neck. Hazel wears spectacles and a burgundy cardigan, Otto keeps his moustache and cap over a tweed jacket, Rue keeps her freckles and wears a mortarboard and an oxford shirt; the four player faces each carry at least one scholarly part. Skin and hair are unchanged, so the cast stays recognisable.
+
+**Over:** Renaming or removing old cases (saved settings decode them); a bow tie or a pencil behind the ear, which do not read at 28 pt; a gold tassel, since gold keeps its table meanings (D33); detail low on the shirt, where the name sticker sits.
+
+**Why:** It fits the person the game is for, without a costume. `castDressesAsScholarsAndOldFacesStillDecode` holds the cast's parts and an old settings file's face.

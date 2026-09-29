@@ -241,6 +241,9 @@ public enum Theme {
             case .rust: Color(red: 0.62, green: 0.30, blue: 0.18)
             case .navy: Color(red: 0.16, green: 0.22, blue: 0.40)
             case .mustard: Color(red: 0.72, green: 0.58, blue: 0.22)
+            case .tweed: Color(red: 0.46, green: 0.35, blue: 0.24)
+            case .oxford: Color(red: 0.24, green: 0.34, blue: 0.52)
+            case .burgundy: Color(red: 0.46, green: 0.14, blue: 0.20)
             }
         }
         /// Hats and glasses frames.
@@ -248,6 +251,10 @@ public enum Theme {
         public static let disc = Color(red: 0.10, green: 0.24, blue: 0.20)
         /// The flower hat.
         public static let blossom = Color(red: 0.93, green: 0.55, blue: 0.62)
+        /// The shirt showing at a scholar's neck: the tweed jacket's and cardigan's V, the oxford's collar (D92).
+        public static let collar = Color(red: 0.94, green: 0.91, blue: 0.84)
+        /// The mortarboard's tassel: brick red, since gold keeps its table meanings (D33).
+        public static let tassel = Color(red: 0.74, green: 0.26, blue: 0.28)
         /// A face that pops out of its disc (N49) is drawn this much larger and raised this fraction of its size.
         public static let popScale = 1.2
         public static let popRise = 0.26

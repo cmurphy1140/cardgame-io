@@ -441,6 +441,26 @@ import Testing
     #expect(Cast.seatWords == ["You", "West", "Partner", "East"])
 }
 
+@Test func castDressesAsScholarsAndOldFacesStillDecode() throws {
+    // Every face at the table and in the pickers wears at least one scholarly part (D92).
+    let scholarly: (Portrait) -> Bool = { face in
+        face.feature == .spectacles || face.hat == .mortarboard || [.tweed, .oxford, .burgundy].contains(face.shirt)
+    }
+    #expect(Cast.opponents.allSatisfy { scholarly($0.portrait) })
+    #expect(Cast.playerChoices.allSatisfy(scholarly))
+    // Each computer player keeps the skin, hair and feature that make them recognisable.
+    #expect(Cast.opponents.map(\.portrait.skin) == [.light, .tan, .brown])
+    #expect(Cast.opponents.map(\.portrait.hair) == [.bob, .short, .curly])
+    // A settings file saved before the scholars, carrying the old parts, still loads with its face intact.
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: url) }
+    let old = "{\"playerName\":\"Mum\",\"playerPortrait\":{\"skin\":\"brown\",\"hair\":\"bald\",\"hairColor\":\"black\","
+        + "\"feature\":\"glasses\",\"hat\":\"flower\",\"shirt\":\"mustard\"}}"
+    try Data(old.utf8).write(to: url)
+    let read = try SettingsStore.read(from: url)
+    #expect(read.playerPortrait == Portrait(skin: .brown, hair: .bald, hairColor: .black, feature: .glasses, hat: .flower, shirt: .mustard))
+}
+
 @Test func settingsRoundTripKeepsPlayerNameAndPortrait() throws {
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: url) }
