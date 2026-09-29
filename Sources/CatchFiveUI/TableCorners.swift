@@ -1,11 +1,12 @@
 import CatchFive
 import SwiftUI
 
-/// The bid box in the table's top-left corner once the auction resolves (D65, D87): Connor's three biggest things,
-/// who bid (their own face), the bid large in the display serif under a small BID eyebrow (9 and out reads as a 9
-/// with "and out"), and trump, the suit big in its own colour once it is named (N63, N67). The suit is also the
-/// player's tally of trumps played: tap adds a mark, press and hold takes one back; the app never counts for the
-/// player (spec R4), it only keeps the marks they make. The separate trump tile is gone.
+/// The bid in the table's top-left corner once the auction resolves (D65, D87): Connor's three biggest things,
+/// who bid (their own face), the bid large in the display serif under a BID eyebrow (9 and out reads as a 9
+/// with "and out"), and trump, the suit big in its own colour once it is named (N63, N67). Since D94 there is no box:
+/// the face lies on the table like a chip and the words and the suit are carved into the wood. The suit is also the
+/// player's tally of trumps played, chalked beside it: tap adds a mark, press and hold takes one back; the app never
+/// counts for the player (spec R4), it only keeps the marks they make.
 struct ContractPlaque: View {
     struct Contract: Equatable {
         let bid: Int
@@ -47,10 +48,8 @@ struct ContractPlaque: View {
     var onAdd: () -> Void = {}
     var onTakeBack: () -> Void = {}
 
-    /// The light tan of both corners, and the dark wood browns the box's words are set in (D76).
-    static let fill = Theme.Table.cornerFill
-    static let eyebrowInk = Theme.Wood.dark
-    static let numberInk = Theme.Wood.streakDark
+    /// The bid is cut into the wood (D94).
+    static let numberInk = Carving.ink
 
     /// The word printed beside the suit, so the glyph reads as trump and not as a card (D93).
     nonisolated static let trumpWord = "Trump"
@@ -67,15 +66,17 @@ struct ContractPlaque: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .bottom, spacing: 4) {
+                // The bidder's face lies on the table like a chip, its shadow on the wood.
                 PortraitView(portrait: contract.portrait, size: Theme.Table.plaquePortraitSize, popsOut: true)
+                    .shadow(color: .black.opacity(0.5), radius: 3, x: 1, y: 3)
                     .padding(.top, Theme.Table.plaquePortraitSize * Theme.Table.portraitHeadroom)
                 VStack(spacing: -6) {
-                    Text("BID").font(.system(.caption2, design: .monospaced).weight(.semibold)).tracking(1.5)
-                        .foregroundStyle(Self.eyebrowInk)
+                    Text("BID").font(.system(size: Theme.Table.bidEyebrowSize, weight: .heavy, design: .serif)).tracking(1.5)
+                        .carved()
                     Text(contract.number).font(.system(size: Theme.Table.plaqueNumberSize, weight: .bold, design: .serif))
-                        .foregroundStyle(Self.numberInk)
+                        .carved(Self.numberInk)
                     if let qualifier = contract.qualifier {
-                        Text(qualifier).font(.caption.weight(.semibold)).foregroundStyle(Self.numberInk)
+                        Text(qualifier).font(.system(size: Theme.Table.bidEyebrowSize, weight: .heavy, design: .serif)).carved()
                     }
                 }
             }
@@ -84,26 +85,23 @@ struct ContractPlaque: View {
             suit
         }
         .lineLimit(1).minimumScaleFactor(0.6)
-        .padding(.horizontal, 6).padding(.vertical, 4)
+        .padding(.horizontal, 2).padding(.vertical, 4)
         .frame(width: width, height: Theme.Table.cornerHeight)
-        .background(Self.fill, in: RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
-        .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
         .accessibilityElement(children: .contain)
     }
 
-    /// Trump and its tally strokes, the tap target; an empty line of the same height until trump is named.
+    /// Trump carved beside the bid, and the player's tally chalked by it, the tap target; an empty line of the same
+    /// height until trump is named.
     @ViewBuilder private var suit: some View {
         if let trump = contract.trump {
             HStack(spacing: 6) {
-                Text(trump.glyph).font(.system(size: Theme.Table.bidBoxSuitSize))
-                    .foregroundStyle(Self.glyphColor(trump))
+                CarvedSuit(suit: trump, size: Theme.Table.bidBoxSuitSize)
                     .modifier(DemoTap(active: demo))
                 // The word sits over the tally, the way BID sits over the number, so the row keeps its height.
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(Self.trumpWord).font(.system(size: Theme.Table.trumpWordSize, weight: .heavy))
-                        .foregroundStyle(Self.numberInk)
+                    Text(Self.trumpWord).font(.system(size: Theme.Table.trumpWordSize, weight: .heavy, design: .serif))
+                        .carved()
                     TallyMarks(count: tally).frame(maxWidth: .infinity).frame(height: Theme.Table.tallyHeight)
                 }
             }
@@ -153,8 +151,7 @@ struct CornerArrival: ViewModifier {
     }
 }
 
-/// Tally strokes in groups of five, the fifth drawn across the four before it, as on paper, in dark brown beside
-/// the suit in the bid box.
+/// Tally strokes chalked straight onto the wood (D94), in groups of five with the fifth across the four, as on paper.
 struct TallyMarks: View {
     let count: Int
 
@@ -167,19 +164,20 @@ struct TallyMarks: View {
         Canvas { context, size in
             let step = Theme.Table.tallyStep, gap = Theme.Table.tallyGroupGap
             let groupWidth = 3 * step
-            var x = 1.0
+            var x = 2.0
             for strokes in Self.groups(count) {
                 var path = Path()
                 for index in 0..<min(strokes, 4) {
-                    let stroke = x + Double(index) * step
-                    path.move(to: CGPoint(x: stroke, y: 1))
-                    path.addLine(to: CGPoint(x: stroke, y: size.height - 1))
+                    // A hand-drawn lean, alternating, so the chalk does not look ruled.
+                    let stroke = x + Double(index) * step, lean = index.isMultiple(of: 2) ? 0.8 : -0.6
+                    path.move(to: CGPoint(x: stroke + lean, y: 2))
+                    path.addLine(to: CGPoint(x: stroke - lean, y: size.height - 2))
                 }
                 if strokes == 5 {
-                    path.move(to: CGPoint(x: x - 2, y: size.height - 3))
-                    path.addLine(to: CGPoint(x: x + groupWidth + 2, y: 3))
+                    path.move(to: CGPoint(x: x - 2, y: size.height - 4))
+                    path.addLine(to: CGPoint(x: x + groupWidth + 2, y: 4))
                 }
-                context.stroke(path, with: .color(Theme.Wood.streakDark), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                context.stroke(path, with: .color(.ivory.opacity(0.9)), style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
                 x += groupWidth + gap
             }
         }

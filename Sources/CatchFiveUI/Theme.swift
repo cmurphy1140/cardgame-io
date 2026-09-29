@@ -117,8 +117,11 @@ public enum Theme {
         /// beside their tile and this far down, clear of their card on the pile and under the scorecard.
         public static let dealerMarkDeckWidth = 30.0
         public static let dealerMarkWidth = 72.0
+        /// The dealer button (D94): a puck a thumb wide, its "D" engraved large.
+        public static let dealerButtonSize = 44.0
+        public static let dealerButtonLetterSize = 24.0
         public static let partnerMarkGap = 6.0
-        public static let partnerMarkDrop = 40.0
+        public static let partnerMarkDrop = 64.0
         /// How far above the fan the deck sits, for the deal-in flight.
         public static let deckRise = 520.0
         /// Each seat's box in the auction (N55): small enough that the side seats' boxes both fit between them,
@@ -136,17 +139,9 @@ public enum Theme {
         public static let dotInk = Color(red: 0.05, green: 0.17, blue: 0.10)
         public static let dotFill = Color(red: 0.52, green: 0.80, blue: 0.52)
         public static let dotFillEdge = Color(red: 0.26, green: 0.55, blue: 0.30)
-        /// The name tags (N64): the sticker's width, the handwritten name's size, and its green. The phone holder's
-        /// tag under the hand keeps the full size.
-        public static let nameTagWidth = 88.0
-        public static let nameTagSize = 20.0
-        /// A seat's tag pinned to its shirt (D93): this much of the face's width, scaled down by this much, its top this
-        /// far down the face, turned a little like a sticker put on by hand.
-        public static let seatTagWidthRatio = 0.9
-        public static let seatTagScale = 0.66
-        public static let seatTagDrop = 0.56
-        public static let seatTagTiltDegrees = -4.0
-        public static let tagGreen = Color(red: 0.16, green: 0.45, blue: 0.26)
+        /// Every name carved into the wood under its seat (D94), and the phone holder's under the hand: large enough
+        /// to read from across the table.
+        public static let carvedNameSize = 22.0
         /// The layout runs under the bottom safe area and stops this far above the screen's edge, clear of its rounded corners.
         public static let footInset = 16.0
         /// The scorecard (N66): the ruled line's height, the handwritten total's size, and how many lines show.
@@ -157,8 +152,10 @@ public enum Theme {
         public static let auctionButtonHeight = 64.0
         public static let auctionButtonSpacing = 6.0
         public static let auctionButtonRadius = 14.0
-        /// The slim row across the top (D93): Home on the left, Rules on the right, each a full thumb tall.
+        /// The slim row across the top (D93): Home on the left, Rules on the right, each a full thumb tall; the Rules
+        /// book is this wide (D94).
         public static let topRowHeight = 44.0
+        public static let rulesBookWidth = 92.0
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
         /// The table's top corners either side of the partner (D65): the contract plaque on the left, the
@@ -167,19 +164,20 @@ public enum Theme {
         public static let cornerWidth = 124.0
         public static let cornerHeight = 116.0
         public static let cornerRadius = 14.0
-        /// Both corners sit on a very light tan (D76), so they read as paper laid on the felt, not holes in it.
+        /// The score pad's paper is a very light tan (D76); the bid corner has no fill and is carved into the wood (D94).
         public static let cornerFill = Color(red: 0.91, green: 0.84, blue: 0.70)
         /// Big for people who won't read small text (N52): the bid's number in the display serif, the bidder's
         /// face beside it, and trump under them in the same box (N63).
         public static let plaqueNumberSize = 52.0
         public static let plaquePortraitSize = 46.0
         public static let bidBoxSuitSize = 48.0
-        /// The word Trump over the tally, beside the suit (D93).
-        public static let trumpWordSize = 13.0
+        /// The word Trump over the tally, beside the suit (D93), and BID over the number, both carved and readable (D94).
+        public static let trumpWordSize = 16.0
+        public static let bidEyebrowSize = 15.0
         /// A corner arrives (N53): it grows from this scale with a glow that fades over `cornerGlowSeconds`.
         public static let cornerArrivalScale = 0.6
         public static let cornerGlowSeconds = 0.9
-        /// Tally strokes beside the suit in the bid box: height, the step between strokes, and the gap between groups of five.
+        /// Tally strokes chalked beside the carved suit (D94): height, the step between strokes, and the gap between groups of five.
         public static let tallyHeight = 24.0
         public static let tallyStep = 4.0
         public static let tallyGroupGap = 7.0

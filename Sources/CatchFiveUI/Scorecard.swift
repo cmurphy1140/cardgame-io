@@ -1,8 +1,8 @@
 import CatchFive
 import SwiftUI
 
-/// The scorecard in the table's top-right corner (N66): the bid box's size and light tan, ruled faintly like a
-/// notebook page, with a US and a THEM column. When a hand ends each team's new total is handwritten on the next
+/// The scorecard in the table's top-right corner (N66): a score pad lying on the table (D94), light tan paper turned a
+/// little with its shadow on the wood and no frame, ruled faintly like a notebook page, with a US and a THEM column. When a hand ends each team's new total is handwritten on the next
 /// line and the one before it gets a scratch through it, as on paper; nothing moves during a hand. Only the last
 /// few lines fit; a tap opens the full sheet (`ScorePanel`) with every hand. It replaces the green rails (D82, D83).
 struct Scorecard: View {
@@ -15,6 +15,9 @@ struct Scorecard: View {
     nonisolated static let columns = ["US", "THEM"]
     /// The handwriting, built into iOS.
     nonisolated static let handwriting = "Marker Felt"
+    /// The pad lies a little crooked, as a pad put down by hand does, and casts a soft shadow (D94).
+    nonisolated static let tiltDegrees = 2.0
+    nonisolated static let shadowRadius = 5.0
 
     /// `team`'s totals after each finished hand, all but the newest struck.
     nonisolated static func lines(team: Int, history: [HandSummary]) -> [Line] {
@@ -52,8 +55,8 @@ struct Scorecard: View {
             .padding(.vertical, 4)
             .frame(width: width, height: Theme.Table.cornerHeight)
             .background { page }
-            .overlay(RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous).stroke(Theme.Wood.light, lineWidth: 1.5))
-            .shadow(color: .black.opacity(0.4), radius: 4, y: 3)
+            .rotationEffect(.degrees(Self.tiltDegrees))
+            .shadow(color: .black.opacity(0.5), radius: Self.shadowRadius, x: 2, y: 4)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -81,10 +84,12 @@ struct Scorecard: View {
         }
     }
 
-    /// Light tan paper, a faint blue-free rule under the heading and every line after, and a line between the columns.
+    /// Light tan paper with square corners and the pad's glued edge along the top, a faint blue-free rule under the
+    /// heading and every line after, and a line between the columns.
     private var page: some View {
-        let shape = RoundedRectangle(cornerRadius: Theme.Table.cornerRadius, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 2, style: .continuous)
         return shape.fill(Theme.Table.cornerFill)
+            .overlay(alignment: .top) { Rectangle().fill(Theme.Wood.dark.opacity(0.55)).frame(height: 4) }
             .overlay {
                 Canvas { context, size in
                     var rules = Path()
