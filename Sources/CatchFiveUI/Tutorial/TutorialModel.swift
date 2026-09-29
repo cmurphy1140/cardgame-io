@@ -94,7 +94,7 @@ public final class TutorialModel: ObservableObject {
     // MARK: Lesson 4
 
     public var trickPrompt: String {
-        trickPart == 0 ? "West led the K♦. Spades are trump. Tap a card you are allowed to play." : "Four cards down. Tap the winner."
+        trickPart == 0 ? "Later in the hand, West led the K♦. Spades are trump. Tap a card you are allowed to play." : "Four cards down. Tap the winner."
     }
 
     public func pickTrickCard(_ card: Card) {

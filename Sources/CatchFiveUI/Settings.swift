@@ -51,6 +51,14 @@ public struct Settings: Codable, Equatable, Sendable {
         }
     }
 
+    /// A name typed on a seat's tag at the table (D92): seat 0 goes through `setPlayerName`, the others are trimmed
+    /// and written as they are. Blank input keeps the old name.
+    public mutating func renameSeat(_ seat: Int, to name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, seatNames.indices.contains(seat) else { return }
+        if seat == 0 { setPlayerName(trimmed) } else { seatNames[seat] = trimmed }
+    }
+
     public init(playSpeed: PlaySpeed = .relaxed, seatNames: [String] = Settings.defaultSeatNames,
                 haptics: Bool = true, difficulty: Difficulty = .standard, hasSeenRules: Bool = false,
                 completedLessons: Set<Int> = [], playerName: String? = nil,

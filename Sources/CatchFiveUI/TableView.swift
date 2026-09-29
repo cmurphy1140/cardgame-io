@@ -9,12 +9,11 @@ public struct TableView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var cards
-    /// The mode New game picked, while the start-over alert asks to be sure (D57).
-    @State private var newGameMode: PlayMode?
-    /// The Table or Clarify drop-down open under the bar (N68).
-    @State private var openMenu: TableBar.Box?
-    /// The bar's lower edge in the table's space: the drop-downs hang from it.
-    @State private var barBottom = 0.0
+    /// The seat whose name tag was tapped, and the name being typed for it (D92).
+    @State private var renaming: Int?
+    @State private var nameDraft = ""
+    /// The rules, opened from the book in the top row (D92).
+    @State private var showRules = false
     @State private var confirmNineAndOut = false
     @State private var showSettings = false
     @State private var showTutorial = false
@@ -41,7 +40,7 @@ public struct TableView: View {
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
-    /// Home in the Table drop-down: back to the main menu, the match kept.
+    /// Home in the top row: back to the main menu, the match kept (D92).
     private let onHome: () -> Void
     /// Something outside this view covers the table (the welcome card); computers wait while it is up.
     private let covered: Bool
@@ -62,11 +61,10 @@ public struct TableView: View {
     private var pause: TablePause {
         TablePause(sceneActive: scenePhase == .active,
                    welcomeShown: covered,
-                   sheetShown: showSettings || showTutorial || scorePanel || showStatistics,
-                   dialogShown: newGameMode != nil || confirmNineAndOut || model.tallyDemo != nil || model.errorMessage != nil || model.saveError != nil,
+                   sheetShown: showSettings || showTutorial || showRules || scorePanel || showStatistics,
+                   dialogShown: renaming != nil || confirmNineAndOut || model.tallyDemo != nil || model.errorMessage != nil || model.saveError != nil,
                    inspectingTrick: reopenedTrick != nil,
-                   drawShown: drawShown,
-                   menuShown: openMenu != nil)
+                   drawShown: drawShown)
     }
 
     /// The draw for dealer is showing: a fresh match, not yet covered, with its draw still on the table.
@@ -121,8 +119,6 @@ public struct TableView: View {
                 if ["won", "ninewin", "ninelose"].contains(ScreenshotStage.name ?? "") { celebrating = model.celebrations }
                 if ScreenshotStage.name == "confirm9" { confirmNineAndOut = true }
                 if ScreenshotStage.name == "panel" { scorePanel = true }
-                if ScreenshotStage.name == "table-menu" { openMenu = .table }
-                if ScreenshotStage.name == "clarify" { openMenu = .clarify }
             }
     }
 
@@ -175,10 +171,9 @@ public struct TableView: View {
     /// Score bar, table and hand in one non-scrolling column.
     private var layout: some View {
         VStack(spacing: 6) {
-            // Table and Clarify across the top (N68), each opening its drop-down under the bar.
-            TableBar(open: Binding(get: { openMenu }, set: { box in withAnimation(motion(Theme.Motion.overlay)) { openMenu = box } }))
+            // Home on the left, the rules on the right (D92).
+            TableTopRow(onHome: onHome, onRules: { showRules = true })
                 .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 4)
-                .onGeometryChange(for: Double.self) { $0.frame(in: .named(TableLayout.space)).maxY } action: { barBottom = $0 }
                 // A solid header band: runs up behind the status bar and ends in a frown, the corners
                 // hanging lower than the middle, so the bar sits on one colour and the wood starts beneath.
                 .background {
@@ -193,6 +188,7 @@ public struct TableView: View {
                          onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
                          onScorecard: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = true } },
+                         onRename: rename,
                          holdsResult: !celebrating.isEmpty,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -200,7 +196,7 @@ public struct TableView: View {
             // Cards stop growing at XXXL so the fan keeps six cards on screen; the cap must sit above the
             // fan's own scaled metrics, which read it from the environment.
             HandFanView(model: model, namespace: cards, onIllegal: shake, shakes: $shakes,
-                        deck: dealerDeck, onDeck: { dealerDeck = $0 })
+                        deck: dealerDeck, onDeck: { dealerDeck = $0 }, onRename: rename)
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
                 .padding(.horizontal, 16)
         }
@@ -210,7 +206,6 @@ public struct TableView: View {
                 RiffleShuffle().id(shuffles).position(dealerDeck)
             }
         }
-        .overlay { barMenu }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
         .padding(.bottom, Theme.Table.footInset)
@@ -224,23 +219,10 @@ public struct TableView: View {
         .preferredColorScheme(.dark)
     }
 
-    /// The open drop-down, hanging from the bar over the table.
-    @ViewBuilder private var barMenu: some View {
-        if let box = openMenu {
-            TableBarMenu(box: box,
-                         onPause: { closeMenu(); onLeave() },
-                         onNewGame: { mode in closeMenu(); newGameMode = mode },
-                         onHome: { closeMenu(); onHome() },
-                         onHowToPlay: { closeMenu(); showTutorial = true },
-                         onClose: closeMenu)
-                .padding(.top, barBottom)
-                .id(box)
-                .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
-        }
-    }
-
-    private func closeMenu() {
-        withAnimation(motion(Theme.Motion.overlay)) { openMenu = nil }
+    /// A tapped name tag asks for the seat's new name, starting from the one it wears (D92).
+    private func rename(_ seat: Int) {
+        nameDraft = model.seatNames[seat]
+        renaming = seat
     }
 
     /// US or THEM in solo, the pair's names in pass and play.
@@ -329,15 +311,16 @@ public struct TableView: View {
                 Button("Retry") { model.retrySave() }
                 Button("Not now", role: .cancel) { model.saveError = nil }
             } message: { Text(model.saveError ?? "") }
-            // An alert, not a confirmation dialog: iOS 26 anchors the dialog to its button as a popover and drops
-            // the Cancel button, so only an alert keeps the explicit way out on every system (D57).
-            .alert("Start over?", isPresented: Binding(get: { newGameMode != nil }, set: { if !$0 { newGameMode = nil } })) {
-                Button("Start over", role: .destructive) {
-                    if let mode = newGameMode { model.newGame(mode: mode) }
-                    newGameMode = nil
+            .sheet(isPresented: $showRules, onDismiss: { model.markRulesSeen() }) { RulesView { showRules = false } }
+            // Renaming a seat from its tag (D92); blank keeps the old name (`Settings.renameSeat`).
+            .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+                TextField("Name", text: $nameDraft)
+                Button("Save") {
+                    if let seat = renaming { model.settings.renameSeat(seat, to: nameDraft) }
+                    renaming = nil
                 }
-                Button("Cancel", role: .cancel) { newGameMode = nil }
-            } message: { Text("This replaces your saved game with a new \(newGameMode == .passAndPlay ? "pass and play" : "solo") game.") }
+                Button("Cancel", role: .cancel) { renaming = nil }
+            } message: { Text("What should this seat be called?") }
     }
 
     private func motion(_ animation: Animation) -> Animation { reduceMotion ? Theme.Motion.reduced : animation }

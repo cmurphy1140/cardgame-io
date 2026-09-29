@@ -6,7 +6,7 @@
 flowchart TB
     subgraph View["View layer — SwiftUI (Sources/CatchFiveUI)"]
         RV["RootView: login → intro → main menu → table<br/>LoginView · IntroView · MainMenuView · WelcomeCard (pause) · PortraitView (Cast)"]
-        TV["TableView + TableScheduler<br/>TableBar · TableSurface (SeatView, pile) · HandFanView"]
+        TV["TableView + TableScheduler<br/>TableTopRow · TableSurface (SeatView, pile) · HandFanView"]
         CV["CardView · CardBackView · Theme"]
         HS[HandSummaryView]
         SH["Sheets: Settings, Tutorial + Rules,<br/>Review, Scoreboard, Statistics, Explainer"]
@@ -37,15 +37,15 @@ flowchart TB
 
 ### Screens
 
-`RootView` owns the one `GameModel`. A new player (no `Settings.playerName`) sees the login screen, whose only button is New match; that opens a one-page intro (`IntroView`: how a hand goes in five steps, with Learn the game for the full tutorial and Deal me in to skip) and then the table. A returning player lands on the main menu (`MainMenuView`): a card with their name, difficulty and where the saved match stands, a Beginner mode toggle, Continue game in gold while a match is in progress, New match (confirmed if it would replace one) and How to play, with Settings, Statistics and How Catch 5 is built in a hamburger dropdown at the top right. The table's menu has Pause game, which opens `WelcomeCard` as a pause card with exactly Continue game, New match and Main menu; Main menu keeps the match for Continue game. The three opponents are the fixed `Cast` (Hazel, Otto, Rue), whose names are the defaults in `Settings.seatNames` and whose faces `PortraitView` draws from a `Portrait` recipe.
+`RootView` owns the one `GameModel`. A new player (no `Settings.playerName`) sees the login screen, whose only button is New match; that opens a one-page intro (`IntroView`: how a hand goes in five steps, with Learn the game for the full tutorial and New game to skip) and then the table. A returning player lands on the main menu (`MainMenuView`): a card with their name, difficulty and where the saved match stands, a Beginner mode toggle, Continue game in gold while a match is in progress, New match (confirmed if it would replace one) and How to play, with Settings, Statistics and How Catch 5 is built in a hamburger dropdown at the top right. The table's menu has Pause game, which opens `WelcomeCard` as a pause card with exactly Continue game, New match and Main menu; Main menu keeps the match for Continue game. The three opponents are the fixed `Cast` (Hazel, Otto, Rue), whose names are the defaults in `Settings.seatNames` and whose faces `PortraitView` draws from a `Portrait` recipe.
 
 ```mermaid
 flowchart LR
     Launch --> Q{playerName saved?}
     Q -- no --> Login
     Login -- "New match" --> Intro
-    Intro -- "Deal me in" --> Table
-    Intro -- "Learn the game" --> Tutorial -- "Skip / Deal me in" --> Table
+    Intro -- "New game" --> Table
+    Intro -- "Learn the game" --> Tutorial -- "Skip / New game" --> Table
     Q -- yes --> Menu["Main menu"]
     Menu -- "Continue game / New match" --> Table
     Table -- "Menu › Pause game" --> Card["Pause card: Continue game · New match · Main menu"]

@@ -52,6 +52,9 @@ struct ContractPlaque: View {
     static let eyebrowInk = Theme.Wood.dark
     static let numberInk = Theme.Wood.streakDark
 
+    /// The word printed beside the suit, so the glyph reads as trump and not as a card (D92).
+    nonisolated static let trumpWord = "Trump"
+
     /// Red for hearts and diamonds, black for spades and clubs: the suit's own colour, never a control's.
     nonisolated static func glyphColor(_ suit: Suit) -> Color { suit.isRed ? .suitRed : .black }
 
@@ -97,7 +100,12 @@ struct ContractPlaque: View {
                 Text(trump.glyph).font(.system(size: Theme.Table.bidBoxSuitSize))
                     .foregroundStyle(Self.glyphColor(trump))
                     .modifier(DemoTap(active: demo))
-                TallyMarks(count: tally).frame(maxWidth: .infinity).frame(height: Theme.Table.tallyHeight)
+                // The word sits over the tally, the way BID sits over the number, so the row keeps its height.
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(Self.trumpWord).font(.system(size: Theme.Table.trumpWordSize, weight: .heavy))
+                        .foregroundStyle(Self.numberInk)
+                    TallyMarks(count: tally).frame(maxWidth: .infinity).frame(height: Theme.Table.tallyHeight)
+                }
             }
             .frame(height: Theme.Table.bidBoxSuitSize * 1.15)
             .contentShape(Rectangle())

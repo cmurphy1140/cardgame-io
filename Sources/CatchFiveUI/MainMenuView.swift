@@ -2,7 +2,7 @@ import CatchFive
 import SwiftUI
 
 /// The main menu (spec R31): who is playing, where the saved match stands, and every destination that is
-/// not the table itself. Back to the table leads back to the match untouched; Deal me in starts a new one,
+/// not the table itself. Back to the table leads back to the match untouched; New game starts a new one,
 /// after a word of warning if it would replace one (D67); How to play opens the lessons. Settings, Statistics and the build explainer wait in a
 /// hamburger menu in the top-right corner, one tap from here in every mode (spec R29), as a bare glyph
 /// with no plate (spec R19).
@@ -57,7 +57,7 @@ struct MainMenuView: View {
                 .accessibilityElement(children: .combine)
 
                 VStack(spacing: 10) {
-                    // Deal me in always asks Solo or Pass and play; the same question warns when a match is in progress.
+                    // New game always asks Solo or Pass and play; the same question warns when a match is in progress.
                     ForEach(Self.homeButtons(matchInProgress: model.matchInProgress), id: \.title) { button in
                         let action = button.action == .backToTable ? onPlay : { confirmNewMatch = true }
                         if button.prominent { MenuButtons.prominent(button.title, action: action) }
@@ -113,19 +113,19 @@ struct MainMenuView: View {
 
 extension MainMenuView {
     struct HomeButton: Equatable {
-        enum Action { case backToTable, dealMeIn }
+        enum Action { case backToTable, newGame }
         let title: String
         let prominent: Bool
         let action: Action
     }
 
     /// The home screen's play buttons (D67): with a match in progress, Back to the table in the prominent style
-    /// and Deal me in plain; otherwise Deal me in alone, prominent. Deal me in keeps New match's alert and mode picker.
+    /// and New game plain; otherwise New game alone, prominent (D92). New game keeps New match's alert and mode picker.
     nonisolated static func homeButtons(matchInProgress: Bool) -> [HomeButton] {
         matchInProgress
             ? [HomeButton(title: "Back to the table", prominent: true, action: .backToTable),
-               HomeButton(title: "Deal me in", prominent: false, action: .dealMeIn)]
-            : [HomeButton(title: "Deal me in", prominent: true, action: .dealMeIn)]
+               HomeButton(title: "New game", prominent: false, action: .newGame)]
+            : [HomeButton(title: "New game", prominent: true, action: .newGame)]
     }
 }
 

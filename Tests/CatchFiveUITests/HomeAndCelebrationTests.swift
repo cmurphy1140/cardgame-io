@@ -42,10 +42,10 @@ import Testing
 @Test func homeOffersBackToTheTableOnlyWithAMatchInProgress() {
     #expect(MainMenuView.homeButtons(matchInProgress: true) == [
         .init(title: "Back to the table", prominent: true, action: .backToTable),
-        .init(title: "Deal me in", prominent: false, action: .dealMeIn),
+        .init(title: "New game", prominent: false, action: .newGame),
     ])
     #expect(MainMenuView.homeButtons(matchInProgress: false) == [
-        .init(title: "Deal me in", prominent: true, action: .dealMeIn),
+        .init(title: "New game", prominent: true, action: .newGame),
     ])
 }
 
