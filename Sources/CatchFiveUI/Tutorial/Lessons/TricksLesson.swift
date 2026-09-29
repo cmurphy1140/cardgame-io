@@ -14,7 +14,7 @@ struct TricksLesson: View {
             
             DisclosureGroup("Why?") {
                 LessonText(paragraphs: [
-                    "The bid winner leads. Each player adds one card; those four cards are a hand. The winner takes them and leads next.",
+                    "The bid winner leads first, and must lead a trump if they hold one. Each player adds one card; those four cards are a hand. The winner takes them and leads next.",
                     "Follow the led suit if you can. If you cannot, play anything, trump included. The highest trump wins; with no trump, the highest card of the led suit.",
                 ], tactic: "Never lead the five of trump. Lead your highest trump to pull the others out, and save the five for a hand your side is already winning.")
             }.tint(.gold)

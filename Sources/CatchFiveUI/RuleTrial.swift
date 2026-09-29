@@ -122,17 +122,18 @@ struct RuleTrial {
         return deck
     }
 
-    /// Seat 1 wins the auction, names spades, and leads a heart. After the refill you hold two spades,
-    /// two hearts and two clubs.
+    /// Seat 1 wins the auction, names spades, and leads a heart. Seat 1 holds no spade, so the heart is a
+    /// legal opening lead (D91). After the refill you hold two spades, two hearts and two clubs.
     private static func followSuitPosition() -> Match {
         let deck = deck(
             seat0: [Card(.spades, .king), Card(.spades, .seven), Card(.diamonds, .three), Card(.diamonds, .four), Card(.diamonds, .six), Card(.diamonds, .eight)],
-            seat1: [Card(.spades, .queen), Card(.spades, .nine), Card(.spades, .four), Card(.diamonds, .nine), Card(.diamonds, .ten), Card(.diamonds, .jack)],
+            seat1: [Card(.diamonds, .two), Card(.diamonds, .five), Card(.diamonds, .seven), Card(.diamonds, .nine), Card(.diamonds, .ten), Card(.diamonds, .jack)],
             seat2: [Card(.spades, .ten), Card(.spades, .three), Card(.spades, .two), Card(.clubs, .nine), Card(.clubs, .ten), Card(.clubs, .jack)],
             seat3: [Card(.spades, .ace), Card(.spades, .six), Card(.spades, .five), Card(.diamonds, .queen), Card(.diamonds, .king), Card(.diamonds, .ace)],
-            // Refill order after trump is seats 0, 1, 2, 3: you draw four, seat 1 three, seat 2 three, seat 3 three.
+            // Refill order after trump is seats 0, 1, 2, 3: you draw four, seat 1 six, seat 2 three, seat 3 three.
             stock: [Card(.hearts, .king), Card(.hearts, .five), Card(.clubs, .two), Card(.clubs, .seven),
                     Card(.hearts, .nine), Card(.hearts, .queen), Card(.clubs, .ace),
+                    Card(.hearts, .four), Card(.hearts, .six), Card(.clubs, .eight),
                     Card(.hearts, .two), Card(.hearts, .three), Card(.clubs, .three),
                     Card(.hearts, .ten), Card(.hearts, .jack), Card(.clubs, .four)])
         var match = try! Match(deck: deck, dealer: 3)

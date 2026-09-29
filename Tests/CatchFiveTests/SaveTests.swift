@@ -202,3 +202,29 @@ private func advance(_ match: inout Match, count: Int) throws {
     // An archive written before the counts existed carries no new key, so it decodes unchanged.
     #expect(try MatchSave.encode(restored) == MatchSave.encode(match))
 }
+
+private func versionOne(_ match: Match, appending extra: [SavedAction] = []) throws -> Data {
+    var object = try #require(JSONSerialization.jsonObject(with: MatchSave.encode(match)) as? [String: Any])
+    #expect(object["version"] as? Int == 2)
+    object["version"] = 1
+    let actions = try #require(object["actions"] as? [Any])
+    object["actions"] = actions + (try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(extra)) as? [Any]))
+    return try JSONSerialization.data(withJSONObject: object)
+}
+
+@Test func versionOneSaveThatOpensWithTrumpStillLoads() throws {
+    var match = try readyMatch()
+    try advance(&match, count: 5)
+    let restored = try MatchSave.decode(versionOne(match))
+    #expect(restored.hand.hands == match.hand.hands)
+    #expect(restored.hand.completedTricks.count == 1)
+}
+
+@Test func versionOneSaveThatOpensWithoutTrumpIsRefused() throws {
+    let match = try readyMatch()
+    let bidder = try #require(match.hand.auction.winner)
+    let offSuit = try #require(match.hand.hands[bidder].first { $0.suit != .hearts })
+    #expect(match.hand.hands[bidder].contains { $0.suit == .hearts })
+    let data = try versionOne(match, appending: [.play(seat: bidder, card: offSuit)])
+    #expect(throws: SaveError.invalidData) { try MatchSave.decode(data) }
+}

@@ -8,7 +8,7 @@ public struct CompletedTrick: Sendable {
 }
 
 public enum HandError: Error, Equatable {
-    case invalidDeck, wrongPhase, notBidWinner, cardNotHeld, mustFollowSuit
+    case invalidDeck, wrongPhase, notBidWinner, cardNotHeld, mustFollowSuit, mustLeadTrump
 }
 
 public struct Hand: Sendable {
@@ -74,7 +74,9 @@ public struct Hand: Sendable {
         guard phase == .playing else { throw HandError.wrongPhase }
         guard seat == nextSeat else { throw RuleError.outOfTurn }
         guard let index = hands[seat].firstIndex(of: card) else { throw HandError.cardNotHeld }
-        guard legalMoves(seat: seat).contains(card) else { throw HandError.mustFollowSuit }
+        guard legalMoves(seat: seat).contains(card) else {
+            throw currentTrick.isEmpty ? HandError.mustLeadTrump : HandError.mustFollowSuit
+        }
         // Work on a copy so even a failed trick/scoring validation leaves the hand untouched.
         var updated = self
         updated.hands[seat].remove(at: index)
@@ -99,6 +101,7 @@ public struct Hand: Sendable {
     }
     public func legalMoves(seat: Int) -> [Card] {
         guard phase == .playing, nextSeat == seat, (0..<4).contains(seat) else { return [] }
-        return legalCards(in: hands[seat], led: currentTrick.first?.card.suit)
+        let opening = completedTricks.isEmpty && currentTrick.isEmpty ? trump : nil
+        return legalCards(in: hands[seat], led: currentTrick.first?.card.suit, openingTrump: opening)
     }
 }

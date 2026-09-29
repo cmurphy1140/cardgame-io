@@ -554,6 +554,7 @@ public final class GameModel: ObservableObject {
     nonisolated public static func message(for error: Error) -> String {
         switch error {
         case HandError.mustFollowSuit: "You must follow suit: play a card of the suit that was led if you have one."
+        case HandError.mustLeadTrump: "The bidder opens the hand with trump: lead a trump."
         case HandError.cardNotHeld: "That card is not in your hand."
         case HandError.wrongPhase, RuleError.auctionComplete: "That move does not fit this part of the hand."
         case HandError.notBidWinner: "Only the player who won the bid chooses trump."

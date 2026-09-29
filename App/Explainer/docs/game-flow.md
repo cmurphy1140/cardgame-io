@@ -62,7 +62,7 @@ sequenceDiagram
     participant L as Leader
     participant H as Hand
     participant N as Next three seats
-    L->>H: play(card) — any card is legal on a lead
+    L->>H: play(card) — the bidder's opening lead must be trump if held;<br/>every later lead is free
     loop three more plays
         N->>H: play(card)
         H->>H: legalMoves: must follow led suit if able,<br/>otherwise anything (trumping allowed)

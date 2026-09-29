@@ -9,6 +9,15 @@ import Testing
     #expect(legalCards(in: hand, led: nil) == hand)
 }
 
+@Test func openingLeadMustBeTrumpWhenTheLeaderHoldsOne() {
+    let trumps = [Card(.hearts, .two), Card(.hearts, .king)]
+    let hand = [Card(.clubs, .ace)] + trumps + [Card(.spades, .four)]
+    #expect(legalCards(in: hand, led: nil, openingTrump: .hearts) == trumps)
+    // Without a trump the opening lead is free, and once a suit is led only following suit counts.
+    #expect(legalCards(in: hand, led: nil, openingTrump: .diamonds) == hand)
+    #expect(legalCards(in: hand, led: .clubs, openingTrump: .hearts) == [Card(.clubs, .ace)])
+}
+
 @Test func trumpBeatsLedAce() throws {
     let plays = [Play(seat: 2, card: Card(.clubs, .ace)),
                  Play(seat: 3, card: Card(.hearts, .two)),

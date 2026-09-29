@@ -753,3 +753,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A small deck tucked into the dealer's face, DEALER and BIDDER in small monospaced type under the seat.
 
 **Why:** Connor asked for it (N65): who deals should read from across the table. `onlyTheDealerIsMarkedAndNoSeatSaysBidder` holds the words and the size.
+
+## D91. The bidder opens with trump (2026-09-29)
+
+**Chosen:** A house-rule change decided by Connor after his mom's playtest: the bid winner's opening lead of every hand must be a trump if they hold one. With no trump, any card may lead. Every later lead in the hand is free, and following suit is unchanged. The rule lives in the one legality function, `legalCards(in:led:openingTrump:)`, which `Hand.legalMoves`, the standard computer and the frozen Easy computer all call; a refused opening lead throws `HandError.mustLeadTrump`. Saves move to version 2; `decode` still reads version 1 and replays it under the current rules, so an old game whose opening lead broke the rule fails replay and is set aside by the existing corrupt-save path. The `RuleTrial` follow-suit position now gives the leader no spade, so its heart lead stays legal. The bot-sin ceilings for tens and lows were re-measured on the new seeded games (18 and 21, from 12 and 17).
+
+**Over:** Any card on every lead; a separate check for the bots; a settings toggle.
+
+**Why:** Connor's table plays it this way. One legality function means the human, both bots, hints and saves cannot disagree about it. `bidderHoldingTrumpMustOpenWithTrump`, `bidderWithoutTrumpMayOpenWithAnyCard`, `leadsAfterTheFirstTrickAreFree`, `bothBotsOpenTheHandWithTrump` and the two version 1 save tests hold it.

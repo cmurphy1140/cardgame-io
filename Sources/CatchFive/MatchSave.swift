@@ -32,7 +32,7 @@ private struct Archive: Codable {
 /// Versioned local saves. Replay validates actions through the ordinary rules.
 public enum MatchSave {
     public static func encode(_ match: Match) throws -> Data {
-        let archive = Archive(version: 1, initialDeck: match.initialDeck,
+        let archive = Archive(version: 2, initialDeck: match.initialDeck,
                               initialDealer: match.initialDealer, actions: match.actions)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -42,7 +42,9 @@ public enum MatchSave {
     public static func decode(_ data: Data) throws -> Match {
         do {
             let archive = try JSONDecoder().decode(Archive.self, from: data)
-            guard archive.version == 1 else { throw SaveError.unsupportedVersion(archive.version) }
+            // Version 2 marks the trump opening lead (D91). Both replay under today's rules, so a version 1
+            // game that opened without trump fails replay and is set aside like any unreadable save.
+            guard [1, 2].contains(archive.version) else { throw SaveError.unsupportedVersion(archive.version) }
             return try Match.replaying(deck: archive.initialDeck, dealer: archive.initialDealer, actions: archive.actions)
         } catch let error as SaveError {
             throw error

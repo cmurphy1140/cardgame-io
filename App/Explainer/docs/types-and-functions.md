@@ -117,7 +117,7 @@ classDiagram
 | Name | Purpose | Proven by |
 |---|---|---|
 | `Play` | one seat's card in a trick | trick tests |
-| `legalCards(in:led:)` | if you hold the led suit you must play it; otherwise anything | `mustFollowSuitEvenWithTrump` |
+| `legalCards(in:led:openingTrump:)` | if you hold the led suit you must play it; otherwise anything. On a lead with `openingTrump` set (the bidder's opening lead of the hand) only trumps are legal when any are held (D91); every other lead is free. `Hand.legalMoves` and both computer players pass it | `mustFollowSuitEvenWithTrump`, `openingLeadMustBeTrumpWhenTheLeaderHoldsOne` |
 | `trickWinner(_:trump:)` | highest trump, else highest of led suit; rejects malformed tricks | `trumpBeatsLedAce`, `highestTrumpWins`, `malformedTricksAreRejected` |
 
 ## Sources/CatchFive/Bidding.swift
@@ -145,13 +145,13 @@ classDiagram
 |---|---|---|
 | `HandPhase` | bidding, choosingTrump, playing, finished | phase guards in every test |
 | `CompletedTrick` | four plays and the winning seat | `playMustFollowSuitAndWinningPlayerLeadsNext` |
-| `HandError` | invalidDeck, wrongPhase, notBidWinner, cardNotHeld, mustFollowSuit | |
+| `HandError` | invalidDeck, wrongPhase, notBidWinner, cardNotHeld, mustFollowSuit, mustLeadTrump (a non-trump opening lead while holding trump, D91) | `bidderHoldingTrumpMustOpenWithTrump` |
 | `Hand.init(deck:dealer:)` | requires 52 unique cards; deals two packets of three | `dealSixEachInTwoPacketsStartingLeftOfDealer`, `rejectInvalidDecks` |
 | `Hand.bid` | forwards to `Auction`; moves to `choosingTrump` when the dealer has acted | `trumpSelectionRequiresFinishedAuctionAndWinningSeat` |
 | `Hand.chooseTrump` | bid winner only; discards non-trumps, refills to six from stock, and records how many each seat threw | `refillKeepsTrumpsAndDiscardsOnlyInitialNonTrumps`, `everySeatsDiscardCountIsRecordedAndPublicWithoutRevealingTheCards` |
 | `Hand.discardCounts` | how many cards each seat threw when trump was named, which every player says aloud at a real table; a seat that discarded n kept 6 − n trumps. Derived from the deal, so a replayed save recomputes it and no archive version changes | `everySeatsDiscardCountIsRecordedAndPublicWithoutRevealingTheCards`, `discardCountsComeBackFromAReplayedSaveWithoutAnArchiveChange` |
 | `Hand.play` | full validation, copy-mutate-commit; fourth card resolves the trick, sixth trick scores | `illegalPlayLeavesStateUnchanged`, `completeHandsConserveCardsAndFinishAfterSixTricks` (208 hands) |
-| `Hand.legalMoves(seat:)` | empty unless it is that seat's turn in `playing` | UI greying relies on this through `allows` |
+| `Hand.legalMoves(seat:)` | empty unless it is that seat's turn in `playing`; before any card of the hand is played, passes trump as `openingTrump` | UI greying relies on this through `allows`; `bidderWithoutTrumpMayOpenWithAnyCard`, `leadsAfterTheFirstTrickAreFree` |
 
 ## Sources/CatchFive/Match.swift
 
@@ -183,7 +183,7 @@ classDiagram
 | `ComputerPlayer.isTrailingBadly(_:)`, `deficit(_:)`, `boldDeficit` | true when the seat's team is `boldDeficit` (10) or more match points behind; `bidAdvice` then lets the most it will bid rise by one, never past 9 and never to a 9 and out, and says so in the advice. The table's note asks the same function (D71). Easy never sees it | `trailingBadlyStartsAtExactlyTenBehind`, `trailingBadlyRaisesTheBidCeilingByOne`, `trailingBadlyNeverBidsAboveNineOrNineAndOut`, `easyIgnoresTheMatchScore`, `boldWhenTrailingIsMeasuredAgainstTheSameStrategyWithoutIt` |
 | `ComputerPlayer.Knowledge` | built from a `PlayerView`: the set of unseen cards (other hands or stock), `unbeatable(_:led:)` (no unseen card can beat it), `pointValue(_:)` (five 5, jack 1, certain High 1, certain Low 1, plus 0.06 per Game point) and `controlValue(_:)` (what holding a trump is worth for later tricks; 0.8 extra when unbeatable, 0 on the last trick) | `computerSpendsTheAceToCaptureTheFive`, `computerDumpsTheTrickWhenItIsWorthlessAndNoTrumpIsFree` |
 | card play (private `chooseCard`) | scores every legal card: chance our side wins the trick × (points on the table + this card's stake) − chance we lose × this card's stake − control given up; picks the best, ties to least control then lowest rank | `computerFollowsSuitInsteadOfTrumping`, `computerUsesLowestWinningCardAgainstOpponentWhenNothingIsAtStake`, `computerFeedsFiveToPartnerWhenLastToPlay`, `computerPreservesFiveWhenItCannotWin` |
-| leads (private `chooseLead`) | an unbeatable trump if held; the best side card when no trumps can be against us; otherwise the cheapest exit, never the five | `computerLeadsHighestTrumpButKeepsTheFiveBack` |
+| leads (private `chooseLead`) | an unbeatable trump if held; the best side card when no trumps can be against us; otherwise the cheapest exit, never the five. On the bidder's opening lead only trumps are legal (D91) and the reason says the bidder opens with trump | `computerLeadsHighestTrumpButKeepsTheFiveBack`, `bothBotsOpenTheHandWithTrump` |
 
 ### Test-only strategy fixtures
 
@@ -216,7 +216,7 @@ The sin hunt (D58): a sweep that finds the computer's bad decisions so each one 
 |---|---|---|
 | `SaveError` | invalidData, unsupportedVersion | `rejectsBrokenOrUnsupportedSave` |
 | `SavedAction` (internal) | Codable mirror of the five actions, each replays through the real `Match` method | `replayRejectsIllegalActionsAndInvalidInitialDeck` |
-| `MatchSave.encode` / `decode` | version 1 JSON: initial deck, dealer, actions | `saveRestoresEveryPhaseAndContinuesIdentically`, `saveRestoresHistoryAndNextDealer`, `rejectedActionsNeverEnterSaveAndResavingDoesNotDuplicateActions`, `corruptSavesSurviveTheFailedReadSoTheyCanBeSetAside` |
+| `MatchSave.encode` / `decode` | version 2 JSON: initial deck, dealer, actions. `decode` accepts versions 1 and 2 and replays both under the current rules, so a version 1 game that opened without trump is refused (D91) | `versionOneSaveThatOpensWithTrumpStillLoads`, `versionOneSaveThatOpensWithoutTrumpIsRefused`, `saveRestoresEveryPhaseAndContinuesIdentically`, `saveRestoresHistoryAndNextDealer`, `rejectedActionsNeverEnterSaveAndResavingDoesNotDuplicateActions`, `corruptSavesSurviveTheFailedReadSoTheyCanBeSetAside` |
 | `MatchSave.write` / `read` | atomic file replacement; errors surface | `saveRoundTripOnDiskReplacesPreviousSave`, `diskFailuresAreReported`, `failedSaveKeepsThePreviousFileAndOneRetryWritesTheAcceptedMoveOnce` |
 
 ## Sources/CatchFiveUI/GameModel.swift

@@ -3,11 +3,15 @@ import Testing
 
 private func view(cards: [Card], phase: HandPhase = .playing, seat: Int = 0,
                   dealer: Int = 3, highestBid: Int? = nil, bidder: Int? = nil,
-                  trick: [Play] = []) -> PlayerView {
+                  trick: [Play] = [], completedTricks: [CompletedTrick] = []) -> PlayerView {
     PlayerView(seat: seat, cards: cards, phase: phase, nextSeat: seat,
                dealer: dealer, highestBid: highestBid, bidder: bidder,
-               trump: .hearts, trick: trick)
+               trump: .hearts, trick: trick, completedTricks: completedTricks)
 }
+
+/// A finished first trick of low diamonds, so the next lead is not the bidder's opening lead (D91).
+private let firstTrick = [CompletedTrick(plays: [Rank.two, .three, .four, .six].enumerated().map {
+    Play(seat: $0.offset, card: Card(.diamonds, $0.element)) }, winner: 3)]
 
 @Test func computerPassesWeakHandButDealerTakesForcedTwo() {
     // Middle cards promise no High, Low, Jack or Five, so nothing justifies even a two.
@@ -129,7 +133,7 @@ struct RepeatableRandom: RandomNumberGenerator {
     let cards = [Card(.hearts, .ace), Card(.hearts, .five), Card(.clubs, .ten)]
     #expect(ComputerPlayer.decide(view(cards: cards)) == .play(Card(.hearts, .ace)))
     let fiveOnlyTrump = [Card(.hearts, .five), Card(.clubs, .ten), Card(.spades, .king)]
-    #expect(ComputerPlayer.decide(view(cards: fiveOnlyTrump)) == .play(Card(.spades, .king)))
+    #expect(ComputerPlayer.decide(view(cards: fiveOnlyTrump, completedTricks: firstTrick)) == .play(Card(.spades, .king)))
     #expect(ComputerPlayer.decide(view(cards: [Card(.hearts, .five)])) == .play(Card(.hearts, .five)))
 }
 
@@ -354,4 +358,14 @@ private func bidding(_ cards: [Card], scores: [Int], highestBid: Int? = nil, bid
     #expect(try PlayerView(match: match, seat: 0).scores == [0, 0])
     try match.startNextHand(deck: deck.shuffled(using: &random))
     #expect(try PlayerView(match: match, seat: 1).scores == match.scores)
+}
+
+@Test func bothBotsOpenTheHandWithTrump() {
+    // Left free, the standard bot exits with the club and the easy bot keeps its five back.
+    let standard = [Card(.hearts, .two), Card(.clubs, .nine)]
+    let advice = ComputerPlayer.advise(view(cards: standard, bidder: 0))
+    #expect(advice?.action == .play(Card(.hearts, .two)))
+    #expect(advice?.reason == "Lead the two of hearts: the bidder opens with trump.")
+    let easy = [Card(.hearts, .five), Card(.clubs, .nine)]
+    #expect(EasyPlayer.decide(view(cards: easy, bidder: 0)) == .play(Card(.hearts, .five)))
 }

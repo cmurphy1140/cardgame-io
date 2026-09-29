@@ -45,7 +45,8 @@ public enum EasyPlayer {
 
     private static func chooseCard(_ view: PlayerView) -> Card? {
         guard let trump = view.trump else { return nil }
-        let legal = legalCards(in: view.cards, led: view.trick.first?.card.suit)
+        let opening = view.completedTricks.isEmpty && view.trick.isEmpty ? trump : nil
+        let legal = legalCards(in: view.cards, led: view.trick.first?.card.suit, openingTrump: opening)
         guard let lead = view.trick.first else {
             let leads = legal.filter { $0 != Card(trump, .five) }
             return (leads.isEmpty ? legal : leads)
