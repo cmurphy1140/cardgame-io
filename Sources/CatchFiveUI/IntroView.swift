@@ -58,7 +58,7 @@ struct IntroView: View {
                     }
                     .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
                     Button(action: onDone) {
-                        Text("Deal me in").font(.headline).frame(maxWidth: .infinity).frame(minHeight: 50)
+                        Text("New game").font(.headline).frame(maxWidth: .infinity).frame(minHeight: 50)
                     }
                     .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
                 }

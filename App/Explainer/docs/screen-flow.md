@@ -29,10 +29,10 @@ stateDiagram-v2
     intro --> table: finished or skipped
 
     menu --> table: Back to the table, tip card first
-    menu --> table: Deal me in (confirmed), tip card first
+    menu --> table: New game (confirmed), tip card first
 
     table --> menu: pause card, Main menu
-    table --> menu: Table box, Home
+    table --> menu: Home, top left
     note right of table
         The match is preserved.
         Nothing is discarded without asking.
@@ -52,7 +52,7 @@ match never carries a revealed seat.
 flowchart TD
     M[Main menu]
     M -->|Back to the table| TC[Tip card, cover]
-    M -->|Deal me in, alert confirms| TC
+    M -->|New game, alert confirms| TC
     TC -->|tap, or after its second face| T[Table]
     M -->|How to play| TU[How to play, sheet]
     M -->|hamburger| S[Settings, sheet]
@@ -64,8 +64,8 @@ flowchart TD
     EX --> M
 ```
 
-Back to the table is the primary action whenever a match is in progress, with Deal me in beside it;
-Deal me in stands alone when there is none (D67). Replacing a match in progress always asks first (spec R32).
+Back to the table is the primary action whenever a match is in progress, with New game beside it;
+New game stands alone when there is none (D67). Replacing a match in progress always asks first (spec R32).
 Either way the tip card comes up over the table first: where the game comes from, then one tip, then the
 deal. A launch that resumes onto the table skips it.
 
@@ -74,12 +74,9 @@ deal. A launch that resumes onto the table skips it.
 ```mermaid
 flowchart TD
     T[Table]
-    T -->|Table box| TB[Table drop-down, play waits]
-    T -->|Clarify box| CL[Clarify drop-down, play waits]
-    TB -->|Pause| P[Pause card, drops down, cover]
-    TB -->|New game, Solo or Pass and play, alert confirms| NEW[New match]
-    TB -->|Home| M
-    CL -->|How to play| TU[How to play, sheet]
+    T -->|Home, top left, game saved| M
+    T -->|Rules book, top right| RU[Rules, sheet]
+    T -->|tap a name tag| RN[Rename alert, play waits]
     T -->|scorecard| SB[Score sheet, cover]
     T -->|hint| H[Hint detail, sheet]
     T -->|hand ends| R[Hand result, cover]

@@ -24,8 +24,11 @@ enum RulesFigures {
     /// All nine, as the sum of the tiles above; the test checks it against the engine's count.
     static var nineAndOutPoints: Int { pointTiles.map(\.points).reduce(0, +) }
 
-    /// Both example tricks: hearts led, spades trump. Seat 1 leads.
+    /// Both example tricks: hearts led, spades trump. Seat 1 leads, later in the hand: the bidder, seat 0, has
+    /// already opened with trump (D91), so this lead is free (D93).
     static let trump = Suit.spades
+    static let bidder = 0
+    static let setting = "A later lead: the bidder opened with trump, and now any suit may lead."
     static let followedTrick = [
         Play(seat: 1, card: Card(.hearts, .nine)),
         Play(seat: 2, card: Card(.hearts, .king)),

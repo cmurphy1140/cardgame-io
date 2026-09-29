@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Owns the one `GameModel`. A new player sees login, then the tutorial as an intro they may skip, then the
 /// table. A returning player with a match in progress lands back on the table, curtain down in pass and play;
-/// with no match, or a finished one, they land on the main menu, Back to the table or Deal me in one tap away
+/// with no match, or a finished one, they land on the main menu, Back to the table or New game one tap away
 /// (override of spec R31/R32 and this comment, decision D64). Going from the menu to the table shows the tip
 /// card first (D67); a launch that resumes onto the table does not. The table's menu opens a pause card whose Main
 /// menu comes back here with the match preserved (spec R31, R32).
@@ -35,8 +35,7 @@ public struct RootView: View {
     /// its screen up), `won` (a solo match won, the cascade falling) or `confirm9` (your bid, the partner asking about 9 and out); `rules`
     /// (How to play with the full rules sheet open over it), `signoff` (the same, scrolled to the family's note); `bold` (a computer team down 10 or more, its note held on the table); `five` (your team has just taken the five
     /// of trump, the big faces up, your lead), `handline` (a hand's result with a seat's line on it), `panel` (three hands
-    /// in, your team's score panel open) or `demo` (the `table` state with the one-time tally demo's first caption held);
-    /// `table-menu` and `clarify` (the `table` state with that drop-down open under the bar).
+    /// in, your team's score panel open) or `demo` (the `table` state with the one-time tally demo's first caption held).
     public init(model: GameModel, stage: String? = nil) {
         ScreenshotStage.name = stage
         var model = model
@@ -51,7 +50,7 @@ public struct RootView: View {
             Self.passAndPlay(model) { hand in hand.phase == .playing && !hand.currentTrick.isEmpty && hand.nextSeat != 0 }
         case "draw":
             model.newGame(mode: .solo)
-        case "bidding", "table", "table-menu", "clarify", "demo", "pause", "result", "review", "home", "home-tips", "home-whywe", "confirm9":
+        case "bidding", "table", "demo", "pause", "result", "review", "home", "home-tips", "home-whywe", "confirm9":
             // The `bidding` stage deals until a bid and a pass are both in the seats' boxes before your turn (N55).
             for _ in 0..<200 {
                 model.newGame(mode: .solo)
@@ -59,7 +58,7 @@ public struct RootView: View {
                 Self.play(model) { hand, humanTurn in
                     switch stage {
                     case "bidding", "home", "home-tips", "home-whywe", "confirm9": humanTurn && hand.phase == .bidding
-                    case "table", "table-menu", "clarify", "demo", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
+                    case "table", "demo", "pause": humanTurn && hand.phase == .playing && !hand.currentTrick.isEmpty
                     default: hand.phase == .finished
                     }
                 }
@@ -149,7 +148,7 @@ public struct RootView: View {
         _tutorial = StateObject(wrappedValue: model.makeTutorial())
         let screen: Screen = switch stage {
         case "picker", "stats", "settings", "howto", "rules", "signoff", "home": .menu
-        case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "table-menu", "clarify", "dealer-bidder", "pause", "result", "review", "over",
+        case "curtain", "seat", "pass-table", "draw", "bidding", "trump", "table", "dealer-bidder", "pause", "result", "review", "over",
              "home-tips", "home-whywe", "ninewin", "ninelose", "won", "confirm9", "bold", "five", "handline", "panel", "demo": .table
         default: Self.initialScreen(for: model.settings, matchInProgress: model.matchInProgress)
         }

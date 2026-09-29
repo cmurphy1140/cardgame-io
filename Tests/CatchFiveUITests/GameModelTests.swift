@@ -696,9 +696,9 @@ import Testing
     }
 }
 
-@MainActor @Test func tableFacesAreBiggerAndTheirHeadsPopOutOfTheirDiscs() {
-    // About 1.3× the 68 pt faces they were (N48).
-    #expect(Theme.Table.portraitSize >= 68 * 1.25 && Theme.Table.portraitSize <= 68 * 1.35)
+@MainActor @Test func tableFacesAreAFifthSmallerAndTheirHeadsPopOutOfTheirDiscs() {
+    // About a fifth smaller than the 86 pt faces of N48, so the table breathes (D93).
+    #expect(Theme.Table.portraitSize >= 86 * 0.75 && Theme.Table.portraitSize <= 86 * 0.85)
     // The head rises over the disc's top edge (N49), by a tenth of the face or so.
     #expect(PortraitView.popOverflow(top: PortraitView.headTop) >= 0.08)
     // The seat keeps room above the disc for the tallest hat, so nothing reaches into the header.

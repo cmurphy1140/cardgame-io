@@ -12,6 +12,8 @@ struct HandFanView: View {
     var deck: CGPoint? = nil
     /// Your own deck, under the fan when you deal, says where it rests.
     var onDeck: (CGPoint) -> Void = { _ in }
+    /// The phone holder's tag was tapped: rename that seat (D93).
+    var onRename: (Int) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .title2) private var scaledStandard = Theme.Card.handWidth
     @ScaledMetric(relativeTo: .title2) private var scaledWide = Theme.Card.handWidthWide
@@ -54,9 +56,9 @@ struct HandFanView: View {
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TableLayout.space)) } action: { fanFrame = $0 }
-            // No "Your hand" caption (T05). Under the hand, the phone holder's name tag (N64) and, when yours, the deal.
+            // No "Your hand" caption (T05). Under the hand, the phone holder's name tag (N64), a tap renames them (D93), and, when yours, the deal.
             HStack(spacing: 10) {
-                if let seat = model.viewerSeat { NameTag(name: model.seatNames[seat]) }
+                if let seat = model.viewerSeat { NameTag(name: model.seatNames[seat]).renames { onRename(seat) } }
                 Spacer(minLength: 0)
                 if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat { DealerMark(onPlaced: onDeck, sideways: true) }
             }

@@ -29,7 +29,7 @@ public enum TutorialFixtures {
     public static let refilledHand = [Card(.spades, .ace), Card(.spades, .king), Card(.spades, .five),
                                       Card(.spades, .eight), Card(.clubs, .queen), Card(.hearts, .two)]
 
-    // Lesson 4a: West led the king of diamonds with spades trump.
+    // Lesson 4a: later in the hand (you bid and opened with trump, D91), West led the king of diamonds with spades trump.
     public static let trickLead = Card(.diamonds, .king)
     public static let trickHand = [Card(.diamonds, .nine), Card(.spades, .ace), Card(.clubs, .seven),
                                    Card(.diamonds, .two), Card(.hearts, .queen), Card(.spades, .eight)]

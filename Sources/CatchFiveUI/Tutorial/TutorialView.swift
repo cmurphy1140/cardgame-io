@@ -4,7 +4,7 @@ import SwiftUI
 /// The five-lesson "How to play" sheet. Layout, copy and exercises follow docs/tutorial-spec.md.
 struct TutorialView: View {
     @ObservedObject var model: TutorialModel
-    /// Opened from the new player's intro: the toolbar says Skip and the last lesson ends with Deal me in.
+    /// Opened from the new player's intro: the toolbar says Skip and the last lesson ends with New game.
     var isIntro = false
     let onDismiss: () -> Void
     @State private var showRules = false
@@ -78,7 +78,7 @@ struct TutorialView: View {
         HStack {
             Button("Back") { model.back() }.buttonStyle(.bordered).tint(.ivory.opacity(0.8)).disabled(model.lesson == 0)
             Spacer()
-            Button(model.isLastLesson ? (isIntro ? "Deal me in" : "Finish") : "Next lesson") { if model.isLastLesson { onDismiss() } else { model.next() } }
+            Button(model.isLastLesson ? (isIntro ? "New game" : "Finish") : "Next lesson") { if model.isLastLesson { onDismiss() } else { model.next() } }
                 .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
         }
     }

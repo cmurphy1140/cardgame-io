@@ -80,12 +80,13 @@ public enum Theme {
         /// The pile's reserved footprint around a card, so the table does not jump between tricks.
         public static let pileMarginX = 64.0
         public static let pileMarginY = 48.0
-        /// The little stack of backs under a seat's name in play: a hint of a hand, not a count (spec R20).
+        /// The height a seat's badge band keeps under the face, the height the old stack of backs had (spec R20),
+        /// so the tiles do not jump when the dealer's mark moves on; the stack itself is gone (D93).
         public static let seatBackWidth = 14.0
-        /// Faces around the table read at a glance from arm's length: 86 pt, about 1.3× the 68 of the last
-        /// pass (N48) and up from the 36 they started at (spec R2). At rest face and halo fit a side tile beside
-        /// the pile; at full breath the halo borrows the gap beside it.
-        public static let portraitSize = 86.0
+        /// Faces around the table read at a glance from arm's length: 68 pt, a fifth smaller than the 86 of N48
+        /// so the table breathes (D93), and still up from the 36 they started at (spec R2). At rest face and halo
+        /// fit a side tile beside the pile; at full breath the halo borrows the gap beside it.
+        public static let portraitSize = 68.0
         /// Room kept above a table face's disc, as a fraction of its size, for the head that pops out (N49).
         public static let portraitHeadroom = 0.24
         /// While bidding the side seats rise this far toward the partner's row, so the bigger faces still leave the
@@ -135,14 +136,19 @@ public enum Theme {
         public static let dotInk = Color(red: 0.05, green: 0.17, blue: 0.10)
         public static let dotFill = Color(red: 0.52, green: 0.80, blue: 0.52)
         public static let dotFillEdge = Color(red: 0.26, green: 0.55, blue: 0.30)
-        /// The name tags above the heads (N64): the sticker's width, the handwritten name's size, and its green.
+        /// The name tags (N64): the sticker's width, the handwritten name's size, and its green. The phone holder's
+        /// tag under the hand keeps the full size.
         public static let nameTagWidth = 88.0
         public static let nameTagSize = 20.0
+        /// A seat's tag pinned to its shirt (D93): this much of the face's width, scaled down by this much, its top this
+        /// far down the face, turned a little like a sticker put on by hand.
+        public static let seatTagWidthRatio = 0.9
+        public static let seatTagScale = 0.66
+        public static let seatTagDrop = 0.56
+        public static let seatTagTiltDegrees = -4.0
         public static let tagGreen = Color(red: 0.16, green: 0.45, blue: 0.26)
         /// The layout runs under the bottom safe area and stops this far above the screen's edge, clear of its rounded corners.
         public static let footInset = 16.0
-        /// How far a seat's tag tucks down into the headroom above the face; any further and the popped head hides the name.
-        public static let nameTagTuck = 2.0
         /// The scorecard (N66): the ruled line's height, the handwritten total's size, and how many lines show.
         public static let scorecardRule = 26.0
         public static let scorecardNumberSize = 22.0
@@ -151,9 +157,8 @@ public enum Theme {
         public static let auctionButtonHeight = 64.0
         public static let auctionButtonSpacing = 6.0
         public static let auctionButtonRadius = 14.0
-        /// The Table and Clarify boxes across the top (N68): skinny, but a full thumb tall.
-        public static let barHeight = 36.0
-        public static let barRadius = 10.0
+        /// The slim row across the top (D93): Home on the left, Rules on the right, each a full thumb tall.
+        public static let topRowHeight = 44.0
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
         /// The table's top corners either side of the partner (D65): the contract plaque on the left, the
@@ -169,6 +174,8 @@ public enum Theme {
         public static let plaqueNumberSize = 52.0
         public static let plaquePortraitSize = 46.0
         public static let bidBoxSuitSize = 48.0
+        /// The word Trump over the tally, beside the suit (D93).
+        public static let trumpWordSize = 13.0
         /// A corner arrives (N53): it grows from this scale with a glow that fades over `cornerGlowSeconds`.
         public static let cornerArrivalScale = 0.6
         public static let cornerGlowSeconds = 0.9
