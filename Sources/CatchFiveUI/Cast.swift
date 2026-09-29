@@ -5,9 +5,9 @@ public struct Portrait: Codable, Equatable, Hashable, Sendable {
     public enum Skin: String, Codable, CaseIterable, Sendable { case light, tan, brown, deep }
     public enum Hair: String, Codable, CaseIterable, Sendable { case short, bob, curly, bald }
     public enum HairColor: String, Codable, CaseIterable, Sendable { case black, brown, blond, silver, red }
-    public enum Feature: String, Codable, CaseIterable, Sendable { case none, glasses, moustache, freckles }
-    public enum Hat: String, Codable, CaseIterable, Sendable { case none, beanie, cap, flower }
-    public enum Shirt: String, Codable, CaseIterable, Sendable { case plum, olive, teal, rust, navy, mustard }
+    public enum Feature: String, Codable, CaseIterable, Sendable { case none, glasses, moustache, freckles, spectacles }
+    public enum Hat: String, Codable, CaseIterable, Sendable { case none, beanie, cap, flower, mortarboard }
+    public enum Shirt: String, Codable, CaseIterable, Sendable { case plum, olive, teal, rust, navy, mustard, tweed, oxford, burgundy }
     /// A passing mood drawn on the face: not part of the recipe, never saved.
     public enum Expression: Sendable { case neutral, thinking, pleased, rueful, triumphant, dismayed, surprised }
 
@@ -39,21 +39,21 @@ public struct Character: Equatable, Sendable {
     }
 }
 
-/// The fixed cast. Seats 1, 2 and 3 are always Hazel, Otto and Rue; the human picks a face at login.
+/// The fixed cast, dressed as scholars (D92). Seats 1, 2 and 3 are always Hazel, Otto and Rue; the human picks a face at login.
 public enum Cast {
     /// Index 0 is seat 1 (West), 1 is seat 2 (Partner), 2 is seat 3 (East).
     public static let opponents: [Character] = [
-        Character(name: "Hazel", portrait: Portrait(skin: .light, hair: .bob, hairColor: .silver, feature: .glasses, shirt: .plum)),
-        Character(name: "Otto", portrait: Portrait(skin: .tan, hair: .short, hairColor: .brown, feature: .moustache, hat: .cap, shirt: .olive)),
-        Character(name: "Rue", portrait: Portrait(skin: .brown, hair: .curly, hairColor: .red, feature: .freckles, hat: .beanie, shirt: .teal)),
+        Character(name: "Hazel", portrait: Portrait(skin: .light, hair: .bob, hairColor: .silver, feature: .spectacles, shirt: .burgundy)),
+        Character(name: "Otto", portrait: Portrait(skin: .tan, hair: .short, hairColor: .brown, feature: .moustache, hat: .cap, shirt: .tweed)),
+        Character(name: "Rue", portrait: Portrait(skin: .brown, hair: .curly, hairColor: .red, feature: .freckles, hat: .mortarboard, shirt: .oxford)),
     ]
 
     /// Faces the human can choose from at login and in Settings.
     public static let playerChoices: [Portrait] = [
-        Portrait(skin: .tan, hair: .short, hairColor: .black, shirt: .navy),
-        Portrait(skin: .deep, hair: .curly, hairColor: .black, shirt: .mustard),
-        Portrait(skin: .light, hair: .bob, hairColor: .blond, hat: .flower, shirt: .rust),
-        Portrait(skin: .brown, hair: .bald, hairColor: .black, feature: .glasses, shirt: .teal),
+        Portrait(skin: .tan, hair: .short, hairColor: .black, feature: .spectacles, shirt: .oxford),
+        Portrait(skin: .deep, hair: .curly, hairColor: .black, hat: .mortarboard, shirt: .tweed),
+        Portrait(skin: .light, hair: .bob, hairColor: .blond, feature: .spectacles, hat: .flower, shirt: .burgundy),
+        Portrait(skin: .brown, hair: .bald, hairColor: .black, feature: .glasses, shirt: .tweed),
     ]
 
     public static let defaultPlayerPortrait = playerChoices[0]

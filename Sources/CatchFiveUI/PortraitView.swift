@@ -137,10 +137,42 @@ struct PortraitView: View {
     // MARK: Parts
 
     private var shoulders: some View {
-        RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-            .fill(Theme.Portrait.color(portrait.shirt))
-            .frame(width: size * 0.78, height: size * 0.5)
-            .offset(y: size * 0.5)
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .fill(Theme.Portrait.color(portrait.shirt))
+                .frame(width: size * 0.78, height: size * 0.5)
+                .offset(y: size * 0.5)
+            neckline
+        }
+    }
+
+    /// The scholars' shirts show at the neck, above where a name sticker sits: an ivory V under the tweed
+    /// jacket and the cardigan, two collar points on the oxford.
+    @ViewBuilder private var neckline: some View {
+        switch portrait.shirt {
+        case .tweed, .burgundy:
+            Outline(points: [(-0.1, 0.22), (0.1, 0.22), (0, 0.37)]).fill(Theme.Portrait.collar)
+                .frame(width: size, height: size)
+        case .oxford:
+            ForEach([-1.0, 1.0], id: \.self) { side in
+                Outline(points: [(side * 0.02, 0.24), (side * 0.13, 0.22), (side * 0.07, 0.34)]).fill(Theme.Portrait.collar)
+                    .frame(width: size, height: size)
+            }
+        case .plum, .olive, .teal, .rust, .navy, .mustard:
+            EmptyView()
+        }
+    }
+
+    /// A closed or open run of points, each a fraction of the frame measured from its centre.
+    private struct Outline: Shape {
+        let points: [(Double, Double)]
+        var closed = true
+        func path(in rect: CGRect) -> Path {
+            var path = Path()
+            path.addLines(points.map { CGPoint(x: rect.midX + $0.0 * rect.width, y: rect.midY + $0.1 * rect.height) })
+            if closed { path.closeSubpath() }
+            return path
+        }
     }
 
     private var head: some View {
@@ -192,6 +224,24 @@ struct PortraitView: View {
                     Circle().fill(Theme.Portrait.accessory.opacity(0.5)).frame(width: size * 0.03, height: size * 0.03)
                 }
             }.offset(y: size * 0.05)
+        case .spectacles:
+            // Round reading spectacles: smaller, finer and lower than `glasses`, with a glint in the lenses and
+            // arms running back to the ears.
+            let rim = max(1, size * 0.016)
+            ZStack {
+                ForEach([-1.0, 1.0], id: \.self) { side in
+                    Circle().fill(Color.ivory.opacity(0.3)).frame(width: size * 0.12, height: size * 0.12)
+                        .overlay(Circle().stroke(Theme.Portrait.accessory, lineWidth: rim))
+                        .offset(x: side * size * 0.08)
+                }
+                Outline(points: [(-0.02, -0.005), (0, -0.015), (0.02, -0.005)], closed: false)
+                    .stroke(Theme.Portrait.accessory, lineWidth: rim)
+                    .frame(width: size, height: size)
+                Outline(points: [(-0.14, 0), (-0.23, -0.02)], closed: false).stroke(Theme.Portrait.accessory, lineWidth: rim)
+                    .frame(width: size, height: size)
+                Outline(points: [(0.14, 0), (0.23, -0.02)], closed: false).stroke(Theme.Portrait.accessory, lineWidth: rim)
+                    .frame(width: size, height: size)
+            }.offset(y: -size * 0.05)
         }
     }
 
@@ -215,6 +265,18 @@ struct PortraitView: View {
                 .frame(width: size * 0.2, height: size * 0.2)
                 .rotationEffect(.degrees(-30))
                 .offset(x: size * 0.18, y: -size * 0.24)
+        case .mortarboard:
+            // A skullcap under a flat square board seen from the front, its tassel hanging off the right corner.
+            // The board's top stays at `tallestTop`, so a popped head still fits the seat's headroom.
+            ZStack {
+                Ellipse().fill(Theme.Portrait.accessory).frame(width: size * 0.46, height: size * 0.2).offset(y: -size * 0.24)
+                Outline(points: [(-0.33, -0.33), (0, -0.39), (0.33, -0.33), (0, -0.27)]).fill(Theme.Portrait.accessory)
+                    .frame(width: size, height: size)
+                Outline(points: [(0, -0.33), (0.27, -0.32), (0.28, -0.19)], closed: false)
+                    .stroke(Theme.Portrait.tassel, style: StrokeStyle(lineWidth: max(1, size * 0.02), lineCap: .round, lineJoin: .round))
+                    .frame(width: size, height: size)
+                Capsule().fill(Theme.Portrait.tassel).frame(width: size * 0.05, height: size * 0.09).offset(x: size * 0.28, y: -size * 0.17)
+            }
         }
     }
 }

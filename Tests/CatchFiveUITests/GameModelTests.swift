@@ -441,6 +441,26 @@ import Testing
     #expect(Cast.seatWords == ["You", "West", "Partner", "East"])
 }
 
+@Test func castDressesAsScholarsAndOldFacesStillDecode() throws {
+    // Every face at the table and in the pickers wears at least one scholarly part (D92).
+    let scholarly: (Portrait) -> Bool = { face in
+        face.feature == .spectacles || face.hat == .mortarboard || [.tweed, .oxford, .burgundy].contains(face.shirt)
+    }
+    #expect(Cast.opponents.allSatisfy { scholarly($0.portrait) })
+    #expect(Cast.playerChoices.allSatisfy(scholarly))
+    // Each computer player keeps the skin, hair and feature that make them recognisable.
+    #expect(Cast.opponents.map(\.portrait.skin) == [.light, .tan, .brown])
+    #expect(Cast.opponents.map(\.portrait.hair) == [.bob, .short, .curly])
+    // A settings file saved before the scholars, carrying the old parts, still loads with its face intact.
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: url) }
+    let old = "{\"playerName\":\"Mum\",\"playerPortrait\":{\"skin\":\"brown\",\"hair\":\"bald\",\"hairColor\":\"black\","
+        + "\"feature\":\"glasses\",\"hat\":\"flower\",\"shirt\":\"mustard\"}}"
+    try Data(old.utf8).write(to: url)
+    let read = try SettingsStore.read(from: url)
+    #expect(read.playerPortrait == Portrait(skin: .brown, hair: .bald, hairColor: .black, feature: .glasses, hat: .flower, shirt: .mustard))
+}
+
 @Test func settingsRoundTripKeepsPlayerNameAndPortrait() throws {
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: url) }
@@ -676,9 +696,9 @@ import Testing
     }
 }
 
-@MainActor @Test func tableFacesAreBiggerAndTheirHeadsPopOutOfTheirDiscs() {
-    // About 1.3× the 68 pt faces they were (N48).
-    #expect(Theme.Table.portraitSize >= 68 * 1.25 && Theme.Table.portraitSize <= 68 * 1.35)
+@MainActor @Test func tableFacesAreAFifthSmallerAndTheirHeadsPopOutOfTheirDiscs() {
+    // About a fifth smaller than the 86 pt faces of N48, so the table breathes (D93).
+    #expect(Theme.Table.portraitSize >= 86 * 0.75 && Theme.Table.portraitSize <= 86 * 0.85)
     // The head rises over the disc's top edge (N49), by a tenth of the face or so.
     #expect(PortraitView.popOverflow(top: PortraitView.headTop) >= 0.08)
     // The seat keeps room above the disc for the tallest hat, so nothing reaches into the header.

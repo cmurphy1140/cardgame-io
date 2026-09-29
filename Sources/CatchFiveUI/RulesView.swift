@@ -318,6 +318,8 @@ struct RulesView: View {
                 Text("Trumped").tag(true)
             }
             .pickerStyle(.segmented)
+            Text(RulesFigures.setting).font(.caption).opacity(0.75).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             let plays = trumped ? RulesFigures.trumpedTrick : RulesFigures.followedTrick
             let winner = trumped ? RulesFigures.trumpedWinner : RulesFigures.followedWinner
             HStack(spacing: 10) {

@@ -3,20 +3,43 @@ import CatchFive
 import Foundation
 import Testing
 
-@MainActor @Test func theTableBarHasTableAndClarifyWithTheirDropDowns() {
-    // N68: one skinny bar, two boxes; Table pauses, starts over or goes home, Clarify answers what's on the table.
-    #expect(TableBar.Box.allCases.map(\.title) == ["Table", "Clarify"])
-    #expect(TableBar.TableItem.allCases.map(\.title) == ["Pause", "New game", "Home"])
-    #expect(TableBar.newGameChoices.map(\.title) == ["Solo", "Pass and play"])
-    #expect(TableBar.newGameChoices.map(\.mode) == [.solo, .passAndPlay])
-    #expect(TableBar.answers.map(\.topic) == ["The bid box", "The scorecard", "Tap the suit", "Tap a face"])
-    #expect(TableBar.answers.allSatisfy { !$0.text.isEmpty })
-    #expect(TableBar.howToPlay == "How to play")
-    // Play waits while a drop-down is open.
-    #expect(TablePause(menuShown: true).isPaused)
+@MainActor @Test func theTopRowHasHomeLeftAndRulesRightAndNothingThatPauses() {
+    // D93: the Table / Clarify bar is gone; Home goes back to the menu (the game is already saved), Rules opens the rulebook.
+    #expect(TableTopRow.home == TableTopRow.Button(title: "Home", symbol: "house"))
+    #expect(TableTopRow.rules == TableTopRow.Button(title: "Rules", symbol: "book"))
+    // No drop-down is left to hold play up.
     #expect(!TablePause().isPaused)
     // The pause card says the game keeps its place.
     #expect(WelcomeCard.keepsPlace == "You can leave the app and come back to this exact spot.")
+}
+
+@Test func tappingANameTagRenamesThatSeat() {
+    // D93: seats 1 to 3 write their own name; seat 0 goes through the player's name; blank keeps the old one.
+    var settings = Settings(playerName: "Connor")
+    settings.seatNames[0] = "Connor"
+    settings.renameSeat(2, to: "  Grandpa ")
+    #expect(settings.seatNames == ["Connor", "JC", "Grandpa", "Diane"])
+    settings.renameSeat(2, to: "   ")
+    #expect(settings.seatNames[2] == "Grandpa")
+    settings.renameSeat(0, to: "Mom")
+    #expect(settings.playerName == "Mom")
+    #expect(settings.seatNames[0] == "Mom")
+    settings.renameSeat(0, to: "")
+    #expect(settings.playerName == "Mom")
+}
+
+@Test func theBidBoxSaysTrumpBesideTheSuit() {
+    // D93: the word, not just the glyph, so a new player knows what the suit is.
+    #expect(ContractPlaque.trumpWord == "Trump")
+}
+
+@MainActor @Test func theRulesPicturesNeverShowTheBidderOpeningWithoutTrump() {
+    // D93 after D91: the example tricks are a later lead, not the bidder's opening one.
+    #expect(RulesFigures.followedTrick.first?.seat != RulesFigures.bidder)
+    #expect(RulesFigures.trumpedTrick.first?.seat != RulesFigures.bidder)
+    #expect(RulesFigures.setting.contains("later"))
+    // Lesson 4a says West's king is a later lead, after the bidder opened.
+    #expect(TutorialModel(completed: [], onCompletionChange: { _ in }).trickPrompt.hasPrefix("Later in the hand"))
 }
 
 @MainActor @Test func theBidBoxShowsTheFaceTheBidAndTrumpAndTheSuitKeepsTheTally() throws {
@@ -82,7 +105,7 @@ private func playHand(_ match: inout Match) throws {
 }
 
 @MainActor @Test func everySeatWearsANameTagWithItsName() throws {
-    // N64: a "HI, MY NAME IS" sticker above every head, the name handwritten; the phone holder's too.
+    // N64, D93: a "HI, MY NAME IS" sticker pinned to every shirt, the name handwritten; the phone holder's too.
     #expect(NameTag.band == "HI, MY NAME IS")
     #expect(NameTag.handwriting == Scorecard.handwriting)
     let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))

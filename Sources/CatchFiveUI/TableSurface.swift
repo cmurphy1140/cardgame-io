@@ -20,6 +20,8 @@ struct TableSurface: View {
     var onDeck: (CGPoint) -> Void = { _ in }
     /// The scorecard opens the full score sheet (N66).
     var onScorecard: () -> Void = {}
+    /// A seat's name tag was tapped: rename that seat (D93).
+    var onRename: (Int) -> Void = { _ in }
     /// A match-win celebration is playing; the hand-end card waits until it has finished (D69).
     var holdsResult = false
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
@@ -74,7 +76,7 @@ struct TableSurface: View {
                         .opacity(dim)
                         .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
-                        SeatView(model: model, seat: model.seat(at: 2), stackWithTag: true, onDeck: onDeck).accessibilitySortPriority(20)
+                        SeatView(model: model, seat: model.seat(at: 2), isPartner: true, onDeck: onDeck, onRename: onRename).accessibilitySortPriority(20)
                             // The partner's box sits beside them on the left, in the corner the bid box will take (N55),
                             // since the scorecard holds the right (N66). Level with the top of the face.
                             .overlay(alignment: .topLeading) {
@@ -98,7 +100,7 @@ struct TableSurface: View {
                     let sideWidth = inAuction ? Theme.Table.seatTileWidth : TableLayout.sideSeatWidth(available: geometry.size.width)
                     HStack(alignment: .center) {
                         // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
-                        SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(30)
+                        SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck, onRename: onRename).accessibilitySortPriority(30)
                             .modifier(DemoTap(active: model.tallyDemo == .face(seat: model.seat(at: 1))))
                             .overlay(alignment: .bottomTrailing) {
                                 if hand.phase == .bidding {
@@ -109,7 +111,7 @@ struct TableSurface: View {
                         Spacer(minLength: TableLayout.seatGap)
                         if !inAuction { centre(reach: reach) }
                         Spacer(minLength: TableLayout.seatGap)
-                        SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck).accessibilitySortPriority(10)
+                        SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck, onRename: onRename).accessibilitySortPriority(10)
                             .overlay(alignment: .bottomLeading) {
                                 if hand.phase == .bidding {
                                     bidBox(at: 3, from: CGSize(width: Theme.Table.bidBoxWidth, height: -Theme.Table.bidBoxHeight))
@@ -602,17 +604,19 @@ struct TableSurface: View {
     }
 }
 
-/// One opponent: name, what they have shown (their call, or a stack of card backs with a count), dealer badge.
-/// A gold ring marks the seat whose turn it is.
+/// One opponent: a face with a name tag pinned to its shirt, and the dealer badge. A gold ring marks the seat whose
+/// turn it is.
 struct SeatView: View {
     @ObservedObject var model: GameModel
     let seat: Int
     /// Side tiles take the width the row can spare; the partner's tile keeps the full width.
     var width: Double = Theme.Table.seatTileWidth
-    /// The partner's stack of backs sits beside the name tag above the head, not under the face (N64).
-    var stackWithTag = false
+    /// The partner across the top: no badge band, so the row stays short, and the dealer's mark set out beside the tile.
+    var isPartner = false
     /// The dealer's deck says where it rests.
     var onDeck: (CGPoint) -> Void = { _ in }
+    /// The name tag was tapped: rename this seat (D93).
+    var onRename: (Int) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The halo's breathing, driven by a repeating animation while this seat is deciding.
     @State private var pulsing = false
@@ -628,15 +632,12 @@ struct SeatView: View {
     /// The player has marked this seat as out of trump (D65).
     private var markedOut: Bool { hand.trump != nil && model.outOfTrump.contains(seat) }
 
-    /// A name tag over a face over one line of badges (N64): a hint of a hand in play (the call has its own box, N55);
-    /// the dealer's mark beside the face (N65), and no BIDDER, since the bid box shows who bid. Everything a seat says sits under its own portrait, so nothing
+    /// A face with its name tag pinned to the shirt (D93) over one line of badges: the dealer's mark beside the face
+    /// (N65), no stack of backs (D93) and no BIDDER, since the bid box shows who bid. Everything a seat says sits on or under its own portrait, so nothing
     /// about a player floats elsewhere on the table (spec R2). The seat to act wears a gold halo that
     /// breathes; that halo is the table's only turn indicator.
     var body: some View {
         VStack(spacing: 2) {
-            // The tag floats above the head (N64).
-            NameTag(name: model.seatNames[seat], backs: stackWithTag && hand.phase != .bidding ? hand.hands[seat].count : 0)
-                .padding(.bottom, -Theme.Table.nameTagTuck)
             PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true)
                 // Big public moments show larger on the face, until the next lead (N36).
                 .scaleEffect(bigMomentScale, anchor: .bottom)
@@ -663,6 +664,8 @@ struct SeatView: View {
                     PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true, headOnly: true)
                         .scaleEffect(bigMomentScale, anchor: .bottom)
                 }
+                // The tag is pinned to the shirt, a little crooked, like a sticker put on by hand (D93); a tap renames the seat.
+                .overlay(alignment: .top) { pinnedTag }
                 .scaleEffect(pulsing ? Theme.Table.activePulseScale : 1)
                 .onChange(of: active, initial: true) { _, isActive in
                     if isActive, !reduceMotion {
@@ -677,16 +680,16 @@ struct SeatView: View {
                 .overlay(alignment: .top) {
                     if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
                 }
-            // The partner's stack rides with the tag, so the partner's tile ends at the face and the row stays short.
-            if !stackWithTag { badges }
+            // The partner's tile ends at the face, so the row stays short.
+            if !isPartner { badges }
         }
         .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
         // The dealer owns the deck: the big dealer mark, static, never a control (T12, T13, N65). The side seats wear
-        // it to the right of their stack of backs (below); the partner's sits off to the right of the tile, beside
+        // it under the face (below); the partner's sits off to the right of the tile, beside
         // their card on the pile and under the scorecard.
         .overlay(alignment: .bottomTrailing) {
-            if stackWithTag, deals {
+            if isPartner, deals {
                 DealerMark(onPlaced: onDeck)
                     .offset(x: Theme.Table.dealerMarkWidth + Theme.Table.partnerMarkGap, y: Theme.Table.partnerMarkDrop)
             }
@@ -694,6 +697,7 @@ struct SeatView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.seatSummary(for: seat) + (markedOut ? ", out of trump" : ""))
         .accessibilityActions {
+            Button("Rename \(model.seatNames[seat])") { onRename(seat) }
             if hand.trump != nil {
                 Button(markedOut ? "Clear out of trump" : "Mark out of trump") { model.toggleOutOfTrump(seat) }
             }
@@ -702,6 +706,8 @@ struct SeatView: View {
 
     /// Room the tile keeps on each side.
     nonisolated static let tilePadding = 4.0
+    /// About how tall a seat's scaled tag stands, so its thumb-tall hit area can be centred on it.
+    nonisolated static let tagHeight = 26.0
 
     /// The words a seat wears beside its face: DEALER for the dealer, and nothing for the bidder, whom the bid box
     /// shows (N65).
@@ -710,23 +716,22 @@ struct SeatView: View {
     }
 
     /// One band, the same height through a hand, so the tiles do not jump when a call lands or the phase turns: the
-    /// stack of backs in play, and to its right the dealer's mark when this seat deals (N65).
+    /// dealer's mark when this seat deals (N65). The stack of backs that sat beside it is gone (D93).
     private var badges: some View {
         HStack(spacing: 6) {
-            // In the auction the call sits in the seat's bid box beside it (N55), so the band holds only the mark.
-            if hand.phase != .bidding, !stackWithTag {
-                // The stack's thickness says roughly how many cards are left; there is no number (spec R20).
-                ZStack(alignment: .leading) {
-                    ForEach(0..<min(3, max(1, hand.hands[seat].count)), id: \.self) { index in
-                        CardBackView(width: Theme.Table.seatBackWidth).offset(x: Double(index) * 3)
-                    }
-                }
-                .padding(.trailing, 6)
-                .dynamicTypeSize(...Theme.Card.maximumTypeSize)
-            }
             if deals { DealerMark(onPlaced: onDeck) }
         }
         .frame(height: deals ? nil : backWidth * Theme.Card.ratio + 2)
+    }
+
+    /// The seat's tag, sized to its shirt and a little crooked; its thumb-tall hit area is centred on the sticker.
+    private var pinnedTag: some View {
+        let drop = Theme.Table.portraitSize * Theme.Table.seatTagDrop - (Theme.Table.statusButtonHitSize - Self.tagHeight) / 2
+        return NameTag(name: model.seatNames[seat], width: Theme.Table.portraitSize * Theme.Table.seatTagWidthRatio,
+                       scale: Theme.Table.seatTagScale)
+            .renames { onRename(seat) }
+            .rotationEffect(.degrees(Theme.Table.seatTagTiltDegrees))
+            .offset(y: drop)
     }
 
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
