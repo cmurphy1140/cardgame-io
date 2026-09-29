@@ -12,8 +12,8 @@ public struct TableView: View {
     /// The seat whose name tag was tapped, and the name being typed for it (D93).
     @State private var renaming: Int?
     @State private var nameDraft = ""
-    /// The rules, opened from the book in the top row (D93).
-    @State private var showRules = false
+    /// The rules, opened from the book in the top row (D93); they open like a book (D94).
+    @State private var showRules = ScreenshotStage.name == "table-rules" || BookFold.heldProgress(stage: ScreenshotStage.name) != nil
     @State private var confirmNineAndOut = false
     @State private var showSettings = false
     @State private var showTutorial = false
@@ -84,8 +84,9 @@ public struct TableView: View {
 
     public var body: some View {
         withSheets
-            // Pass and play: nothing of the table shows, to the eye or to VoiceOver, until the next player is ready.
-            .accessibilityHidden(model.curtainSeat != nil)
+            // Pass and play: nothing of the table shows, to the eye or to VoiceOver, until the next player is ready; and
+            // VoiceOver meets only the rules while the book is open (D94).
+            .accessibilityHidden(model.curtainSeat != nil || showRules)
             .overlay {
                 if let seat = model.curtainSeat {
                     PassCurtainView(name: model.seatNames[seat], portrait: portraits[seat]) {
@@ -112,6 +113,7 @@ public struct TableView: View {
                 }
             }
             .overlay { teamPanel }
+            .overlay { rulesBook }
             .overlay { celebration }
             .transformEnvironment(\.dynamicTypeSize) { $0 = $0.boosted(by: Theme.textBoostSteps) }
             .onAppear {
@@ -159,6 +161,25 @@ public struct TableView: View {
         }
     }
 
+    /// The rules, swinging onto the screen like a book's page about its left edge and back when closed (D94).
+    @ViewBuilder private var rulesBook: some View {
+        if showRules {
+            RulesView { closeRules() }
+                .modifier(BookFold(progress: BookFold.heldProgress(stage: ScreenshotStage.name) ?? 1))
+                .transition(BookFold.transition(reduceMotion: reduceMotion))
+                .zIndex(1)
+        }
+    }
+
+    private func openRules() {
+        withAnimation(reduceMotion ? Theme.Motion.reduced : .easeInOut(duration: BookFold.seconds)) { showRules = true }
+    }
+
+    private func closeRules() {
+        withAnimation(reduceMotion ? Theme.Motion.reduced : .easeInOut(duration: BookFold.seconds)) { showRules = false }
+        model.markRulesSeen()
+    }
+
     private func nextCelebration() {
         guard !celebrating.isEmpty else { return }
         withAnimation(motion(Theme.Motion.overlay)) { _ = celebrating.removeFirst() }
@@ -172,7 +193,7 @@ public struct TableView: View {
     private var layout: some View {
         VStack(spacing: 6) {
             // Home on the left, the rules on the right (D93).
-            TableTopRow(onHome: onHome, onRules: { showRules = true })
+            TableTopRow(onHome: onHome, onRules: openRules)
                 .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 4)
                 // A solid header band: runs up behind the status bar and ends in a frown, the corners
                 // hanging lower than the middle, so the bar sits on one colour and the wood starts beneath.
@@ -311,7 +332,6 @@ public struct TableView: View {
                 Button("Retry") { model.retrySave() }
                 Button("Not now", role: .cancel) { model.saveError = nil }
             } message: { Text(model.saveError ?? "") }
-            .sheet(isPresented: $showRules, onDismiss: { model.markRulesSeen() }) { RulesView { showRules = false } }
             // Renaming a seat from its tag (D93); blank keeps the old name (`Settings.renameSeat`).
             .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("Name", text: $nameDraft)

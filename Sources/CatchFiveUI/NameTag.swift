@@ -1,17 +1,17 @@
+import CatchFive
 import SwiftUI
 
-/// A "HI, MY NAME IS" sticker (N64): white with a green outline, the words printed on a green band, the name
-/// handwritten under it in the scorecard's Marker Felt. Every seat wears one pinned to its shirt (D93), the phone
-/// holder's under the hand at full size.
+/// A seat's name carved into the wood under it (D94, over the N64 sticker): large dark serif letters cut into the
+/// table, and beside them, when this seat won the bid and trump is named, the trump suit cut the same way. Every seat
+/// has one; the phone holder's sits under the hand.
 struct NameTag: View {
     let name: String
-    /// The sticker's width; a seat's tag fits its shirt.
-    var width = Theme.Table.nameTagWidth
-    /// The printing and the handwriting, scaled together so a smaller tag still reads as the same sticker.
-    var scale = 1.0
+    /// Trump, carved beside the name of the seat that bid (D94); nil for everyone else.
+    var trump: Suit? = nil
 
-    nonisolated static let band = "HI, MY NAME IS"
-    nonisolated static let handwriting = Scorecard.handwriting
+    /// The rename button's height: a full thumb (D93).
+    nonisolated static let hitHeight = Theme.Table.statusButtonHitSize
+    nonisolated static let renameHint = "Rename this seat"
 
     /// The names by place round the table, 0 the phone holder at the bottom, then left, across and right.
     static func names(_ model: GameModel) -> [String] {
@@ -19,41 +19,29 @@ struct NameTag: View {
     }
 
     var body: some View {
-        sticker.dynamicTypeSize(...Theme.Card.maximumTypeSize)
+        HStack(spacing: 6) {
+            Text(name).font(.system(size: Theme.Table.carvedNameSize, weight: .heavy, design: .serif))
+                .carved()
+                .lineLimit(1).minimumScaleFactor(0.7)
+            if let trump { CarvedSuit(suit: trump, size: Theme.Table.carvedNameSize + 4) }
+        }
+        .dynamicTypeSize(...Theme.Card.maximumTypeSize)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
     }
 
-    private var sticker: some View {
-        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
-        return VStack(spacing: 0) {
-            Text(Self.band).font(.system(size: 9 * scale, weight: .heavy)).tracking(0.5 * scale)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 1)
-                .background(Theme.Table.tagGreen)
-            Text(name).font(.custom(Self.handwriting, size: Theme.Table.nameTagSize * scale, relativeTo: .title3))
-                .foregroundStyle(Theme.Wood.streakDark)
-                .padding(.horizontal, 6 * scale).padding(.vertical, -2 * scale)
-        }
-        .lineLimit(1).minimumScaleFactor(0.5)
-        .frame(width: width)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(.white, in: shape)
-        .clipShape(shape)
-        .overlay(shape.stroke(Theme.Table.tagGreen, lineWidth: 2))
-        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(name)
-    }
+    /// "Diane, hearts are trump" for the bidder once trump is named; the name alone otherwise.
+    var spoken: String { trump.map { "\(name), \($0.rawValue) are trump" } ?? name }
 }
 
 extension NameTag {
-    /// The tag as a button that renames its seat (D93): the sticker unchanged, its hit area at least a thumb tall.
+    /// The carved name as a button that renames its seat (D93): its hit area at least a thumb tall.
     func renames(_ onRename: @escaping () -> Void) -> some View {
         Button(action: onRename) {
-            frame(minHeight: Theme.Table.statusButtonHitSize).contentShape(Rectangle())
+            frame(minHeight: Self.hitHeight).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(name)
-        .accessibilityHint("Rename this seat")
+        .accessibilityLabel(spoken)
+        .accessibilityHint(Self.renameHint)
     }
 }

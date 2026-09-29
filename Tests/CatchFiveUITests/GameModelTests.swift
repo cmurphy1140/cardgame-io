@@ -1446,12 +1446,12 @@ import Testing
 }
 
 @MainActor @Test func tableCornersSitOnLightTanWithDarkBrownInkAndSuitColouredTrump() {
-    // Both corners share one very light tan fill (D76), about RGB 0.91, 0.84, 0.70.
+    // The score pad's paper keeps the very light tan (D76), about RGB 0.91, 0.84, 0.70; the bid corner has no
+    // fill at all (D94): its words are carved into the wood.
     let tan = Theme.Table.cornerFill.resolve(in: EnvironmentValues())
     #expect(abs(Double(tan.red) - 0.91) < 0.01 && abs(Double(tan.green) - 0.84) < 0.01 && abs(Double(tan.blue) - 0.70) < 0.01)
-    #expect(ContractPlaque.fill == Theme.Table.cornerFill)
-    // The plaque's words are dark brown from the wood; the trump glyph keeps its suit's colour.
-    #expect(ContractPlaque.eyebrowInk == Theme.Wood.dark && ContractPlaque.numberInk == Theme.Wood.streakDark)
+    #expect(ContractPlaque.numberInk == Carving.ink)
+    // The trump glyph keeps its suit's colour.
     #expect(ContractPlaque.glyphColor(.hearts) == .suitRed && ContractPlaque.glyphColor(.diamonds) == .suitRed)
     #expect(ContractPlaque.glyphColor(.spades) == .black && ContractPlaque.glyphColor(.clubs) == .black)
 }

@@ -56,11 +56,18 @@ struct HandFanView: View {
             .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TableLayout.space)) } action: { fanFrame = $0 }
-            // No "Your hand" caption (T05). Under the hand, the phone holder's name tag (N64), a tap renames them (D93), and, when yours, the deal.
+            // No "Your hand" caption (T05). Under the hand, the phone holder's name carved into the wood, trump beside it
+            // when they bid (D94), a tap renames them (D93), and, when yours, the deal with its dealer button.
             HStack(spacing: 10) {
-                if let seat = model.viewerSeat { NameTag(name: model.seatNames[seat]).renames { onRename(seat) } }
+                if let seat = model.viewerSeat {
+                    let hand = model.match.hand
+                    NameTag(name: model.seatNames[seat], trump: SeatView.carvedTrump(seat: seat, bidder: hand.auction.winner, trump: hand.trump))
+                        .renames { onRename(seat) }
+                }
                 Spacer(minLength: 0)
-                if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat { DealerMark(onPlaced: onDeck, sideways: true) }
+                if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
+                    DealerMark(onPlaced: onDeck, sideways: DealerMark.placement(forPlace: 0) == .besideYourName)
+                }
             }
         }
         .frame(maxWidth: .infinity)

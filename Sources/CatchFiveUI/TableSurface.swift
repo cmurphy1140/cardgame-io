@@ -228,9 +228,6 @@ struct TableSurface: View {
                 .transition(transition(for: play, winner: pile.winner, reach: reach))
                 .zIndex(Double(pile.plays.firstIndex(where: { $0.card == play.card }) ?? 0))
             }
-            if pile.plays.isEmpty, hand.phase == .playing, !model.isHumanTurn || hand.completedTricks.isEmpty {
-                Text(hand.completedTricks.isEmpty ? "First lead" : "").font(.caption2).opacity(0.7)
-            }
         }
         .accessibilitySortPriority(5)
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
@@ -383,17 +380,17 @@ struct TableSurface: View {
         ZStack {
             if let refusal = model.refusal {
                 // A refused tap answers first: it is the freshest thing the player did.
-                Text(refusal).font(.footnote).multilineTextAlignment(.center).foregroundStyle(.ivory.opacity(0.9))
+                Text(refusal).font(.body.weight(.medium)).multilineTextAlignment(.center).foregroundStyle(.ivory)
                     .padding(.horizontal, 8)
             } else if let hint = model.hint {
                 // One complete recommendation on one line; the reason waits behind Why?, so a long hint
                 // can never push the controls above it off the screen (spec R22).
                 let parts = Self.hintParts(hint.reason)
                 HStack(spacing: 10) {
-                    Text(parts.recommendation).font(.footnote.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(parts.recommendation).font(.body.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
                     if !parts.detail.isEmpty {
                         Button("Why?") { showHintDetail = true }
-                            .font(.footnote.weight(.semibold)).tint(.ivory).underline()
+                            .font(.body.weight(.semibold)).tint(.ivory).underline()
                             .accessibilityHint("Opens the reason for this hint")
                     }
                 }
@@ -403,19 +400,21 @@ struct TableSurface: View {
                 .accessibilityLabel("Hint: \(parts.recommendation)")
             } else if let text = model.explanation {
                 Text(text)
-                    .font(.footnote).multilineTextAlignment(.center)
-                    .foregroundStyle(.ivory.opacity(0.85))
+                    .font(.body.weight(.medium)).multilineTextAlignment(.center)
+                    .foregroundStyle(.ivory)
                     .padding(.horizontal, 8)
             } else if let notice = model.notice {
-                Text(notice).font(.footnote).opacity(0.85)
+                // Large and full ivory (D94): no small light captions on the table.
+                Text(notice).font(.body.weight(.medium)).multilineTextAlignment(.center).padding(.horizontal, 8)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             } else if let note = model.boldNote {
-                Text(note).font(.footnote).opacity(0.85)
+                Text(note).font(.body.weight(.medium)).multilineTextAlignment(.center).padding(.horizontal, 8)
                     .transition(.opacity)
             } else if hand.phase == .bidding, !model.isHumanTurn, let seat = model.viewerSeat, let call = model.latestCall(for: seat) {
-                Text("You: \(call)").font(.footnote).opacity(0.85)
+                Text("You: \(call)").font(.body.weight(.medium))
             } else if !inAuction {
                 Text(pile.plays.isEmpty || !coaching ? " " : (reopenedTrick != nil ? "Tap a card to see why it was played" : "Tap a card on the table to see why it was played"))
-                    .font(.footnote).foregroundStyle(.ivory.opacity(0.7))
+                    .font(.body.weight(.medium)).foregroundStyle(.ivory)
                     .accessibilityHidden(true)
             }
         }
@@ -467,7 +466,7 @@ struct TableSurface: View {
         let lowest = row.first(where: \.enabled)?.bid
         return VStack(spacing: Theme.Table.auctionButtonSpacing) {
             if let context = model.auctionContext {
-                Text(context).font(.footnote).opacity(0.85).multilineTextAlignment(.center).padding(.bottom, 2)
+                Text(context).font(.body.weight(.medium)).multilineTextAlignment(.center).padding(.bottom, 2)
             }
             ForEach(Self.auctionRows(nineAndOut: model.allows(.nineAndOut)), id: \.self) { line in
                 switch line {
@@ -496,7 +495,7 @@ struct TableSurface: View {
     /// The rare bid, small and set apart under the 9 it belongs to (B02).
     private var nineAndOutButton: some View {
         Button { onNineAndOut() } label: {
-            Text("9 and out").font(.caption.weight(.semibold)).foregroundStyle(.ivory)
+            Text("9 and out").font(.subheadline.weight(.semibold)).foregroundStyle(.ivory)
                 .lineLimit(1).fixedSize()
                 .padding(.horizontal, 10).padding(.vertical, 3)
                 .background(Theme.Wood.dark, in: Capsule())
@@ -529,8 +528,8 @@ struct TableSurface: View {
                             Text(keeps)
                         }
                     }
-                    .font(.caption2.weight(.semibold)).opacity(0.8)
-                    .lineLimit(1)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1).minimumScaleFactor(0.8)
                 }
                 .accessibilityElement(children: .contain)
             }
@@ -604,14 +603,15 @@ struct TableSurface: View {
     }
 }
 
-/// One opponent: a face with a name tag pinned to its shirt, and the dealer badge. A gold ring marks the seat whose
+/// One opponent: a face with its name carved into the wood under it, and the dealer button. A gold ring marks the seat whose
 /// turn it is.
 struct SeatView: View {
     @ObservedObject var model: GameModel
     let seat: Int
     /// Side tiles take the width the row can spare; the partner's tile keeps the full width.
     var width: Double = Theme.Table.seatTileWidth
-    /// The partner across the top: no badge band, so the row stays short, and the dealer's mark set out beside the tile.
+    /// The partner across the top: no badge band, so the row stays short, and the dealer's mark set out beside the tile
+    /// (`DealerMark.placement(forPlace:)`).
     var isPartner = false
     /// The dealer's deck says where it rests.
     var onDeck: (CGPoint) -> Void = { _ in }
@@ -632,7 +632,7 @@ struct SeatView: View {
     /// The player has marked this seat as out of trump (D65).
     private var markedOut: Bool { hand.trump != nil && model.outOfTrump.contains(seat) }
 
-    /// A face with its name tag pinned to the shirt (D93) over one line of badges: the dealer's mark beside the face
+    /// A face over its carved name (D94) over one line of badges: the dealer's mark beside the face
     /// (N65), no stack of backs (D93) and no BIDDER, since the bid box shows who bid. Everything a seat says sits on or under its own portrait, so nothing
     /// about a player floats elsewhere on the table (spec R2). The seat to act wears a gold halo that
     /// breathes; that halo is the table's only turn indicator.
@@ -664,8 +664,6 @@ struct SeatView: View {
                     PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true, headOnly: true)
                         .scaleEffect(bigMomentScale, anchor: .bottom)
                 }
-                // The tag is pinned to the shirt, a little crooked, like a sticker put on by hand (D93); a tap renames the seat.
-                .overlay(alignment: .top) { pinnedTag }
                 .scaleEffect(pulsing ? Theme.Table.activePulseScale : 1)
                 .onChange(of: active, initial: true) { _, isActive in
                     if isActive, !reduceMotion {
@@ -680,8 +678,13 @@ struct SeatView: View {
                 .overlay(alignment: .top) {
                     if thinking { ThinkingDots().offset(y: -14).transition(.opacity) }
                 }
-            // The partner's tile ends at the face, so the row stays short.
-            if !isPartner { badges }
+            // The name carved into the wood under the face, trump carved beside it for the bidder (D94); a tap renames
+            // the seat (D93). Its thumb-tall hit area reaches a little into the face above.
+            NameTag(name: model.seatNames[seat], trump: Self.carvedTrump(seat: seat, bidder: hand.auction.winner, trump: hand.trump))
+                .renames { onRename(seat) }
+                .padding(.top, -8)
+            // The partner's tile ends at the name, so the row stays short.
+            if placement == .underFace { badges }
         }
         .padding(.horizontal, Self.tilePadding).padding(.vertical, 1)
         .frame(width: width)
@@ -689,7 +692,7 @@ struct SeatView: View {
         // it under the face (below); the partner's sits off to the right of the tile, beside
         // their card on the pile and under the scorecard.
         .overlay(alignment: .bottomTrailing) {
-            if isPartner, deals {
+            if placement == .besideTile, deals {
                 DealerMark(onPlaced: onDeck)
                     .offset(x: Theme.Table.dealerMarkWidth + Theme.Table.partnerMarkGap, y: Theme.Table.partnerMarkDrop)
             }
@@ -706,8 +709,14 @@ struct SeatView: View {
 
     /// Room the tile keeps on each side.
     nonisolated static let tilePadding = 4.0
-    /// About how tall a seat's scaled tag stands, so its thumb-tall hit area can be centred on it.
-    nonisolated static let tagHeight = 26.0
+
+    /// Where this seat's dealer button rests when it deals (D94).
+    private var placement: DealerMark.Placement { DealerMark.placement(forPlace: model.place(of: seat)) }
+
+    /// The suit carved beside a seat's name (D94): trump, for the seat that won the bid, once it is named.
+    nonisolated static func carvedTrump(seat: Int, bidder: Int?, trump: Suit?) -> Suit? {
+        bidder == seat ? trump : nil
+    }
 
     /// The words a seat wears beside its face: DEALER for the dealer, and nothing for the bidder, whom the bid box
     /// shows (N65).
@@ -724,25 +733,29 @@ struct SeatView: View {
         .frame(height: deals ? nil : backWidth * Theme.Card.ratio + 2)
     }
 
-    /// The seat's tag, sized to its shirt and a little crooked; its thumb-tall hit area is centred on the sticker.
-    private var pinnedTag: some View {
-        let drop = Theme.Table.portraitSize * Theme.Table.seatTagDrop - (Theme.Table.statusButtonHitSize - Self.tagHeight) / 2
-        return NameTag(name: model.seatNames[seat], width: Theme.Table.portraitSize * Theme.Table.seatTagWidthRatio,
-                       scale: Theme.Table.seatTagScale)
-            .renames { onRename(seat) }
-            .rotationEffect(.degrees(Theme.Table.seatTagTiltDegrees))
-            .offset(y: drop)
-    }
-
     private var portrait: Portrait { Cast.opponent(at: seat)?.portrait ?? model.settings.playerPortrait }
     private var expression: Portrait.Expression { SeatMood.expression(for: seat, in: model.match) }
     private var bigMomentScale: Double { SeatMood.isBigMoment(for: seat, in: model.match) ? Theme.Table.bigMomentScale : 1 }
 }
 
-/// Whoever deals (N65): a proper deck, much larger than the small stack it replaces, with a big DEALER label on a
-/// light tan pill across its foot. Nothing about it is a control.
+/// Whoever deals (N65): a proper deck, much larger than the small stack it replaces, with a dealer button, a round
+/// puck with a "D" engraved in it, resting at its foot (D94). Nothing about it is a control.
 struct DealerMark: View {
     nonisolated static let label = "DEALER"
+    nonisolated static let engraving = "D"
+
+    /// Where the mark rests in front of the dealer's seat: beside the phone holder's name under the hand, under a side
+    /// seat's face, or out beside the partner's tile across the top.
+    enum Placement: Equatable { case besideYourName, underFace, besideTile }
+
+    nonisolated static func placement(forPlace place: Int) -> Placement {
+        switch place {
+        case 0: .besideYourName
+        case 2: .besideTile
+        default: .underFace
+        }
+    }
+
     /// Told the deck's centre in the table's coordinate space whenever it moves; the deal starts there.
     var onPlaced: (CGPoint) -> Void = { _ in }
     /// The label beside the deck rather than across its foot, for the short row under the hand.
@@ -751,23 +764,14 @@ struct DealerMark: View {
     var body: some View {
         Group {
             if sideways {
-                HStack(spacing: 6) { DealerDeck(onPlaced: onPlaced); word }
+                HStack(spacing: 6) { DealerDeck(onPlaced: onPlaced); DealerButton() }
             } else {
-                VStack(spacing: -10) { DealerDeck(onPlaced: onPlaced); word }.frame(width: Theme.Table.dealerMarkWidth)
+                VStack(spacing: -12) { DealerDeck(onPlaced: onPlaced); DealerButton() }.frame(width: Theme.Table.dealerMarkWidth)
             }
         }
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
-    }
-
-    private var word: some View {
-        Text(Self.label).font(.system(size: 14, weight: .heavy)).tracking(0.5)
-            .foregroundStyle(Theme.Wood.streakDark)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(Theme.Table.cornerFill, in: Capsule())
-            .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1.5))
-            .fixedSize()
     }
 }
 

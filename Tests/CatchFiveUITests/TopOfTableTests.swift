@@ -105,9 +105,7 @@ private func playHand(_ match: inout Match) throws {
 }
 
 @MainActor @Test func everySeatWearsANameTagWithItsName() throws {
-    // N64, D93: a "HI, MY NAME IS" sticker pinned to every shirt, the name handwritten; the phone holder's too.
-    #expect(NameTag.band == "HI, MY NAME IS")
-    #expect(NameTag.handwriting == Scorecard.handwriting)
+    // N64, D93, D94: every seat's name carved into the wood under it, no sticker; the phone holder's too.
     let solo = GameModel(match: try Match(deck: GameModel.deck(), dealer: 3))
     #expect(NameTag.names(solo) == solo.seatNames)
     // Pass and play turns the table with the phone, and the tags turn with it.
@@ -120,7 +118,7 @@ private func playHand(_ match: inout Match) throws {
 }
 
 @Test func onlyTheDealerIsMarkedAndNoSeatSaysBidder() {
-    // N65: a big DEALER mark beside whoever deals; the bid box says who bid, so BIDDER goes.
+    // N65, D94: a dealer button beside whoever deals; the bid box says who bid, so BIDDER goes.
     #expect(DealerMark.label == "DEALER")
     #expect(SeatView.marks(seat: 1, dealer: 1, bidder: 1) == ["DEALER"])
     #expect(SeatView.marks(seat: 2, dealer: 1, bidder: 2).isEmpty)
