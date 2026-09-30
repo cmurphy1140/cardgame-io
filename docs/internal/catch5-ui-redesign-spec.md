@@ -5,11 +5,11 @@ refer to them by number, so they do not get renumbered.
 
 | For | Read |
 |---|---|
-| What to build next, in what order, and what counts as done | [family-first plan](docs/superpowers/plans/2026-09-05-iphone-16-ui-ux-gameplay.md), section 8 |
-| Ideas kept but not scheduled | [ideas](docs/ideas.md) |
-| How the screens connect | [screen flow](docs/screen-flow.md) |
+| What to build next, in what order, and what counts as done | [family-first plan](../superpowers/plans/2026-09-05-iphone-16-ui-ux-gameplay.md), section 8 |
+| Ideas kept but not scheduled | [ideas](../ideas.md) |
+| How the screens connect | [screen flow](../screen-flow.md) |
 | What the app should look like | the Aesthetic North Star in `AGENTS.md` |
-| The rules of the game | [house rules](docs/catch-five-rules.md) |
+| The rules of the game | [house rules](../catch-five-rules.md) |
 
 This file says *what the screens must do*. It does not track progress, hold unscheduled ideas, or
 decide the order of work; those moved out on September 14, 2026 when it had grown to 775 lines and

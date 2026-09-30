@@ -3,7 +3,7 @@
 Preserved September 14 when the requirements spec was split into a spec, an ideas file and this
 record. Its evidence and delivery order are of its date. Current order and progress live in the
 [family-first plan](../superpowers/plans/2026-09-05-iphone-16-ui-ux-gameplay.md); the requirements it
-refers to are in [the spec](../../catch5-ui-redesign-spec.md).
+refers to are in [the spec](../internal/catch5-ui-redesign-spec.md).
 
 ## Current working agreement — 2026-09-12
 

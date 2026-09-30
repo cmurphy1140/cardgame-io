@@ -4,7 +4,7 @@ Everything worth remembering that nobody has agreed to build. Split out of the r
 September 14, 2026: a requirement is something the app must do, an idea is something it might.
 
 **Nothing here is authorised.** An idea earns a requirement identifier when it is chosen, and only
-then does it move into [the spec](../catch5-ui-redesign-spec.md).
+then does it move into [the spec](internal/catch5-ui-redesign-spec.md).
 
 Add freely. Connor volunteers these as they occur to him and they are captured the same day, with
 the open questions attached so the thinking is not lost.
