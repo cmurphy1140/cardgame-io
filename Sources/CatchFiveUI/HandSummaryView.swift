@@ -51,7 +51,7 @@ struct HandSummaryView: View {
                         }
                         if let review {
                             ForEach(review.tricks, id: \.number) { trick in
-                                DisclosureGroup("Hand \(trick.number) · \(names[trick.winner]) took it") {
+                                DisclosureGroup("Trick \(trick.number) · \(names[trick.winner]) took it") {
                                     VStack(alignment: .leading, spacing: 8) {
                                         ForEach(trick.plays, id: \.play.card) { reviewPlay in
                                             playRow(reviewPlay)
@@ -76,9 +76,10 @@ struct HandSummaryView: View {
         let before = match.history.dropLast().last?.scores[team] ?? 0
         let change = summary.scores[team] - before
         return VStack(spacing: 2) {
-            Text("\(names[team]) + \(names[team + 2])").font(.caption).lineLimit(1).minimumScaleFactor(0.7).opacity(0.75)
+            Text("\(names[team]) + \(names[team + 2])").font(.caption).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).opacity(0.75)
+            Text("Total").font(.caption).opacity(0.75)
             Text(summary.scores[team], format: .number).font(.system(.title, design: .serif).weight(.semibold)).monospacedDigit()
-            Text(change >= 0 ? "+\(change)" : "\(change)").font(.subheadline.weight(.semibold)).monospacedDigit().opacity(0.75)
+            Text("This hand: \(change >= 0 ? "+\(change)" : "\(change)")").font(.subheadline.weight(.semibold)).monospacedDigit().opacity(0.75)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)

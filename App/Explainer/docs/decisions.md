@@ -793,3 +793,10 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** A chevron, which reads as a list disclosure as often as a way back; keeping the 48 pt suit apart from the word.
 
 **Why:** Connor: "you dont need yo write home next to a icon of a home", "use and arrow", "above it", and "yes carve the spade too". `homeIsACarvedBackArrowWithNoWord`, `carvedSuitsAreCutConcaveLikeTheLetters` and `theBidCornerSetsTheSuitAndTrumpOnOneLine` hold it.
+
+
+## D96. UI audit preview: score meaning and bidding targets (2026-09-30)
+
+**Implemented on `codex/ui-audit-preview`; commit and squash merge authorized September 30:** Connor requested a separate branch to see the audit improvements in action. Label running scores “Total” and deltas “This hand”; let team names wrap; call the review’s individual plays “Trick” rather than “Hand”. Present the factual hand summary before the character response. Keep the current artwork and rules. Numeric bids retain their ascending order, disabled states and lowest-legal outline; use one row when eight 44-point targets and spacing fit, otherwise two rows of four. Give the compact 9-and-out pill an explicit 44-point hit region.
+
+**Verification:** Native rendering, compilation, accessibility, and device play are pending on a Mac. Merge authorization is separate from visual acceptance. Inspect the narrowest phone and large text during the next device play check; the extra bid row may require the existing vertical scroll fallback.

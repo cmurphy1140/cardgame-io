@@ -458,7 +458,7 @@ struct TableSurface: View {
         nineAndOut ? [.numbers, .nineAndOut, .pass] : [.numbers, .pass]
     }
 
-    /// The auction's controls (B05, N55): every number in one row, the lowest you may bid edged in light brown,
+    /// The auction's controls (B05, N55): numbers in one row when targets fit, otherwise two rows, the lowest you may bid edged in light brown,
     /// 9 and out on a short line of its own under the 9, and Pass as the one wide secondary action. The seats' boxes
     /// carry who bid what, so there are no High and Lowest chips.
     private var bidding: some View {
@@ -471,12 +471,14 @@ struct TableSurface: View {
             ForEach(Self.auctionRows(nineAndOut: model.allows(.nineAndOut)), id: \.self) { line in
                 switch line {
                 case .numbers:
-                    HStack(spacing: Theme.Table.auctionButtonSpacing) {
-                        ForEach(row, id: \.bid) { pill in
-                            actionButton(String(pill.bid), action: .bid(pill.bid), fill: .ivory,
-                                         font: .title2.weight(.bold), labelColor: .suitRed)
-                                .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
-                                    .stroke(Theme.Wood.light, lineWidth: pill.bid == lowest ? 3 : 0))
+                    // Keep all choices stable; wrap before targets become narrower than 44 pt.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Theme.Table.auctionButtonSpacing) {
+                            bidChoices(row, lowest: lowest)
+                        }
+                        .frame(minWidth: 8 * 44 + 7 * Theme.Table.auctionButtonSpacing)
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 44), spacing: Theme.Table.auctionButtonSpacing), count: 4), spacing: Theme.Table.auctionButtonSpacing) {
+                            bidChoices(row, lowest: lowest)
                         }
                     }
                     .dynamicTypeSize(...Theme.Card.maximumTypeSize)
@@ -492,7 +494,18 @@ struct TableSurface: View {
         .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: row)
     }
 
-    /// The rare bid, small and set apart under the 9 it belongs to (B02).
+    /// Shared controls keep bid order, validation and the lowest-bid outline identical in both layouts.
+    private func bidChoices(_ row: [BidPill], lowest: Int?) -> some View {
+        ForEach(row, id: \.bid) { pill in
+            actionButton(String(pill.bid), action: .bid(pill.bid), fill: .ivory,
+                         font: .title2.weight(.bold), labelColor: .suitRed)
+                .frame(minWidth: 44)
+                .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
+                    .stroke(Theme.Wood.light, lineWidth: pill.bid == lowest ? 3 : 0))
+        }
+    }
+
+    /// The rare bid keeps a compact visible pill inside a full-height touch target.
     private var nineAndOutButton: some View {
         Button { onNineAndOut() } label: {
             Text("9 and out").font(.subheadline.weight(.semibold)).foregroundStyle(.ivory)
@@ -500,6 +513,8 @@ struct TableSurface: View {
                 .padding(.horizontal, 10).padding(.vertical, 3)
                 .background(Theme.Wood.dark, in: Capsule())
                 .overlay(Capsule().stroke(Theme.Wood.light, lineWidth: 1))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityHint("Take all nine points or lose the match; asks you to confirm")
@@ -554,8 +569,8 @@ struct TableSurface: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 12) {
                 if let winner = model.match.winner { matchOver(winner) }
-                if let line = model.handEndLine { handEndWords(line) }
                 HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
+                if let line = model.handEndLine { handEndWords(line) }
                 dealButton
             }
             .padding(12)

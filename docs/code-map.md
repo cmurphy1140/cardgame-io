@@ -108,3 +108,8 @@ ComputerPlayerTests.computersCompleteShuffledMatchesThroughRealRules
 Responsibility: PlayerView answers “what can this player know?” ComputerPlayer answers “what should it try?” Match answers “is that action allowed, and what happens next?” These are deliberately separate. Bidding uses an expected-points estimate per suit. Card play builds a `Knowledge` value from the seat's cards and every card already played, then scores each legal card by expected points net of the control given up. Strength is measured by `StrategyBenchmark` against the frozen `EasyPlayer`. It does not attempt 9 and out.
 
 Try `swift run catch-five-demo --computer` for a narrated match with fresh shuffled decks.
+
+
+### UI audit preview (September 30, 2026)
+
+`TableSurface.bidChoices(_:lowest:)` shares the numeric bid controls between the wide row and compact four-column grid. `bidding` chooses the fitting layout with `ViewThatFits`; action validation remains in the existing `actionButton`. `HandSummaryView.score` now labels total and per-hand change. These branch changes require native build and play verification; see D96.
