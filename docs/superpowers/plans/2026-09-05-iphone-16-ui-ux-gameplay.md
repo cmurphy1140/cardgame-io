@@ -216,6 +216,39 @@ When useful, capture one before/after and a short explanation of why the change 
 
 ## 8. Current progress and next action
 
+### Release focus — October 4, 2026
+
+Connor chose **Catch-5 only** for this sprint: finish the existing game before opening more projects. This section supersedes the historical implementation requests below. Settings redesign, more lessons, bot improvements, shared visual templates and Plug & Pitch are parked unless a reproducible defect blocks the current game.
+
+**Objective:** finish the current Catch-5 release candidate. **Done when:** the current build passes the core journey and save/resume checks, a physical-phone play-through is accepted, and the agreed distribution step is approved and completed. Automated checks alone do not mean shipped.
+
+**Exact candidate:** local `/Users/connormurphy/Code/catch-5/.claude/worktrees/tactile-table`, branch `ui/tactile-table`, base `cb21ba4b447f2112f0247f1adf8f65b6ead929d2` plus its pre-existing uncommitted tactile-table changes. The main checkout does not contain those changes. Codex coordinates this verification pass and owns these release notes; the bounded Claude reviewer has no write ownership. The only new application change in this pass is the fixed result-action footer in `TableSurface.swift` (D99); all earlier table work is preserved. One heavy verification process runs at a time.
+
+| Release check | Evidence on October 4 | State |
+|---|---|---|
+| Rules and view-model regression suite | `swift test`: 90 engine + 164 UI/model tests, 254 passing | Passed |
+| Actual project, Release configuration | `xcodebuild` on `CatchFive.xcodeproj` passed before D99; the final D99 app rebuilt in Release for the targeted screen test | Build passed; not a signed distribution archive |
+| Real screen interaction | First setup → auction → six card plays → result → next hand, with process restart and the same saved hand; forced dealer bid separately | Both passed before D99 on isolated iPhone 16 / iOS 18.6; exposed the result-action issue below |
+| Independent source review | Local Claude Code, read-only, nine source reads, completed in 308.4 seconds | No supported gameplay blocker in the pre-fix source; the layout issue below came from runtime inspection |
+| Result-action regression after D99 | Release build; Deal next hand and Play again were each hittable without a swipe and each advanced the game; screenshots inspected | Passed, `testResultPhaseActionStaysVisible`, 22.394 seconds |
+| Physical phone and distribution | Earlier notes describe an installed alpha; this candidate has not been installed or accepted in this pass | Unverified; approval gate remains |
+
+Evidence is under `work/release-check/`: `swift-test.log` (baseline), `swift-test-final.log` (after D99), `release-build.log`, `claude-review.md`, `smoke.xcresult` (full journey before D99), `result-action.xcresult` (both result states after D99), the smoke-test harness and SHA-256 source manifests. These are local ignored artifacts, not published evidence or CI results.
+
+**Release-flow fix, D99:** the completed-hand screenshot and test log showed `Deal next hand` offscreen; the original test had to swipe before tapping. The button now stays in a fixed footer while optional result detail scrolls. The same footer handles `Play again`. The original end-to-end harness now forbids scrolling to reach the button; the targeted real-screen check for both result states passed after the fix. Both exported screens were inspected: the action stays visible at the bottom of the card. All 254 unit/model tests pass again after this change. No rules or save code changed.
+
+**One deferred finding:** if the human wins and leads again within the fourth card's 0.42-second arrival, `TableView.planMotion` can briefly draw that card in both its arrival and collection flights. Source-supported by the reviewer; not reproduced at runtime here. Rules, cards and scores are unaffected. Cosmetic; do not expand this release to fix it.
+
+**Remaining sequence for Bau, one goal at a time:**
+
+1. **Local checks complete.** Preserve this tested candidate. Only a newly reproduced launch, legal-play, scoring, saved-game or progression failure earns an implementation task; give one writer its failing sequence, owned files and acceptance check. Stop after the same failed attempt twice.
+2. Once local checks pass, arrange one physical-phone acceptance pass through the existing approval route: finish a hand, leave/resume the same match, and hand over a pass-and-play turn without exposing the next hand. Check the already-required large-text/VoiceOver behavior on that phone. Record what was actually exercised; do not turn missing evidence into a redesign brief.
+3. Confirm the intended distribution destination and obtain the existing commit/push/merge/install/release approvals through Bau before the corresponding action. Build and retain the exact approved candidate, verify the installed build, then mark the release shipped. No public upload, signing change or account purchase is implied by this plan.
+
+**Handoff:** D99 changes `Sources/CatchFiveUI/TableSurface.swift`, documented in `docs/decisions.md` and its bundled copy. This plan and the existing vault project/batch notes record the frozen scope and evidence; the vault project note contains the result-screen proof. The test harness, results and manifests remain local under ignored `work/release-check/`; they are not a new CI suite. `git diff --check` passes. The pre-existing table changes remain uncommitted, with this fix layered on them; nothing was committed, pushed, installed on a physical device, merged or released by this pass. The next concrete action is Bau's approved physical-device acceptance of this exact candidate, followed by the chosen distribution step. One cosmetic animation overlap is deferred above; no reproduced gameplay failure remains from this pass.
+
+### Historical progress — not the active work queue
+
 | Increment | Status on September 14, 2026 | Next check |
 |---|---|---|
 | Baseline reconciliation | Done September 13: plan, spec and rules on `main` (PR #42); `swift build` and `swift test` 149 of 149 verified on that tree; iCloud excluded; stale branches removed; current build played on the simulator and installed on Connor's iPhone. The suite has since grown to 159 tests, verified three times on September 14 | Done; nothing outstanding |

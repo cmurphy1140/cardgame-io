@@ -1,0 +1,141 @@
+import CatchFive
+import SwiftUI
+
+/// The playing field (D97): a walnut panel inlaid in the oak where the trick is played. Its grain runs across the
+/// oak's, a maple stringing line runs just inside its edge, it sits a little below the oak (shadowed under its top
+/// edge, its lower lip catching the light), and once trump is named the suit is inlaid at its centre. A pool of
+/// lamplight lies in front of the seat whose turn it is. Nothing on it is a control.
+struct TableField: View {
+    /// The panel's frame in the space of the view this is the background of.
+    let rect: CGRect
+    let trump: Suit?
+    /// The place (0 you, 1 left, 2 across, 3 right) of the seat to act, or nil when nobody is.
+    let lamp: Int?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.Field.cornerRadius, style: .continuous)
+        ZStack(alignment: .topLeading) {
+            // The walnut is drawn once for the whole surface and only its window moves, so the grain never redraws
+            // while the field changes shape between the auction and play.
+            WalnutGrain().equatable()
+                .mask(alignment: .topLeading) { shape.frame(width: rect.width, height: rect.height).offset(x: rect.minX, y: rect.minY) }
+            ZStack {
+                lampPool
+                if let trump { TrumpInlay(suit: trump, size: min(rect.width * 0.55, Theme.Field.inlayMaximum)).transition(.opacity) }
+                // Recessed: the oak's edge throws a shadow across the top of the panel.
+                shape.stroke(.black.opacity(0.55), lineWidth: 10).blur(radius: 7).offset(y: 4).clipShape(shape)
+                // The lower lip catches the light.
+                shape.inset(by: 0.75).stroke(LinearGradient(stops: [.init(color: .clear, location: 0.55),
+                                                                     .init(color: Theme.Wood.streakLight.opacity(0.55), location: 1)],
+                                                             startPoint: .top, endPoint: .bottom), lineWidth: 1.5)
+                stringing
+                shape.stroke(Theme.Wood.header.opacity(0.7), lineWidth: 1)
+            }
+            .frame(width: rect.width, height: rect.height)
+            .offset(x: rect.minX, y: rect.minY)
+        }
+        // Under Reduce Motion the field and the lamp change in place; nothing slides.
+        .animation(reduceMotion ? nil : .spring(duration: 0.5, bounce: 0), value: rect)
+        .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0), value: lamp)
+        .animation(Theme.Motion.overlay, value: trump)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    /// A strip of maple set into the walnut just inside its edge, with a dark seam on either side.
+    private var stringing: some View {
+        let inset = Theme.Field.stringingInset
+        let inner = RoundedRectangle(cornerRadius: Theme.Field.cornerRadius - inset, style: .continuous)
+        return ZStack {
+            inner.inset(by: inset).stroke(Theme.Field.walnutDark, lineWidth: Theme.Field.stringingWidth + 1.4)
+            inner.inset(by: inset).stroke(Theme.Field.maple.opacity(0.85), lineWidth: Theme.Field.stringingWidth)
+        }
+    }
+
+    /// A soft warm pool between the middle of the field and the seat to act.
+    @ViewBuilder private var lampPool: some View {
+        let radius = min(rect.width, rect.height) * 0.62
+        Circle()
+            .fill(RadialGradient(colors: [Theme.Field.lamp.opacity(Theme.Field.lampOpacity), Theme.Field.lamp.opacity(0)],
+                                 center: .center, startRadius: 0, endRadius: radius))
+            .frame(width: radius * 2, height: radius * 2)
+            .offset(Self.lampOffset(place: lamp, size: rect.size))
+            .opacity(lamp == nil ? 0 : 1)
+            .frame(width: rect.width, height: rect.height)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Field.cornerRadius, style: .continuous))
+    }
+
+    /// Where the lamp sits for a place, from the field's centre: most of the way toward that seat's edge.
+    nonisolated static func lampOffset(place: Int?, size: CGSize) -> CGSize {
+        switch place {
+        case 1: CGSize(width: -size.width * 0.5, height: 0)
+        case 2: CGSize(width: 0, height: -size.height * 0.5)
+        case 3: CGSize(width: size.width * 0.5, height: 0)
+        case 0: CGSize(width: 0, height: size.height * 0.5)
+        default: .zero
+        }
+    }
+}
+
+/// Trump inlaid in the walnut (D97): the suit cut in maple for spades and clubs, in a red wood for hearts and diamonds,
+/// with a dark seam round it, the grain of the field running on through it.
+struct TrumpInlay: View {
+    let suit: Suit
+    let size: Double
+
+    /// The wood a suit is inlaid in.
+    nonisolated static func wood(for suit: Suit) -> Color { suit.isRed ? Theme.Field.inlayRed : Theme.Field.maple }
+
+    var body: some View {
+        ZStack {
+            Text(suit.glyph).font(.system(size: size)).foregroundStyle(Theme.Field.walnutDark)
+                .offset(y: -1).blur(radius: 0.6)
+            Text(suit.glyph).font(.system(size: size)).foregroundStyle(Self.wood(for: suit))
+                .overlay {
+                    // A few fine lines of figure so the inlay reads as wood, not paint.
+                    LinearGradient(stops: [.init(color: .black.opacity(0.0), location: 0), .init(color: .black.opacity(0.18), location: 0.5),
+                                           .init(color: .black.opacity(0.0), location: 1)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                        .mask(Text(suit.glyph).font(.system(size: size)))
+                }
+        }
+        .opacity(Theme.Field.inlayOpacity)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The walnut itself: a dark warm base lit toward the middle, with fine grain running top to bottom, across the oak's.
+struct WalnutGrain: View, Equatable {
+    nonisolated static func == (lhs: WalnutGrain, rhs: WalnutGrain) -> Bool { true }
+
+    var body: some View {
+        Canvas(rendersAsynchronously: true) { context, size in
+            let bounds = Path(CGRect(origin: .zero, size: size))
+            context.fill(bounds, with: .radialGradient(
+                Gradient(colors: [Theme.Field.walnutLight, Theme.Field.walnut, Theme.Field.walnutDark]),
+                center: CGPoint(x: size.width / 2, y: size.height * 0.48), startRadius: 10, endRadius: max(size.width, size.height) * 0.62))
+            var random = GrainRandom(seed: Theme.Wood.seed + 7)
+            // Long figure, the way walnut's grain wanders, with a few darker streaks.
+            var x = -4.0
+            while x < size.width + 4 {
+                x += random.next(in: 1.6...4.8)
+                let amplitude = random.next(in: 0...1) < 0.15 ? random.next(in: 6...16) : random.next(in: 0.5...4)
+                let frequency = random.next(in: 0.004...0.012)
+                let phase = random.next(in: 0...(2 * .pi))
+                var path = Path()
+                path.move(to: CGPoint(x: x, y: -4))
+                var y = 0.0
+                while y < size.height + 8 {
+                    y += 8
+                    path.addLine(to: CGPoint(x: x + amplitude * sin(y * frequency + phase), y: y))
+                }
+                let light = random.next(in: 0...1) < 0.4
+                let alpha = random.next(in: 0.04...0.13)
+                context.stroke(path, with: .color((light ? Theme.Wood.streakLight : Color.black).opacity(alpha)),
+                               lineWidth: random.next(in: 0.5...1.6))
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}

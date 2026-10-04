@@ -18,7 +18,7 @@ struct TableTopRow: View {
     let onRules: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             item(Self.home, hint: "Back to the main menu; your game is saved", action: onHome) {
                 // A back arrow alone, cut into the wood (D95): no house, no word, no pill.
                 Image(systemName: Self.home.symbol)
@@ -26,7 +26,12 @@ struct TableTopRow: View {
                     .modifier(Carved(depth: Carving.depth(size: Theme.Table.homeArrowSize)))
             }
             Spacer(minLength: 0)
-            item(Self.rules, hint: "Opens the rules", action: onRules) { RulesBook() }
+            SwiftUI.Button(action: onRules) { RulesBook() }
+                .buttonStyle(BookPressStyle())
+                // The book is taller than the row (D100): it overhangs above and below rather than pushing the table down.
+                .frame(height: Theme.Table.topRowHeight)
+                .accessibilityLabel(Self.rules.title)
+                .accessibilityHint("Opens the rules")
         }
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
     }

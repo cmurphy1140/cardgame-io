@@ -5,7 +5,7 @@ import Foundation
 /// numbered diagrams rendered to images at export time. Inline styling stays as Markdown for
 /// `AttributedString(markdown:)` to render.
 struct MarkdownDocument: Equatable {
-    enum Block: Equatable {
+    enum Block: Equatable, Hashable {
         case heading(level: Int, text: String)
         case paragraph(String)
         case bullets([String])
@@ -14,6 +14,18 @@ struct MarkdownDocument: Equatable {
         case code(language: String, text: String)
         /// The n-th Mermaid fence in the document, 1-based; the reader shows `diagrams/<file>-<n>.png`.
         case diagram(index: Int)
+
+        /// The words a reader reads in this block: prose, list items and table rows (not the header);
+        /// code counts half, headings and diagrams nothing.
+        var words: Int {
+            switch self {
+            case let .paragraph(text): text.split(separator: " ").count
+            case let .bullets(items), let .numbered(items): items.reduce(0) { $0 + $1.split(separator: " ").count }
+            case let .table(_, rows): rows.reduce(0) { $0 + $1.joined(separator: " ").split(separator: " ").count }
+            case let .code(_, text): text.split(separator: " ").count / 2
+            default: 0
+            }
+        }
     }
 
     struct Section: Equatable {

@@ -24,8 +24,9 @@ import Testing
     #expect(TableSurface.bidRow(allows: { _ in false }).allSatisfy { !$0.enabled })
 }
 
-@Test func nineAndOutTakesItsOwnLineUnderTheBidRow() {
-    // The 9-and-out pill sits on its own line between the numbers and Pass, covering no bid pill.
-    #expect(TableSurface.auctionRows(nineAndOut: true) == [.numbers, .nineAndOut, .pass])
+@Test func nineAndOutSitsOnThePassRowUnderTheNine() {
+    // D97, over D85's own line: 9 and out sits at the right end of the Pass row, under the 9, still covering no number (D85), so the
+    // auction fits above the hand.
+    #expect(TableSurface.auctionRows(nineAndOut: true) == [.numbers, .passWithNineAndOut])
     #expect(TableSurface.auctionRows(nineAndOut: false) == [.numbers, .pass])
 }

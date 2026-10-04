@@ -37,9 +37,11 @@ enum HandLayout {
         return min(cardWidth + baselineGap, (available - cardWidth) / Double(count - 1))
     }
 
-    static func height(of arrangement: Arrangement, cardWidth: Double) -> Double {
+    static func height(of arrangement: Arrangement, cardWidth: Double, flat: Bool = false) -> Double {
         let card = cardWidth * Theme.Card.ratio
         switch arrangement {
+        // A hand lying flat for the auction needs no room for the fan's lift and arc (D97).
+        case .fan where flat: return card + 4
         case .fan: return card + 16 + Theme.Card.fanDrop
         case .rows: return 2 * card + rowGap + 16
         }
@@ -55,6 +57,8 @@ enum TableLayout {
     static let space = "table"
     /// A pile card nudged toward either side seat, plus 4 pt of air on each side.
     static let pileReservation = Theme.Card.pileWidth + 2 * Theme.Table.sideNudge + 8
+    /// The pile's height before the cards' own scale: a card nudged up for the partner and one nudged down for you.
+    static let pileHeight = Theme.Card.pileWidth * Theme.Card.ratio + Theme.Table.partnerNudge + Theme.Table.ownNudge + 8
     /// The spacer between a tile and the pile.
     static let seatGap = 4.0
     static let minimumSeatWidth = 84.0

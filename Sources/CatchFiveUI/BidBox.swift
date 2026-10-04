@@ -1,8 +1,8 @@
 import CatchFive
 import SwiftUI
 
-/// One seat's place in the auction (N55): empty until the seat speaks, then its bid, PASS or 9 OUT, big, carved into the
-/// wood with no box round it (D94). Every
+/// One seat's place in the auction (N55): empty until the seat speaks, then its bid, PASS or 9 OUT, big, chalked on the
+/// table with no box round it (D94, D97). Every
 /// seat has one, the phone holder included; the call arrives from where it was made (the bid row for you,
 /// the seat for everyone else), and the boxes go when the auction ends and the bid corner takes over.
 struct BidBox: View {
@@ -28,7 +28,10 @@ struct BidBox: View {
                 Text(label)
                     .font(.system(size: label.count > 1 ? Theme.Table.bidBoxWordSize : Theme.Table.bidBoxNumberSize,
                                   weight: .heavy, design: .rounded))
-                    .carved()
+                    // Chalked (D97), like the tally: it reads on the oak and on the walnut field the side seats' boxes
+                    // tuck over, where a carving would vanish.
+                    .foregroundStyle(.ivory.opacity(0.94))
+                    .shadow(color: .black.opacity(0.45), radius: 0.5, y: 1)
                     .lineLimit(1).minimumScaleFactor(0.5)
                     .padding(.horizontal, 3)
                     .id(label)

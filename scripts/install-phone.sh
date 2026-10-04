@@ -9,8 +9,9 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Develope
 device="${1:-}"
 if [ -z "$device" ]; then
   # The first phone that is connected or available; the identifier is the UUID column.
+  # The model column (iPhone17,1) keeps a paired Apple Watch, listed first by name, out.
   device=$(xcrun devicectl list devices 2>/dev/null | grep -E ' (connected|available)' \
-    | grep -v simulated | grep -oE '[0-9A-F]{8}-[0-9A-F]{16}|[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
+    | grep -v simulated | grep -E 'iPhone[0-9]+,' | grep -oE '[0-9A-F]{8}-[0-9A-F]{16}|[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
 fi
 if [ -z "$device" ]; then
   echo "No paired iPhone is connected. Plug it in, unlock it, then: xcrun devicectl manage pair --device <name>" >&2

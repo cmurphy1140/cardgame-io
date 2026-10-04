@@ -367,10 +367,11 @@ import Testing
 }
 
 @Test func fannedHandCardsKeepAThumbSizedStrip() {
-    // Six overlapped cards must fit the narrowest supported phone and each expose 44pt (docs/redesign-plan.md).
-    for width in [Theme.Card.handWidth, Theme.Card.handWidthWide] {
+    // Six overlapped cards must fit the narrowest supported phone and each expose 44pt (docs/redesign-plan.md). The wide
+    // cards (D97) are only dealt on screens at least `wideScreenWidth` across, so they are held to that width.
+    for (width, screen) in [(Theme.Card.handWidth, 375.0), (Theme.Card.handWidthWide, Theme.Card.wideScreenWidth)] {
         #expect(Theme.Card.touchStrip(width: width) >= Theme.Card.minimumTouchStrip)
-        #expect(width + 5 * Theme.Card.touchStrip(width: width) <= 375 - 32)
+        #expect(width + 5 * Theme.Card.touchStrip(width: width) <= screen - 32)
     }
     #expect(abs(Theme.Card.radius(width: 60) - 3.6) < 0.0001)
 }

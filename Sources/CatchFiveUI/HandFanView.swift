@@ -4,16 +4,25 @@ import SwiftUI
 /// The human's hand: six overlapped cards on a shallow fan, the dominant element on screen.
 struct HandFanView: View {
     @ObservedObject var model: GameModel
-    let namespace: Namespace.ID
     /// Called with the card when a tap is refused, so the table can shake it and buzz.
     let onIllegal: (Card) -> Void
     @Binding var shakes: [Card: Int]
+    /// The card picked by the first tap (D97); a second tap, or dragging it up, plays it.
+    @Binding var selected: Card?
+    /// Cards of a hand still being dealt (D97): their places are kept, but they are not drawn until they land.
+    var dealing: Set<Card> = []
     /// The centre of the deck beside the dealer, in the table's coordinate space; the refill deals in from it.
     var deck: CGPoint? = nil
     /// Your own deck, under the fan when you deal, says where it rests.
     var onDeck: (CGPoint) -> Void = { _ in }
     /// The phone holder's tag was tapped: rename that seat (D93).
     var onRename: (Int) -> Void = { _ in }
+    /// How the hand is laid out, so the table can deal into it and fly a played card out of it (D97).
+    var onGeometry: (Geometry) -> Void = { _ in }
+    /// Where your name sits under the hand: a trick you take is pulled toward it.
+    var onAnchor: (CGPoint) -> Void = { _ in }
+    /// Told where a card was, in the table's space, just before it is played, so its flight starts there.
+    var onLaunch: (Card, CardPose) -> Void = { _, _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .title2) private var scaledStandard = Theme.Card.handWidth
     @ScaledMetric(relativeTo: .title2) private var scaledWide = Theme.Card.handWidthWide
@@ -21,6 +30,24 @@ struct HandFanView: View {
     @State private var measuredWidth = 0.0
     /// Where the hand sits on the table, so a dealt card knows how far it has come from the deck.
     @State private var fanFrame = CGRect.zero
+    /// The card being dragged and how far it has moved. Gesture state, so a cancelled touch can never leave a card
+    /// hanging in the air; letting go short of a play springs it back.
+    @GestureState(resetTransaction: Transaction(animation: .spring(duration: 0.35, bounce: 0.3))) private var drag: Drag?
+    /// The card under a finger right now: it rises a little before anything is decided.
+    @GestureState private var pressing: Card?
+
+    struct Drag: Equatable {
+        let card: Card
+        let offset: CGSize
+    }
+
+    /// Where a dragged card is drawn for a finger's travel: it follows the finger upward freely; sideways and down it
+    /// resists, so it reads as lifting.
+    nonisolated static func dragOffset(_ translation: CGSize) -> CGSize {
+        // TODO(human): decide how a dragged card should feel under the finger. Today it follows upward one to one,
+        // half as much sideways, and resists downward at 0.3.
+        CGSize(width: translation.width * 0.5, height: min(translation.height, translation.height * 0.3))
+    }
 
     private var wide: Bool { measuredWidth + 32 >= Theme.Card.wideScreenWidth }
     private var cardWidth: Double { wide ? Theme.Card.handWidthWide : Theme.Card.handWidth }
@@ -31,6 +58,10 @@ struct HandFanView: View {
         // pick two rows and then tear the fan down once the real width lands.
         guard measuredWidth > 0 else { return .fan(strip: Theme.Card.touchStrip(width: scaledWidth)) }
         return HandLayout.arrange(count: model.humanCards.count, cardWidth: scaledWidth, available: measuredWidth - 16)
+    }
+
+    private var geometry: Geometry {
+        Geometry(frame: fanFrame, baseWidth: cardWidth, scaledWidth: scaledWidth, available: measuredWidth - 16)
     }
 
     var body: some View {
@@ -53,9 +84,11 @@ struct HandFanView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .bottom)
-            .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth))
+            .frame(height: HandLayout.height(of: arrangement, cardWidth: scaledWidth,
+                                             flat: model.match.hand.phase == .bidding && measuredWidth > 0))
             .onGeometryChange(for: Double.self) { $0.size.width } action: { measuredWidth = $0 }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TableLayout.space)) } action: { fanFrame = $0 }
+            .onChange(of: geometry, initial: true) { _, geometry in onGeometry(geometry) }
             // No "Your hand" caption (T05). Under the hand, the phone holder's name carved into the wood, trump beside it
             // when they bid (D94), a tap renames them (D93), and, when yours, the deal with its dealer button.
             HStack(spacing: 10) {
@@ -63,6 +96,10 @@ struct HandFanView: View {
                     let hand = model.match.hand
                     NameTag(name: model.seatNames[seat], trump: SeatView.carvedTrump(seat: seat, bidder: hand.auction.winner, trump: hand.trump))
                         .renames { onRename(seat) }
+                        .onGeometryChange(for: CGPoint.self) { proxy in
+                            let frame = proxy.frame(in: .named(TableLayout.space))
+                            return CGPoint(x: frame.midX, y: frame.midY)
+                        } action: { onAnchor($0) }
                 }
                 Spacer(minLength: 0)
                 if !cards.isEmpty, model.match.hand.auction.dealer == model.viewerSeat {
@@ -73,55 +110,109 @@ struct HandFanView: View {
         .frame(maxWidth: .infinity)
     }
 
-    @State private var selectedCard: Card?
-
     /// One row of cards. Fanned rows rotate and dip; the two-row fallback lays cards flat so nothing
     /// overlaps a neighbour's touch strip.
     private func row(_ cards: [Card], indices: [Int], strip: Double, fanned: Bool) -> some View {
         let playing = model.match.hand.phase == .playing
         let fanCount = fanned ? cards.count : 1
         return HStack(spacing: strip - scaledWidth) {
-            ForEach(indices, id: \.self) { index in
-                let card = cards[index]
+            // Keyed by the card, not its place (D97): a played card's own view leaves (its flight carries it), a discard's
+            // own view flies to the pile, and no other card inherits an animation meant for one of them.
+            ForEach(indices.map { (index: $0, card: cards[$0]) }, id: \.card) { index, card in
                 let playable = model.allows(.play(card))
-                let isSelected = selectedCard == card
+                let isSelected = selected == card && playable
+                let dragged = drag?.card == card ? drag?.offset ?? .zero : .zero
                 let style: CardStyle = playing && model.isHumanTurn ? (playable ? .playable : .dimmed) : .rest
-                Button {
-                    if playable {
-                        if selectedCard == card {
-                            model.send(.play(card))
-                            selectedCard = nil
-                        } else {
-                            selectedCard = card
-                        }
-                    } else {
-                        onIllegal(card)
-                        selectedCard = nil
-                    }
-                } label: {
-                    CardView(card: card, width: cardWidth, style: style)
-                        .overlay(RoundedRectangle(cornerRadius: Theme.Card.radius(width: cardWidth), style: .continuous)
-                            .strokeBorder(.ivory.opacity(0.9), style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
-                            .opacity(model.hint?.action == .play(card) ? 1 : 0))
-                }
-                .buttonStyle(CardPressStyle(enabled: playable))
-                .modifier(ShakeEffect(trigger: shakes[card, default: 0]))
-                .rotationEffect(.degrees(reduceMotion || !fanned ? 0 : fanAngle(index, of: fanCount)), anchor: .bottom)
-                .offset(y: reduceMotion || !fanned ? 0 : fanDrop(index, of: fanCount))
-                .offset(y: isSelected ? -24 : 0)
-                .allowsHitTesting(playing)
-                .accessibilityValue(model.accessibilityValue(for: card))
-                .modifier(MatchedCard(card: card, namespace: namespace, enabled: !reduceMotion))
-                .transition(handTransition(index: index, slot: indices.firstIndex(of: index) ?? 0, count: indices.count, strip: strip))
-                .zIndex(isSelected ? 100 : Double(index))
+                let inHand = !dealing.contains(card)
+                CardView(card: card, width: cardWidth, style: style)
+                    .overlay(RoundedRectangle(cornerRadius: Theme.Card.radius(width: cardWidth), style: .continuous)
+                        .strokeBorder(.ivory.opacity(0.9), style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                        .opacity(model.hint?.action == .play(card) ? 1 : 0))
+                    // The touch target is the card itself, before it is turned, lifted or dragged, so it travels with
+                    // the card and a raised card is tapped where it is drawn.
+                    .contentShape(Rectangle())
+                    .gesture(cardGesture(card, slot: index, count: cards.count, fanned: fanned, playable: playable))
+                    // The picked card glows warm along its edge, so the second tap has an obvious target. It keeps its
+                    // place in the stack, so the next card's corner stays on top of it and is still that card's to tap.
+                    .shadow(color: Theme.Field.lamp.opacity(isSelected ? 0.75 : 0), radius: isSelected ? 10 : 0)
+                    .modifier(ShakeEffect(trigger: shakes[card, default: 0]))
+                    .rotationEffect(.degrees(reduceMotion || !fanned ? 0 : Self.fanAngle(index, of: fanCount)), anchor: .bottom)
+                    .offset(y: reduceMotion || !fanned ? 0 : Self.fanDrop(index, of: fanCount))
+                    .offset(y: isSelected ? -Theme.Card.liftSelected : 0)
+                    .offset(y: pressing == card && playable && !isSelected && !reduceMotion ? -Theme.Card.liftPressed : 0)
+                    .offset(dragged)
+                    // A dealt card arrives edge-on from the deck and turns face up in its place.
+                    .rotation3DEffect(.degrees(inHand || reduceMotion ? 0 : 90), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
+                    .opacity(inHand ? 1 : 0)
+                    // Under Reduce Motion a picked card simply stands up; nothing slides.
+                    .animation(reduceMotion ? nil : Theme.Motion.press, value: isSelected)
+                    .animation(reduceMotion ? nil : Theme.Motion.press, value: pressing)
+                    .allowsHitTesting(playing && inHand)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(card.spoken)
+                    .accessibilityValue(model.accessibilityValue(for: card))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                    .accessibilityHint(isSelected ? "Tap again to play" : playable ? "Picks this card; tap again to play it" : "")
+                    .accessibilityAction { activate(card, slot: index, count: cards.count, fanned: fanned, playable: playable) }
+                    .transition(handTransition(index: index, slot: indices.firstIndex(of: index) ?? 0, count: indices.count, strip: strip))
+                    .zIndex(drag?.card == card ? 200 : Double(index))
             }
         }
     }
 
-    /// How a card enters or leaves the fan. A played card leaves by `matchedGeometryEffect` (identity
-    /// here). While trump is being chosen, a leaving card is a discard: it rises toward the table and
-    /// fades, one after another. At the start of play, an arriving card is part of the refill: it
-    /// deals in from the deck beside the dealer, deck-sized and faint, after the discards have gone.
+    /// One gesture for a hand card (D97): a touch that does not travel is a tap; one that travels drags a legal card,
+    /// and letting go high enough plays it, lower and it springs back. A card that may not be played shakes and the
+    /// table says why, whether it was tapped or dragged.
+    private func cardGesture(_ card: Card, slot: Int, count: Int, fanned: Bool, playable: Bool) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(TableLayout.space))
+            .updating($pressing) { _, state, _ in state = card }
+            .updating($drag) { value, state, _ in
+                guard playable, hypot(value.translation.width, value.translation.height) > 8 else { return }
+                state = Drag(card: card, offset: Self.dragOffset(value.translation))
+            }
+            .onEnded { value in
+                let travel = hypot(value.translation.width, value.translation.height)
+                if travel <= 8 || !playable {
+                    activate(card, slot: slot, count: count, fanned: fanned, playable: playable)
+                } else if -value.translation.height >= Theme.Card.dragToPlay, model.allows(.play(card)) {
+                    play(card, slot: slot, count: count, fanned: fanned, extra: Self.dragOffset(value.translation))
+                }
+            }
+    }
+
+    /// A tap: the first picks a playable card, the second on the same card plays it; a card that may not be played
+    /// shakes and the table says why.
+    private func activate(_ card: Card, slot: Int, count: Int, fanned: Bool, playable: Bool) {
+        guard model.allows(.play(card)) else {
+            onIllegal(card)
+            selected = nil
+            return
+        }
+        if selected == card {
+            play(card, slot: slot, count: count, fanned: fanned, extra: .zero)
+        } else {
+            model.clearRefusal()
+            selected = card
+        }
+    }
+
+    private func play(_ card: Card, slot: Int, count: Int, fanned: Bool, extra: CGSize) {
+        let lift = (selected == card ? Theme.Card.liftSelected : 0) + Theme.Card.liftPlayable
+        if var pose = geometry.pose(slot: slot, count: count, flat: !fanned || reduceMotion, lift: lift) {
+            pose.centre.x += extra.width
+            pose.centre.y += extra.height
+            pose.scale = cardWidth / Theme.Card.pileWidth
+            onLaunch(card, pose)
+        }
+        selected = nil
+        model.send(.play(card))
+    }
+
+    /// How a card enters or leaves the fan. A played card leaves by flight (identity here). While trump is being
+    /// chosen, a leaving card is a discard: it rises toward the table and fades, one after another. At the start of
+    /// play, an arriving card is part of the refill: it deals in from the deck beside the dealer, deck-sized and faint,
+    /// after the discards have gone. A fresh hand's cards are dealt by the table's flights, so they enter as they are.
     private func handTransition(index: Int, slot: Int, count: Int, strip: Double) -> AnyTransition {
         if reduceMotion { return .opacity }
         let hand = model.match.hand
@@ -163,17 +254,56 @@ struct HandFanView: View {
     }
 
     /// Cards rotate from −8° on the left to +8° on the right about their bottom edge.
-    private func fanAngle(_ index: Int, of count: Int) -> Double {
+    nonisolated static func fanAngle(_ index: Int, of count: Int) -> Double {
         guard count > 1 else { return 0 }
         let t = Double(index) / Double(count - 1)
         return (t - 0.5) * 2 * Theme.Card.fanRotationDegrees
     }
 
     /// The outer cards sit a little lower so the tops trace a shallow arc.
-    private func fanDrop(_ index: Int, of count: Int) -> Double {
+    nonisolated static func fanDrop(_ index: Int, of count: Int) -> Double {
         guard count > 1 else { return 0 }
         let t = Double(index) / Double(count - 1)
         return pow((t - 0.5) * 2, 2) * Theme.Card.fanDrop
+    }
+
+    /// The hand's layout as the table needs it (D97): where each card of a hand of a given size is drawn, in the
+    /// table's space, so a dealt card can land in its place and a played card can leave from it.
+    struct Geometry: Equatable {
+        /// The cards' row, in the table's coordinate space; the row is centred in it.
+        var frame: CGRect
+        /// The card width before it scales with the reader's text size, and after.
+        var baseWidth: Double
+        var scaledWidth: Double
+        /// The width a row may use.
+        var available: Double
+
+        /// The pose of card `slot` of `count`: lying flat in a row (the auction, or Reduce Motion) or fanned, and
+        /// raised by `lift`. Nil before the hand has been measured.
+        func pose(slot: Int, count: Int, flat: Bool, lift: Double = 0) -> CardPose? {
+            guard count > 0, slot < count, frame.width > 0, available > 0 else { return nil }
+            let height = scaledWidth * Theme.Card.ratio
+            switch HandLayout.arrange(count: count, cardWidth: scaledWidth, available: available) {
+            case let .fan(strip):
+                if flat {
+                    let step = HandLayout.baselineStrip(count: count, cardWidth: scaledWidth, available: available)
+                    return CardPose(centre: CGPoint(x: frame.midX + (Double(slot) - Double(count - 1) / 2) * step, y: frame.midY - lift))
+                }
+                // Turned about its bottom edge, then dropped along the arc.
+                let angle = HandFanView.fanAngle(slot, of: count), radians = angle * .pi / 180
+                let x = frame.midX + (Double(slot) - Double(count - 1) / 2) * strip
+                return CardPose(centre: CGPoint(x: x + height / 2 * sin(radians),
+                                                y: frame.midY + height / 2 * (1 - cos(radians)) + HandFanView.fanDrop(slot, of: count) - lift),
+                                rotation: angle)
+            case let .rows(perRow, strip):
+                let row = slot < perRow ? 0 : 1
+                let inRow = row == 0 ? min(perRow, count) : count - perRow
+                let position = row == 0 ? slot : slot - perRow
+                let top = frame.midY - (2 * height + HandLayout.rowGap) / 2
+                return CardPose(centre: CGPoint(x: frame.midX + (Double(position) - Double(inRow - 1) / 2) * strip,
+                                                y: top + height / 2 + Double(row) * (height + HandLayout.rowGap) - lift))
+            }
+        }
     }
 }
 
@@ -195,15 +325,5 @@ struct ShakeEffect: ViewModifier {
                 CubicKeyframe(0, duration: 0.05)
             }
         }
-    }
-}
-
-/// Joins a hand card to its pile counterpart so a play flies between them; off under Reduce Motion.
-struct MatchedCard: ViewModifier {
-    let card: Card
-    let namespace: Namespace.ID
-    let enabled: Bool
-    func body(content: Content) -> some View {
-        if enabled { content.matchedGeometryEffect(id: card, in: namespace) } else { content }
     }
 }

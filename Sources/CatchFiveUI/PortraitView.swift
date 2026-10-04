@@ -13,6 +13,9 @@ struct PortraitView: View {
     var popsOut = false
     /// Draws only the popped head, with no disc, so a seat can lay it over its rings and keep the head in front.
     var headOnly = false
+    /// The disc's rim. On the table it says which side the seat is on (D97); elsewhere it is the usual light ring.
+    var rim: Color = .ivory.opacity(0.7)
+    var rimWidth: Double? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -31,7 +34,7 @@ struct PortraitView: View {
             .animation(reduceMotion ? nil : Theme.Motion.overlay, value: expression)
             .frame(width: size, height: size)
             .clipShape(Circle())
-            .overlay(Circle().stroke(Color.ivory.opacity(0.7), lineWidth: max(1, size * 0.03)))
+            .overlay(Circle().stroke(rim, lineWidth: rimWidth ?? max(1, size * 0.03)))
             .overlay { if popsOut { poppedHead } }
             .accessibilityHidden(true)
         }

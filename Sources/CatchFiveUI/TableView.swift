@@ -8,7 +8,6 @@ public struct TableView: View {
     @StateObject private var tutorial: TutorialModel
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Namespace private var cards
     /// The seat whose name tag was tapped, and the name being typed for it (D93).
     @State private var renaming: Int?
     @State private var nameDraft = ""
@@ -37,6 +36,24 @@ public struct TableView: View {
     @State private var celebrating: [Celebration] = []
     /// Counts cascades begun, for their success haptic.
     @State private var cascades = 0
+    /// The match has just been won; the celebration waits until the last trick has been taken (D97).
+    @State private var celebrationDue = false
+    /// What is in the air and what has landed (D97). View state only: derived from the match after each accepted
+    /// action, never written back, and reset whenever the match moves other than one step forward.
+    @State private var flightState: TableMotion
+    /// The match as the motion planner last saw it.
+    @State private var motionSeen: MotionSnapshot
+    /// Where the seats, the pile, the deck and the hand are; read when a flight is planned, never drawn from.
+    @State private var measured = TableMeasurements()
+    /// The card picked in your hand by a first tap (D97).
+    @State private var selected: Card?
+    /// Counts the tricks that have arrived at each place, so that face nods (D97).
+    @State private var bumps: [Int: Int] = [:]
+    /// When the deal now under way will have finished; the first bid waits for it.
+    @State private var dealEnds: Date?
+    /// A finished trick on its way to its winner, named by its collection, so a stale one never clears a newer one; the
+    /// hand's result waits until it has arrived (D97).
+    @State private var takingTrick: UUID?
     @AccessibilityFocusState private var statusFocused: Bool
 
     private let onLeave: () -> Void
@@ -51,6 +68,10 @@ public struct TableView: View {
         // Share the root's tutorial model when there is one, so lessons finished in the intro show as done here.
         _tutorial = StateObject(wrappedValue: tutorial ?? model.makeTutorial())
         _seen = State(initialValue: TableFeedback.Snapshot(model))
+        // A restored table shows everything where it is; only a fresh match still behind its draw for dealer is dealt.
+        _collapsedTricks = State(initialValue: model.match.hand.completedTricks.count)
+        _flightState = State(initialValue: TableMotion(match: model.match, dealPending: Self.dealPending(model)))
+        _motionSeen = State(initialValue: MotionSnapshot(match: model.match))
         self.covered = covered
         self.onLeave = onLeave
         self.onHome = onHome
@@ -203,21 +224,31 @@ public struct TableView: View {
                         .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
                         .ignoresSafeArea(edges: .top)
                 }
-            TableSurface(model: model, namespace: cards, collapsedTricks: collapsedTricks, reopenedTrick: reopenedTrick, toast: toast,
+            TableSurface(model: model, collapsedTricks: collapsedTricks, motion: reduceMotion ? nil : flightState, selected: selected,
+                         bumps: bumps, resultReady: collapsedTricks >= model.match.hand.completedTricks.count && takingTrick == nil,
+                         onAnchor: { place, point in measured.geometry.seats[place] = point },
+                         onPileCentre: { centre, scale in
+                             measured.geometry.pileCentre = centre
+                             measured.geometry.pileScale = scale
+                         },
+                         reopenedTrick: reopenedTrick, toast: toast,
                          onReopenTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = model.match.hand.completedTricks.count } },
                          onCloseTrick: { withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil } },
                          onNineAndOut: { withAnimation(motion(Theme.Motion.overlay)) { confirmNineAndOut = true } },
                          onDeck: { dealerDeck = $0 },
-                         onScorecard: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = true } },
                          onRename: rename,
-                         holdsResult: !celebrating.isEmpty,
+                         onScorecard: { withAnimation(motion(Theme.Motion.overlay)) { scorePanel = true } },
+                         holdsResult: !celebrating.isEmpty || celebrationDue,
                          statusFocus: $statusFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 16)
             // Cards stop growing at XXXL so the fan keeps six cards on screen; the cap must sit above the
             // fan's own scaled metrics, which read it from the environment.
-            HandFanView(model: model, namespace: cards, onIllegal: shake, shakes: $shakes,
-                        deck: dealerDeck, onDeck: { dealerDeck = $0 }, onRename: rename)
+            HandFanView(model: model, onIllegal: shake, shakes: $shakes, selected: $selected, dealing: dealing,
+                        deck: dealerDeck, onDeck: { dealerDeck = $0 }, onRename: rename,
+                        onGeometry: { measured.geometry.hand = $0 },
+                        onAnchor: { measured.geometry.seats[0] = $0 },
+                        onLaunch: { card, pose in measured.launch = (card, pose) })
                 .dynamicTypeSize(...Theme.Card.maximumTypeSize)
                 .padding(.horizontal, 16)
         }
@@ -227,6 +258,8 @@ public struct TableView: View {
                 RiffleShuffle().id(shuffles).position(dealerDeck)
             }
         }
+        // Every card in the air, above everything on the table (D97).
+        .overlay { FlightLayer(flights: flightState.flights) }
         .coordinateSpace(.named(TableLayout.space))
         .dynamicTypeSize(...Theme.maximumTableTypeSize)
         .padding(.bottom, Theme.Table.footInset)
@@ -261,9 +294,16 @@ public struct TableView: View {
             .onChange(of: model.revision) { _, revision in
                 withAnimation(motion(Theme.Motion.collapse)) { reopenedTrick = nil }
                 if RiffleShuffle.startsHand(model.match.hand) { shuffles += 1 }
+                selected = nil
+                planMotion()
                 noteChanges(revision)
             }
             .onChange(of: model.lastHumanAction) { _, action in toast = action }
+            .onChange(of: takingTrick) { _, _ in startCelebrationIfDue() }
+            // The discards and the "bidding bolder" note are no longer printed (D98); VoiceOver hears them as they happen.
+            .onChange(of: model.notice) { _, notice in if let notice { AccessibilityNotification.Announcement(notice).post() } }
+            .onChange(of: model.boldNote) { _, note in if let note { AccessibilityNotification.Announcement(note).post() } }
+            .onChange(of: collapsedTricks) { _, _ in startCelebrationIfDue() }
             // Focus follows the game: a lifted cover or a new turn puts VoiceOver on the status line.
             .onChange(of: covered) { _, now in if !now { statusFocused = true } }
             .onChange(of: pause.sheetShown) { _, now in if !now { statusFocused = true } }
@@ -309,7 +349,8 @@ public struct TableView: View {
     private func noteChanges(_ revision: Int) {
         let now = TableFeedback.Snapshot(model)
         if let picked = TableFeedback.cue(from: seen, to: now) { cue = (revision, picked) }
-        if now.winner != nil, seen.winner == nil { celebrating = model.celebrations }
+        // The celebration waits for the last trick to be taken (D97); `advance` starts it.
+        if now.winner != nil, seen.winner == nil { celebrationDue = true }
         let handEnded = now.hands > seen.hands
         if now.tricks > seen.tricks, !handEnded, let winner = now.lastTrickWinner {
             AccessibilityNotification.Announcement("\(model.seatNames[winner]) took the hand").post()
@@ -353,19 +394,45 @@ public struct TableView: View {
         shakes[card, default: 0] += 1
         shakeCount += 1
         model.refuse(.play(card))
+        // VoiceOver hears why, as a sighted player reads it over the hand (D97).
+        if let reason = model.refusal { AccessibilityNotification.Announcement(reason).post() }
     }
 
-    /// After every accepted action: hold a finished trick, collapse it, then let the next computer act.
+    /// After every accepted action: deal a fresh hand, hold a finished trick and take it to its winner, then let the
+    /// next computer act. Everything here waits on the table's own pace; none of it changes the match except
+    /// `stepComputer`, the one place a computer acts.
     private func advance() async {
         guard !pause.isPaused else { return }
         let hand = model.match.hand
         if collapsedTricks > hand.completedTricks.count { collapsedTricks = hand.completedTricks.count }
+        // A fresh hand is dealt round the table before anyone bids (D97); one that can no longer be dealt shows at once.
+        let number = model.match.handNumber
+        switch flightState.dealStep(for: hand, handNumber: number, canAnimate: !reduceMotion && model.curtainSeat == nil) {
+        case .animate:
+            // One beat so the new dealer's deck has said where it rests. If a bid lands meanwhile, the next run skips it.
+            try? await Task.sleep(for: .milliseconds(60))
+            guard !Task.isCancelled else { return }
+            deal()
+        case .skip:
+            flightState.skipDeal(handNumber: number)
+        case .none:
+            break
+        }
+        if let dealEnds, dealEnds > Date() {
+            try? await Task.sleep(for: .seconds(dealEnds.timeIntervalSinceNow))
+            guard !Task.isCancelled else { return }
+        }
         let step = TableScheduler.plan(hand: hand, collapsedTricks: collapsedTricks)
         if step.hold {
             try? await Task.sleep(for: model.settings.trickHold)
             guard !Task.isCancelled else { return }
-            withAnimation(motion(Theme.Motion.collapse)) { collapsedTricks = hand.completedTricks.count }
+            collect(trick: hand.completedTricks.count - 1)
+            if !reduceMotion {
+                try? await Task.sleep(for: .seconds(Theme.Motion.collectSeconds))
+                guard !Task.isCancelled else { return }
+            }
         }
+        startCelebrationIfDue()
         if step.dealing {
             try? await Task.sleep(for: Theme.Motion.dealHold)
             guard !Task.isCancelled else { return }
@@ -376,6 +443,139 @@ public struct TableView: View {
         model.stepComputer()
     }
 
+    // MARK: Motion (D97)
+
+    /// A won match celebrates once its last trick has reached the winner. Called whenever that could have become true,
+    /// so a pause or a cancelled scheduler run can never leave the celebration, and the result behind it, waiting.
+    private func startCelebrationIfDue() {
+        guard celebrationDue, collapsedTricks >= model.match.hand.completedTricks.count, takingTrick == nil else { return }
+        celebrationDue = false
+        celebrating = model.celebrations
+    }
+
+    /// A fresh match still behind its draw for dealer is dealt once the draw is put away.
+    private static func dealPending(_ model: GameModel) -> Bool {
+        model.match.actionCount == 0 && model.dealerDraw != nil && RiffleShuffle.startsHand(model.match.hand)
+    }
+
+    /// The cards of your hand that are still being dealt.
+    private var dealing: Set<Card> {
+        guard !reduceMotion else { return [] }
+        let hand = model.match.handNumber
+        return Set(model.humanCards.filter { !flightState.isInHand($0, handNumber: hand) })
+    }
+
+    /// After each accepted action, decide what flies: a played card from its player to the field, or nothing; anything
+    /// that is not one step forward puts every card where the match says it is.
+    private func planMotion() {
+        let now = MotionSnapshot(match: model.match)
+        let change = MotionSnapshot.change(from: motionSeen, to: now)
+        motionSeen = now
+        let launch = measured.launch
+        measured.launch = nil
+        guard !reduceMotion else {
+            flightState.reset(to: model.match)
+            return
+        }
+        flightState.apply(change, to: model.match, dealPending: Self.dealPending(model))
+        switch change {
+        case let .played(play, index):
+            // A trick still lying on the field when the next card is led is swept up first.
+            let hand = model.match.hand
+            if hand.currentTrick.count == 1, hand.completedTricks.count > collapsedTricks {
+                collect(trick: hand.completedTricks.count - 1)
+            }
+            let from = launch?.card == play.card ? launch?.pose : nil
+            if let flight = FlightPlan.play(play, index: index, place: model.place(of: play.seat), handNumber: now.handNumber,
+                                            geometry: measured.geometry, launch: from) {
+                fly([flight])
+            } else {
+                flightState.landedPlays = max(flightState.landedPlays, index + 1)
+            }
+        case .dealt, .quiet:
+            break
+        case .reset:
+            collapsedTricks = model.match.hand.completedTricks.count
+            dealEnds = nil
+            takingTrick = nil
+        }
+    }
+
+    /// Deals the current hand from the dealer's deck (D97).
+    private func deal() {
+        let number = model.match.handNumber
+        var geometry = measured.geometry
+        geometry.deck = dealerDeck
+        let flights = FlightPlan.deal(dealerPlace: model.place(of: model.match.hand.auction.dealer), yourCards: model.humanCards,
+                                      geometry: geometry)
+        flightState.dealStarted = number
+        guard !flights.isEmpty else {
+            flightState.dealtHand = number
+            return
+        }
+        fly(flights)
+        dealEnds = Date().addingTimeInterval(flights.map(\.lands).max() ?? 0)
+    }
+
+    /// Takes finished trick `index` off the field: the flights carry its cards to the winner, whose face nods as they
+    /// arrive. Under Reduce Motion the trick fades instead.
+    private func collect(trick index: Int) {
+        let hand = model.match.hand
+        guard hand.completedTricks.indices.contains(index) else { return }
+        if !reduceMotion {
+            let trick = hand.completedTricks[index]
+            let places = (0..<4).map { model.place(of: $0) }
+            fly(FlightPlan.collect(trick, trickIndex: index, handNumber: model.match.handNumber, places: { places[$0] },
+                                   geometry: measured.geometry))
+            let winner = places[trick.winner], epoch = flightState.epoch, token = UUID()
+            takingTrick = token
+            Task {
+                try? await Task.sleep(for: .seconds(Theme.Motion.collectSeconds))
+                if takingTrick == token { takingTrick = nil }
+                guard flightState.epoch == epoch else { return }
+                bumps[winner, default: 0] += 1
+            }
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { collapsedTricks = hand.completedTricks.count }
+        } else {
+            withAnimation(Theme.Motion.reduced) { collapsedTricks = hand.completedTricks.count }
+        }
+    }
+
+    /// Puts flights in the air and lands each one when its time is up. A reset in between cancels the landing.
+    private func fly(_ planned: [Flight]) {
+        let launched = flightState.launch(planned)
+        let epoch = flightState.epoch
+        for flight in launched {
+            Task {
+                try? await Task.sleep(for: .seconds(flight.lands))
+                guard flightState.epoch == epoch else { return }
+                land(flight)
+            }
+        }
+    }
+
+    /// A flight's end: the card it carried shows where it landed, in the same frame the flight stops being drawn.
+    /// A dealt card turns face up in your hand as it lands.
+    private func land(_ flight: Flight) {
+        let number = model.match.handNumber
+        if case .hand = flight.arrival {
+            withAnimation(.easeOut(duration: 0.18)) { flightState.land(flight, handNumber: number) }
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { flightState.land(flight, handNumber: number) }
+        }
+    }
+
+}
+
+/// The table's measurements, kept by reference so that measuring never redraws the table (D97).
+@MainActor final class TableMeasurements {
+    var geometry = TableGeometry()
+    /// Where the card you are playing was when you let go of it.
+    var launch: (card: Card, pose: CardPose)?
 }
 
 enum TableScheduler {
@@ -383,7 +583,9 @@ enum TableScheduler {
     /// play is a lead (which gets the longer pause) rather than a follow, and whether the hand has
     /// just been refilled after trump (so the deal animation gets its own pause first).
     static func plan(hand: Hand, collapsedTricks: Int) -> (hold: Bool, leading: Bool, dealing: Bool) {
-        let hold = hand.phase == .playing && hand.currentTrick.isEmpty && hand.completedTricks.count > collapsedTricks
+        // The hand's last trick is held and taken too, before its result comes up (D97).
+        let hold = (hand.phase == .playing || hand.phase == .finished) && hand.currentTrick.isEmpty
+            && hand.completedTricks.count > collapsedTricks
         let dealing = hand.phase == .playing && hand.currentTrick.isEmpty && hand.completedTricks.isEmpty
         return (hold, hand.currentTrick.isEmpty && !hold, dealing)
     }
