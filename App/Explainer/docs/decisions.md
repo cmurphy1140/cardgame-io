@@ -236,7 +236,7 @@ Each entry: what was decided, what it was chosen over, and why. Dates are when t
 
 ## D30. Accessibility through the view model, and App Store scaffolding in `App/` (PR #13, 2026-09-04)
 
-**Chosen:** VoiceOver wording lives in `GameModel` (`spokenDescription`, `accessibilityValue`) where it is unit-tested; views only attach it. Fixed point sizes became text styles and `@ScaledMetric`, and Reduce Motion swaps the slide transitions for fades. The icon is rendered by `scripts/make-icon.swift` into the asset catalog, `App/PrivacyInfo.xcprivacy` declares no tracking and no required-reason APIs, and `project.yml` carries the version, category and icon settings; `build-simulator.py` copies scaled icons and the manifest into the hand-built bundle so the simulator shows the same icon.
+**Chosen:** VoiceOver wording lives in `GameModel` (`spokenDescription`, `accessibilityValue`) where it is unit-tested; views only attach it. Fixed point sizes became text styles and `@ScaledMetric`, and Reduce Motion swaps the slide transitions for fades. The icon is rendered by `scripts/make-icon.swift` into the asset catalog, `App/PrivacyInfo.xcprivacy` declares no tracking and one required-reason API (UserDefaults, reason CA92.1, for the `-stage` launch argument), and `project.yml` carries the version, category and icon settings; `build-simulator.py` copies scaled icons and the manifest into the hand-built bundle so the simulator shows the same icon.
 
 **Over:** Ad-hoc labels in views, a hand-drawn icon file, and leaving the store metadata until a Mac with the iOS platform is available.
 
@@ -246,7 +246,7 @@ Portrait iPhone first, with iPad allowed in the same 640-point column, stays the
 
 ## D31. The tutorial is built from Connor's design, with fixtures checked against the engine (PR #14, 2026-09-04)
 
-**Chosen:** The five-lesson "How to play" flow follows [tutorial-spec.md](tutorial-spec.md) and the Claude Design reference build: fixed hand-authored positions, one exercise per lesson, completion shown on chapter pills. Every answer key is asserted against the rules engine in tests. Two deviations from the spec: completion is stored in `Settings.completedLessons` rather than `UserDefaults`, so the privacy manifest can keep declaring no required-reason APIs (D30), and the scoring fixture was corrected after the engine test showed the reference piles gave Game to the wrong side.
+**Chosen:** The five-lesson "How to play" flow follows [tutorial-spec.md](tutorial-spec.md) and the Claude Design reference build: fixed hand-authored positions, one exercise per lesson, completion shown on chapter pills. Every answer key is asserted against the rules engine in tests. Two deviations from the spec: completion is stored in `Settings.completedLessons` rather than `UserDefaults`, so the lessons add no use of it (the manifest declares the UserDefaults category, reason CA92.1, for the `-stage` launch argument that `App/CatchFiveApp.swift` reads), and the scoring fixture was corrected after the engine test showed the reference piles gave Game to the wrong side.
 
 **Over:** Hand-written explanations without engine checks, or a scripted live hand.
 

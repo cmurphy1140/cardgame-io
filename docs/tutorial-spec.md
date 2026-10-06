@@ -17,7 +17,7 @@ A five-lesson "How to play" flow for novices, replacing or sitting alongside the
 | File | Contents |
 | --- | --- |
 | `Sources/CatchFiveUI/Tutorial/TutorialView.swift` | Sheet root: header (CATCH 5 / HOW TO PLAY · LESSON n OF 5), chapter pills, lesson container, Back / Next lesson footer. Same felt gradient, `.ivory` text, `.gold` accents as `TableView`. |
-| `Sources/CatchFiveUI/Tutorial/TutorialModel.swift` | `@MainActor final class TutorialModel: ObservableObject`. `@Published var lesson: Int`, `@Published var completed: Set<Int>` (persisted as `Settings.completedLessons` in `settings.json`, not `UserDefaults`, so the privacy manifest stays empty; see D31), per-lesson exercise state. |
+| `Sources/CatchFiveUI/Tutorial/TutorialModel.swift` | `@MainActor final class TutorialModel: ObservableObject`. `@Published var lesson: Int`, `@Published var completed: Set<Int>` (persisted as `Settings.completedLessons` in `settings.json`, not `UserDefaults`, so the lessons add no use of it; see D31), per-lesson exercise state. |
 | `Sources/CatchFiveUI/Tutorial/Lessons/*.swift` | One view per lesson: `DealLesson`, `BiddingLesson`, `TrumpLesson`, `TricksLesson`, `ScoringLesson`. Each takes the model and reports `onComplete`. |
 | `Sources/CatchFiveUI/Tutorial/TutorialFixtures.swift` | The fixed cards and answer keys listed below, as `Card` arrays. |
 | `Tests/CatchFiveUITests/TutorialModelTests.swift` | Completion tracking, persistence, and that each exercise's legal set matches the engine (see Tests). |
