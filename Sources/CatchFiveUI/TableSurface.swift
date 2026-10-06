@@ -683,12 +683,12 @@ struct TableSurface: View {
     private var finishedCard: some View {
         VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     if let winner = model.match.winner { matchOver(winner) }
                     HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
                     if let line = model.handEndLine { handEndWords(line) }
                 }
-                .padding(12)
+                .padding(.horizontal, 12).padding(.vertical, 8)
             }
             .scrollBounceBehavior(.basedOnSize)
             // R21: the next phase stays reachable while the result's optional detail scrolls.
@@ -724,7 +724,7 @@ struct TableSurface: View {
 
     /// The card shown once a team reaches 25 or a 9-and-out resolves.
     private func matchOver(_ winner: Int) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 3) {
             Text(model.mode == .solo && winner == 0 ? "YOU WIN THE MATCH" : "\(model.teamNames(winner)) WIN")
                 .font(.system(.subheadline, design: .monospaced).weight(.bold)).tracking(2)
             Text("\(model.match.scores[0]) – \(model.match.scores[1]) after \(model.match.history.count) hands").font(.title3.weight(.semibold))
