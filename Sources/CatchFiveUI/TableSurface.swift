@@ -186,7 +186,7 @@ struct TableSurface: View {
                                     }
                                 }
                         case .controls:
-                            if model.isHumanTurn, hand.phase == .bidding { bidding }
+                            if model.isHumanTurn, hand.phase == .bidding { bidding.allowsHitTesting(handLanded) }
                             if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
                         }
                     }
@@ -247,6 +247,14 @@ struct TableSurface: View {
     nonisolated static let space = "surface"
 
     /// The table fades back under the hand-end card, which carries both new totals.
+    /// Whether your own cards have all landed; the auction takes no taps while they are still being dealt and hidden.
+    private var handLanded: Bool { Self.handLanded(model.humanCards, motion: motion, handNumber: model.match.handNumber) }
+
+    nonisolated static func handLanded(_ cards: [Card], motion: TableMotion?, handNumber: Int) -> Bool {
+        guard let motion else { return true }
+        return cards.allSatisfy { motion.isInHand($0, handNumber: handNumber) }
+    }
+
     private var dim: Double { showsResult ? 0.12 : 1 }
 
     /// The score pad lies in the bottom-left corner (D100).

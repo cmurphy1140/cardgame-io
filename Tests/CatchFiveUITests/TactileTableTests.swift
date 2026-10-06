@@ -337,3 +337,14 @@ private func playNext(_ match: inout Match) throws {
     #expect(Theme.Table.rulesBookHeight - Theme.Table.topRowHeight <= 8)
     #expect(Theme.Table.topRowHeight + 8 + Theme.Table.rulesBookWidth <= 375 - 32)
 }
+
+@MainActor @Test func theAuctionTakesNoTapsUntilYourDealtHandHasLanded() throws {
+    let fresh = try Match(deck: orderedDeck(), dealer: 1)
+    let cards = Array(fresh.hand.hands[0])
+    var motion = TableMotion(match: fresh, dealPending: true)
+    #expect(!TableSurface.handLanded(cards, motion: motion, handNumber: fresh.handNumber))
+    motion.skipDeal(handNumber: fresh.handNumber)
+    #expect(TableSurface.handLanded(cards, motion: motion, handNumber: fresh.handNumber))
+    // Reduce Motion passes no motion: nothing is dealt in flight, so the hand is already there.
+    #expect(TableSurface.handLanded(cards, motion: nil, handNumber: fresh.handNumber))
+}
