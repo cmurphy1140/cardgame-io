@@ -32,11 +32,11 @@ More: [architecture](docs/architecture.md), [game flow](docs/game-flow.md), [dec
 ## Build and test
 
 ```bash
-swift test                            # 235 tests: 90 engine, 145 view model
+swift test                            # 260 tests: 90 engine, 170 view model
 python3 scripts/build-simulator.py    # builds work/simulator-build/CatchFive.app
 ```
 
-The same tests run in GitHub Actions on every push. Details: [testing](docs/testing.md) and [build and run](docs/build-and-run.md). To run on a phone, see the [device guide](docs/device-install.md).
+The same tests run in GitHub Actions on pushes to `main` and on pull requests. Details: [testing](docs/testing.md) and [build and run](docs/build-and-run.md). To run on a phone, see the [device guide](docs/device-install.md).
 
 ## Docs
 

@@ -51,7 +51,7 @@ flowchart BT
     L1 --> L2 --> L3 --> L4 --> L5 --> L5b --> L5c --> L6 --> L7
 ```
 
-Total on 2026-09-29: 235 automated tests (90 engine, 145 view model), under 10 s. The per-layer counts above are older and not recounted.
+Total on 2026-10-06: 260 automated tests (90 engine, 170 view model), under 10 s. The per-layer counts above are older and not recounted.
 
 The D71 measurement plays a 40-match sample by default. The full 2400 mirrored matches whose numbers D71 records take about 18 s more:
 
