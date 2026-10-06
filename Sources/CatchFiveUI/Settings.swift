@@ -93,11 +93,13 @@ public struct Settings: Codable, Equatable, Sendable {
         beginnerMode = (try? container.decodeIfPresent(Bool.self, forKey: .beginnerMode)) ?? nil ?? true
         nextTip = (try? container.decodeIfPresent(Int.self, forKey: .nextTip)) ?? nil ?? 0
         hasSeenTallyDemo = (try? container.decodeIfPresent(Bool.self, forKey: .hasSeenTallyDemo)) ?? nil ?? false
-        let names = (try? container.decodeIfPresent([String].self, forKey: .seatNames)) ?? nil ?? Settings.defaultSeatNames
+        let decoded = (try? container.decodeIfPresent([String].self, forKey: .seatNames)) ?? nil ?? Settings.defaultSeatNames
+        // A short or long list is damaged: it takes the defaults before anything indexes into it.
+        let names = decoded.count == 4 ? decoded : Settings.defaultSeatNames
         // Only a file from before the cast (no player name yet) still carries the direction defaults by
         // accident; after sign-in a typed "West" is a choice and stays.
         let migrated = playerName == nil ? Settings.migrated(names) : names
-        seatNames = migrated.count == 4 ? migrated : Settings.defaultSeatNames
+        seatNames = migrated
         // A file saved with the old cast in seats 1 to 3 (any order) takes the family table; seat 0 keeps the
         // player's own name unless a family seat already carries it. Names typed by hand never match and stay.
         if Set(seatNames[1...3]) == Set(Settings.oldCastSeatNames) {

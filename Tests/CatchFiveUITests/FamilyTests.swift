@@ -109,3 +109,10 @@ import Testing
     #expect(TipDeck.face(-1) == TipDeck.whyWePlay)
     #expect(!TipDeck.tips.contains(TipDeck.whyWePlay.text))
 }
+
+@Test func aSeatNamesListOfTheWrongLengthFallsBackToTheDefaultsWithoutTrapping() throws {
+    for json in [#"{"seatNames":["A"]}"#, #"{"seatNames":["A","B","C","D","E"]}"#, #"{"seatNames":[]}"#] {
+        let settings = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
+        #expect(settings.seatNames == Settings.defaultSeatNames)
+    }
+}

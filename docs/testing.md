@@ -57,9 +57,11 @@ The D71 measurement plays a 40-match sample by default. The full 2400 mirrored m
 
 ```bash
 CATCH5_FULL_BENCHMARK=1 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter boldWhenTrailing
-``` Every layer above the first uses the real code beneath it; nothing is mocked. If `trickWinner` broke, the failure would show up in one small trick test *and* in the 208-hand simulation, and the small one tells you exactly what changed.
+```
 
-The cast, login and menu are covered at the model layer: `Settings` migration and round trip, `matchInProgress`, `signIn` and `seatSummary`; the screens themselves are checked by the simulator screenshot pass.
+Every layer above the first uses the real code beneath it; nothing is mocked. If `trickWinner` broke, the failure would show up in one small trick test *and* in the 208-hand simulation, and the small one tells you exactly what changed.
+
+The cast, login and menu are covered at the model layer: `Settings` migration and round trip (`aSeatNamesListOfTheWrongLengthFallsBackToTheDefaultsWithoutTrapping` decodes a short, long or empty `seatNames` list to the defaults), `matchInProgress`, `signIn` and `seatSummary`; the screens themselves are checked by the simulator screenshot pass.
 
 ## Two kinds of test, deliberately
 
