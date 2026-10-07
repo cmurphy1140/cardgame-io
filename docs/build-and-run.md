@@ -24,7 +24,7 @@ flowchart LR
 
 One environment note: this repository lives under the iCloud-synced Desktop, so the folder carries the `com.apple.fileprovider.ignore#P` extended attribute (set September 13, 2026) to keep iCloud out of `.git` and the working tree. After cloning to a synced location, reapply it with `xattr -w 'com.apple.fileprovider.ignore#P' 1 <repo folder>`.
 
-## The seven commands
+## The eight commands
 
 | Command | What it does | When to use |
 |---|---|---|
@@ -32,6 +32,7 @@ One environment note: this repository lives under the iCloud-synced Desktop, so 
 | `... swift test --filter <name>` | Runs one test by function name | While working on one rule |
 | `... swift run catch-five-demo` | Plays a fixed five-hand match in the terminal and prints every trick | To watch the engine without the app. Add `--computer` for shuffled computer play, `--save-roundtrip` to see save/restore mid-trick |
 | `... python3 scripts/build-simulator.py` | Produces `work/simulator-build/CatchFive.app` for the iOS simulator | To run the real app |
+| `scripts/run-simulator.sh [device]` | Builds, boots the "Catch 5 iPhone" simulator (or the named one), installs and launches | To play the latest build in the simulator; IntelliJ's **Catch 5 Simulator** run configuration runs it |
 | `scripts/install-phone.sh` | Builds signed, installs and launches on the connected iPhone | Every time you want the latest build on the phone, and weekly to renew a free-team install ([device-install.md](device-install.md)) |
 | `python3 scripts/export-docs.py` | Renders every explainer page to PDF and every Mermaid diagram to PNG in `work/docs-export/` | To upload the pages to Claude Design or share them outside GitHub |
 | `swift scripts/contrast-sample.swift <png> <x0> <y0> <x1> <y1> [label]` | Reports the contrast against ivory of a region of a simulator screenshot, sampling real pixels | To check a background that is drawn in code, where the colour literal is not what lands on screen |
@@ -68,7 +69,7 @@ Then upload the archive from Xcode's Organizer to TestFlight.
 
 ## Running on the simulator
 
-The simulator named "Catch 5 iPhone" (UDID `02419047-584C-4D69-A0F1-6F33C2C5F0F2`) is the test device. From the terminal:
+The simulator named "Catch 5 iPhone" (UDID `02419047-584C-4D69-A0F1-6F33C2C5F0F2`) is the test device. `scripts/run-simulator.sh` does the whole trip in one step: build, boot, open the Simulator window, install, launch. In IntelliJ it is the **Catch 5 Simulator** run configuration, stored in `.run/` so it arrives with the repository. A device name or UDID as the argument picks another simulator, and `CATCH5_HEADLESS=1` skips the window. The two steps it ends with, from the terminal:
 
 ```bash
 xcrun simctl install 02419047-584C-4D69-A0F1-6F33C2C5F0F2 work/simulator-build/CatchFive.app
