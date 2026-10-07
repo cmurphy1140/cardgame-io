@@ -838,3 +838,11 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 **Over:** Splitting the docs themselves into many small files, which would scatter each topic across pages and break the links and the one-page-per-topic rule; embedding the Lucid images, which drift from the code and need a second image path in the reader.
 
 **Why:** Connor: "break it up into bite sized pieces, some of the pages are wayyy to long", and he asked for the Lucid diagrams in the game's explainer; drawing them as Mermaid keeps them in the same commit as the code they describe. Before: the decision log was 20,010 words on one page and the types page 8,464. After: no page over 300 words unless a single block cannot be cut (the largest, one paragraph of D97, is 635). `chaptersSplitIntoSectionPagesAndLongSectionsIntoParts`, `everyRealChapterReadsInShortPagesThatCoverItOnce` and `aSplitSectionIsOneCardThatOpensOnItsFirstPart` hold it.
+
+## D102. A computer answers a standing 9 and out with a pass or a match, never a plain 9 (2026-10-07)
+
+**Implemented on `fix/closeout-polish`:** the closeout audit's blocker. A computer dealer with a big hand answered a 9 and out with a plain 9; the engine refused it, and the game asked the same seat again forever. While a 9 and out stands (`ComputerPlayer.facesNineAndOut`), the only legal answers are a pass or, for the dealer whose team is at zero or above, a matching 9 and out. Easy stays frozen (D17, D26), so its answer is given in `ComputerPlayer.decide(_:difficulty:)`: it passes. Standard asks `matchesNineAndOut` when matching is legal; for now that returns false, so Standard passes a standing 9 and out too.
+
+**Over:** Teaching Standard when to match (a threshold on its hand estimate), which closes with the dev phase still open; editing `EasyPlayer`, which D17 and D26 freeze.
+
+**Why:** a hand that can never end is the one bug a player cannot get around. `aComputerDealerAnswersANineAndOutWithALegalCall`, `aStandingNineAndOutIsOnlyEverPassedOrMatched` and `easyPassesAStandingNineAndOut` hold it.

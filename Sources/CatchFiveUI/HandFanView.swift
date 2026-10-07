@@ -44,8 +44,7 @@ struct HandFanView: View {
     /// Where a dragged card is drawn for a finger's travel: it follows the finger upward freely; sideways and down it
     /// resists, so it reads as lifting.
     nonisolated static func dragOffset(_ translation: CGSize) -> CGSize {
-        // TODO(human): decide how a dragged card should feel under the finger. Today it follows upward one to one,
-        // half as much sideways, and resists downward at 0.3.
+        // The card follows upward one to one, half as much sideways, and resists downward at 0.3.
         CGSize(width: translation.width * 0.5, height: min(translation.height, translation.height * 0.3))
     }
 

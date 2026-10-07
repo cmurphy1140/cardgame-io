@@ -51,7 +51,9 @@ flowchart BT
     L1 --> L2 --> L3 --> L4 --> L5 --> L5b --> L5c --> L6 --> L7
 ```
 
-Total on 2026-10-06: 260 automated tests (90 engine, 170 view model), under 10 s. The per-layer counts above are older and not recounted.
+Total on 2026-10-07: 263 automated tests (93 engine, 170 view model), under 10 s. The per-layer counts above are older and not recounted.
+
+`NineAndOutAnswerTests` (3 tests, D102) holds the closeout audit's blocker shut: a computer dealer, Easy or Standard, answers a standing 9 and out with a pass or a legal match, never a plain 9 the engine refuses.
 
 The D71 measurement plays a 40-match sample by default. The full 2400 mirrored matches whose numbers D71 records take about 18 s more:
 
