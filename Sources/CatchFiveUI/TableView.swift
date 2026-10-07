@@ -300,6 +300,12 @@ public struct TableView: View {
             }
             .onChange(of: model.lastHumanAction) { _, action in toast = action }
             .onChange(of: takingTrick) { _, _ in startCelebrationIfDue() }
+    }
+
+    /// VoiceOver hears what the screen no longer prints, and its focus follows the game.
+    /// Split from `withScheduling` so older compilers type-check each chain in reasonable time.
+    private var withAnnouncements: some View {
+        withScheduling
             // The discards and the "bidding bolder" note are no longer printed (D98); VoiceOver hears them as they happen.
             .onChange(of: model.notice) { _, notice in if let notice { AccessibilityNotification.Announcement(notice).post() } }
             .onChange(of: model.boldNote) { _, note in if let note { AccessibilityNotification.Announcement(note).post() } }
@@ -309,6 +315,11 @@ public struct TableView: View {
             .onChange(of: pause.sheetShown) { _, now in if !now { statusFocused = true } }
             .onChange(of: pause.dialogShown) { _, now in if !now { statusFocused = true } }
             .onChange(of: model.isHumanTurn) { _, now in if now { statusFocused = true } }
+    }
+
+    /// The timed overlays: the toast, the bold note and the tally demo each fade on their own clock.
+    private var withTimers: some View {
+        withAnnouncements
             .task(id: toast) {
                 guard toast != nil else { return }
                 try? await Task.sleep(for: .seconds(Theme.Motion.toastSeconds))
@@ -339,7 +350,7 @@ public struct TableView: View {
 
     /// Two haptics only: the refusal buzz, and one outcome cue per accepted action (`TableFeedback`).
     private var withHaptics: some View {
-        withScheduling
+        withTimers
             .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.4), trigger: shakeCount) { _, _ in model.settings.haptics }
             .sensoryFeedback(cue?.cue.feedback ?? .selection, trigger: cue?.id ?? 0) { _, _ in model.settings.haptics && cue != nil }
             .sensoryFeedback(.success, trigger: cascades) { _, _ in model.settings.haptics }
