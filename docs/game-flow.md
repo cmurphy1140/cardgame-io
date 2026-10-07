@@ -62,7 +62,7 @@ sequenceDiagram
     participant L as Leader
     participant H as Hand
     participant N as Next three seats
-    L->>H: play(card) — the bidder's opening lead must be trump if held;<br/>every later lead is free
+    L->>H: play(card) — the bidder's opening lead must be trump if held#59;<br/>every later lead is free
     loop three more plays
         N->>H: play(card)
         H->>H: legalMoves: must follow led suit if able,<br/>otherwise anything (trumping allowed)
@@ -111,6 +111,79 @@ flowchart TD
 ```
 
 Because `stepComputer()` increments `revision`, the next task starts automatically. The human's tap also increments it, which cancels any pending computer sleep, so nothing acts out of turn. The task's id also carries a pause flag from `TablePause`: while the pause card, any sheet, a dialog, the reopened last trick or an inactive scene covers the table, the flag flips, the task is cancelled, and nothing acts until every cover is gone, at which point one fresh task runs and applies at most one computer action. The decisions in the middle (hold or not, lead or follow, wait for the deal) come from `TableScheduler.plan`, a pure function with its own test.
+
+## Your touch: from finger to accepted play
+
+`HandFanView` turns one touch on a hand card into a refusal, a pick, a spring back or a play. Look at the two thresholds: a touch that moves 8 pt or less is a tap, and a drag has to travel 70 pt up to play. Only the gold boxes change the match; everything above them happens in the view.
+
+```mermaid
+flowchart TD
+    T(["You touch a card"]) --> L{"legal now?"}
+    L -- no --> SH["shakes, buzzes,<br/>says why;<br/>VoiceOver hears it"]
+    L -- yes --> M{"moved more<br/>than 8 pt?"}
+    M -- no --> P{"already picked?"}
+    P -- no --> PK["picked: rises 30 pt,<br/>&quot;Tap again&quot;"]
+    P -- yes --> PLAY["played: reports<br/>the card's launch pose"]
+    M -- yes --> D{"dragged up 70 pt?"}
+    D -- no --> SB["springs back"]
+    D -- yes --> PLAY
+    PLAY --> SEND["GameModel.send(.play)"]
+    SEND --> AP["Match.apply validates"]
+    AP --> SV["persist() saves game.json"]
+    SV --> RV["revision + 1"]
+    classDef auth fill:#fff4d6,stroke:#b8860b
+    class SEND,AP,SV,RV auth
+```
+
+For a big-screen view, see the [Lucid flowchart](https://lucid.app/lucidchart/2b086c36-464c-43a2-9518-0b41b729c175/edit).
+
+## After every accepted action: the motion lane
+
+Every accepted action starts two lanes; this one decides what the table animates. It holds view state only and never changes the match. Only one card played, one step forward, makes a card fly; anything that is not one step forward resets every card to where the match says it is.
+
+```mermaid
+flowchart TD
+    R(["accepted action:<br/>revision + 1"]) --> C["MotionSnapshot.change<br/>decides what changed"]
+    C -- "one card<br/>played" --> RM{"Reduce Motion?"}
+    RM -- yes --> FADE["it fades in,<br/>no flight"]
+    RM -- no --> FP["FlightPlan: from<br/>your finger or<br/>the player's face"]
+    FP --> FL["FlightLayer draws it<br/>in the air 0.42 s;<br/>the field hides it"]
+    FL --> LAND["it lands and<br/>appears on<br/>the field"]
+    C -- "next hand<br/>dealt" --> NH["none of it on<br/>the field yet"]
+    C -- "a bid<br/>or trump" --> NF["nothing flies"]
+    C -- "undo, new<br/>game or<br/>restore" --> RS["reset at once:<br/>every card where<br/>the match says"]
+```
+
+For a big-screen view, see the [Lucid flowchart](https://lucid.app/lucidchart/2b086c36-464c-43a2-9518-0b41b729c175/edit).
+
+## After every accepted action: the scheduler lane
+
+The other lane is `TableView.advance`, which decides when a computer acts. Read it top to bottom: each question is checked in turn, and the deal and the taking of a finished trick both run before any computer is asked to act. The gold boxes are the only place this lane changes the match, and their `revision + 1` starts both lanes again.
+
+```mermaid
+flowchart TD
+    S(["revision changed:<br/>TableView.advance runs"]) --> P{"paused for a<br/>sheet or dialog?"}
+    P -- yes --> W1["wait"]
+    P -- no --> N{"new hand<br/>not dealt yet?"}
+    N -- yes --> CAN{"no call yet, motion on,<br/>no pass-and-play curtain?"}
+    CAN -- yes --> DEAL["deal from<br/>the dealer's deck"]
+    CAN -- no --> SKIP["skip the deal,<br/>show the hand at once"]
+    N -- no --> T{"finished trick<br/>not yet taken?"}
+    DEAL --> T
+    SKIP --> T
+    T -- yes --> HOLD["hold 2 s, the winner<br/>ringed gold; gather<br/>0.26 s, take 0.44 s;<br/>the winner nods"]
+    HOLD --> HF{"hand finished?"}
+    HF -- yes --> RES["celebrate if the<br/>match is won,<br/>then show the result"]
+    HF -- no --> CMP{"a computer to act?"}
+    T -- no --> CMP
+    CMP -- no --> WAIT["wait for your touch"]
+    CMP -- yes --> STEP["bot beat 2 s,<br/>then stepComputer()"]
+    STEP --> AP["ComputerPlayer.decide<br/>sees a PlayerView;<br/>Match.apply;<br/>revision + 1 again"]
+    classDef auth fill:#fff4d6,stroke:#b8860b
+    class STEP,AP auth
+```
+
+For a big-screen view, see the [Lucid flowchart](https://lucid.app/lucidchart/2b086c36-464c-43a2-9518-0b41b729c175/edit).
 
 ## How a computer chooses a card
 

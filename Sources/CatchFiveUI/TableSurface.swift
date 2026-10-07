@@ -5,9 +5,20 @@ import SwiftUI
 /// the status line and explanations under it, and the phase controls where the pile sits during the auction.
 struct TableSurface: View {
     @ObservedObject var model: GameModel
-    let namespace: Namespace.ID
     /// Completed tricks that have already collapsed toward their winner.
     let collapsedTricks: Int
+    /// What is in the air (D97): a play still flying is not drawn on the field until it lands.
+    var motion: TableMotion? = nil
+    /// The card you have picked in your hand, waiting for the second tap (D97).
+    var selected: Card? = nil
+    /// Counts the tricks each place has taken this session, so its face can nod as a trick arrives (D97).
+    var bumps: [Int: Int] = [:]
+    /// The finished hand's last trick has been taken, so its result may come up (D97).
+    var resultReady = true
+    /// Each seat's face says where it is, by place round the table, so flights can start and end there.
+    var onAnchor: (Int, CGPoint) -> Void = { _, _ in }
+    /// The pile says where its middle is, and how much its cards are scaled by the reader's text size.
+    var onPileCentre: (CGPoint, Double) -> Void = { _, _ in }
     /// A completed trick the player asked to see again.
     let reopenedTrick: Int?
     /// The human's latest action while its undo toast is showing.
@@ -18,10 +29,10 @@ struct TableSurface: View {
     let onNineAndOut: () -> Void
     /// The deck beside the dealer's tile says where it rests, so the deal can start there.
     var onDeck: (CGPoint) -> Void = { _ in }
-    /// The scorecard opens the full score sheet (N66).
-    var onScorecard: () -> Void = {}
     /// A seat's name tag was tapped: rename that seat (D93).
     var onRename: (Int) -> Void = { _ in }
+    /// The score pad opens the full score sheet (N66).
+    var onScorecard: () -> Void = {}
     /// A match-win celebration is playing; the hand-end card waits until it has finished (D69).
     var holdsResult = false
     /// VoiceOver focus lands on the status line when a cover lifts or the turn changes.
@@ -33,19 +44,46 @@ struct TableSurface: View {
     @State private var contentHeight = 0.0
     /// The floating notice's height, so it sits wholly above "Your turn" in play.
     @State private var floatHeight = 0.0
-    /// The top row's lower edge: the hand-end card starts under it, so the scorecard stays in view (N66).
+    /// The top row's lower edge: the hand-end card starts under it.
     @State private var topRowBottom = 0.0
+    /// The score pad's width in the bottom-left corner, which the words above "Your turn" move over to clear (D100).
+    @State private var padWidth = 0.0
+    /// What the field is laid out between (D97), in the column's own space: the partner's row, the side seats and the
+    /// status line.
+    @State private var fieldEdges = FieldEdges()
 
     private var hand: Hand { model.match.hand }
 
-    /// Which plays the pile shows, and the winner if they are a finished trick.
-    private var pile: (plays: [Play], winner: Int?, isLast: Bool) {
-        if !hand.currentTrick.isEmpty { return (hand.currentTrick, nil, false) }
-        guard let last = hand.completedTricks.last else { return ([], nil, false) }
+    /// Which plays the pile shows, the winner if they are a finished trick, and which trick of the hand they are.
+    private var pile: (plays: [Play], winner: Int?, isLast: Bool, trick: Int) {
+        if !hand.currentTrick.isEmpty { return (hand.currentTrick, nil, false, hand.completedTricks.count) }
+        guard let last = hand.completedTricks.last else { return ([], nil, false, 0) }
         let count = hand.completedTricks.count
-        if count > collapsedTricks || reopenedTrick == count { return (last.plays, last.winner, true) }
-        return ([], nil, false)
+        if count > collapsedTricks || reopenedTrick == count { return (last.plays, last.winner, true, count - 1) }
+        return ([], nil, false, count)
     }
+
+    /// The finished hand's card is up: the last trick has been taken (D97), and no celebration is playing.
+    private var showsResult: Bool { hand.phase == .finished && resultReady }
+
+    /// The edges the field is fitted between.
+    struct FieldEdges: Equatable {
+        var top = 0.0
+        var bottom = 0.0
+        var left = 0.0
+        var right = 0.0
+
+        /// The field's frame: between the side seats, tucked a little under each, from under the partner's row to above
+        /// the status line. Nil until the seats have been measured.
+        var rect: CGRect? {
+            let tuck = Theme.Field.sideTuck, gap = Theme.Field.verticalGap
+            let rect = CGRect(x: left - tuck, y: top + gap, width: right - left + 2 * tuck, height: bottom - top - 2 * gap)
+            return rect.width > 80 && rect.height > 80 ? rect : nil
+        }
+    }
+
+    /// The column's own coordinate space, which the field is drawn in.
+    nonisolated static let column = "column"
 
     private var inAuction: Bool { hand.phase == .bidding || hand.phase == .choosingTrump }
     /// Beginner mode is set aside for this milestone (H01, T03): the live table carries no coaching, and the
@@ -54,7 +92,6 @@ struct TableSurface: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let reach = CGSize(width: geometry.size.width / 2 + 40, height: geometry.size.height / 2 + 40)
             // Space goes by priority (spec R25): the seats and the pile hold the top of the table, the
             // status line with its controls and commentary sits down by the hand, and whatever the phase
             // leaves over opens up between them. The column is stretched to the surface whenever its
@@ -76,7 +113,8 @@ struct TableSurface: View {
                         .opacity(dim)
                         .accessibilitySortPriority(25)
                         Spacer(minLength: 0)
-                        SeatView(model: model, seat: model.seat(at: 2), isPartner: true, onDeck: onDeck, onRename: onRename).accessibilitySortPriority(20)
+                        SeatView(model: model, seat: model.seat(at: 2), isPartner: true, onDeck: onDeck, onRename: onRename,
+                                 onAnchor: { onAnchor(2, $0) }, bump: bumps[2, default: 0]).accessibilitySortPriority(20)
                             // The partner's box sits beside them on the left, in the corner the bid box will take (N55),
                             // since the scorecard holds the right (N66). Level with the top of the face.
                             .overlay(alignment: .topLeading) {
@@ -87,20 +125,26 @@ struct TableSurface: View {
                             }
                             .opacity(dim)
                         Spacer(minLength: 0)
-                        // The scorecard: each team's total after every hand, handwritten on a notebook page (N66).
-                        Scorecard(us: Scorecard.lines(team: model.ourTeam, history: model.match.history),
-                                  them: Scorecard.lines(team: 1 - model.ourTeam, history: model.match.history),
-                                  width: cornerWidth, onOpen: onScorecard)
-                            .accessibilitySortPriority(24)
+                        // The right corner stays empty, matching the bid corner's width so the partner sits in the middle;
+                        // the score pad lies in the bottom-left corner by the hand (D100).
+                        corner(width: cornerWidth) { EmptyView() }
                     }
                     .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.space)).maxY } action: { topRowBottom = $0 }
+                    .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.column)).maxY } action: { fieldEdges.top = $0 }
                     // The side tiles give way before the pile can touch them (`TableLayout`); in the auction
                     // there is no pile, so they keep their full width. Faces sit level with the pile's centre,
                     // each beside the card its seat played.
-                    let sideWidth = inAuction ? Theme.Table.seatTileWidth : TableLayout.sideSeatWidth(available: geometry.size.width)
+                    // The side tiles keep their play width through the auction too, so the field between them never changes
+                    // shape (D97); the auction's boxes are chalked, so they read where they tuck over it.
+                    let sideWidth = TableLayout.sideSeatWidth(available: geometry.size.width)
+                    // Half the room the phase leaves goes above the side row, half below, so the trick sits in the
+                    // middle of the field (D97).
+                    Spacer(minLength: 0)
                     HStack(alignment: .center) {
                         // Each side seat's box sits low beside it, toward the empty middle, clear of the partner's name (N55).
-                        SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck, onRename: onRename).accessibilitySortPriority(30)
+                        SeatView(model: model, seat: model.seat(at: 1), width: sideWidth, onDeck: onDeck, onRename: onRename,
+                                 onAnchor: { onAnchor(1, $0) }, bump: bumps[1, default: 0]).accessibilitySortPriority(30)
+                            .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.column)).maxX } action: { fieldEdges.left = $0 }
                             .modifier(DemoTap(active: model.tallyDemo == .face(seat: model.seat(at: 1))))
                             .overlay(alignment: .bottomTrailing) {
                                 if hand.phase == .bidding {
@@ -109,9 +153,11 @@ struct TableSurface: View {
                                 }
                             }
                         Spacer(minLength: TableLayout.seatGap)
-                        if !inAuction { centre(reach: reach) }
+                        if !inAuction { centre.zIndex(1) }
                         Spacer(minLength: TableLayout.seatGap)
-                        SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck, onRename: onRename).accessibilitySortPriority(10)
+                        SeatView(model: model, seat: model.seat(at: 3), width: sideWidth, onDeck: onDeck, onRename: onRename,
+                                 onAnchor: { onAnchor(3, $0) }, bump: bumps[3, default: 0]).accessibilitySortPriority(10)
+                            .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.column)).minX } action: { fieldEdges.right = $0 }
                             .overlay(alignment: .bottomLeading) {
                                 if hand.phase == .bidding {
                                     bidBox(at: 3, from: CGSize(width: Theme.Table.bidBoxWidth, height: -Theme.Table.bidBoxHeight))
@@ -119,9 +165,11 @@ struct TableSurface: View {
                                 }
                             }
                     }
-                    // While bidding there is no pile between them, so the side seats rise toward the partner, stopping
-                    // under the scorecard, and the bigger faces leave the bid pills their room (N48).
+                    // While bidding there is no pile between them, so the side seats rise toward the partner, and the
+                    // bigger faces leave the bid pills their room (N48).
                     .padding(.top, hand.phase == .bidding ? -Theme.Table.biddingSideRise : 0)
+                    // The field ends just under the side row, so it keeps its size whoever's turn it is (D97).
+                    .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.column)).maxY } action: { fieldEdges.bottom = $0 }
                     .opacity(dim)
                     Spacer(minLength: 4)
                     ForEach(Self.lowerRows(inAuction: inAuction), id: \.self) { row in
@@ -132,16 +180,23 @@ struct TableSurface: View {
                                 .overlay(alignment: .top) {
                                     if Self.commentaryFloats(inAuction: inAuction) {
                                         commentary.padding(.bottom, 4)
+                                            .padding(.leading, padOnTable ? padWidth : 0)
                                             .onGeometryChange(for: Double.self) { $0.size.height } action: { floatHeight = $0 }
                                             .offset(y: -floatHeight)
                                     }
                                 }
                         case .controls:
-                            if model.isHumanTurn, hand.phase == .bidding { bidding }
+                            if model.isHumanTurn, hand.phase == .bidding { bidding.allowsHitTesting(handLanded) }
                             if model.isHumanTurn, hand.phase == .choosingTrump { trumpChoice }
                         }
                     }
                     .opacity(dim)
+                }
+                .coordinateSpace(.named(Self.column))
+                .background(alignment: .topLeading) {
+                    if let rect = fieldEdges.rect {
+                        TableField(rect: rect, trump: hand.trump, lamp: lampPlace).opacity(dim)
+                    }
                 }
                 .padding(.top, Theme.Table.seatInset)
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { contentHeight = $0 }
@@ -154,21 +209,25 @@ struct TableSurface: View {
             .scrollClipDisabled()
             .frame(width: geometry.size.width, height: geometry.size.height)
             .mask { Rectangle().padding(.horizontal, -Theme.Table.seatInset) }
-            // Trump, very large and faint behind the play area: there when you look for it, never in the way.
-            .background {
-                if let trump = hand.trump {
-                    Text(trump.glyph).font(.system(size: Theme.Table.watermarkSize))
-                        .foregroundStyle(.ivory.opacity(Theme.Table.watermarkOpacity))
-                        .opacity(dim)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
+            // The score pad lies in the bottom-left corner by the hand while cards are played (D100), at its first size;
+            // the words above "Your turn" move over to clear it.
+            .overlay(alignment: .bottomLeading) {
+                if padOnTable {
+                    Scorecard(us: Scorecard.lines(team: model.ourTeam, history: model.match.history),
+                              them: Scorecard.lines(team: 1 - model.ourTeam, history: model.match.history),
+                              width: TableLayout.cornerWidth(available: geometry.size.width), onOpen: onScorecard)
+                        .padding(.bottom, 4)
+                        .transition(reduceMotion ? .opacity : .move(edge: .leading).combined(with: .opacity))
+                        .accessibilitySortPriority(3)
                 }
             }
+            .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: padOnTable)
+            .onGeometryChange(for: Double.self) { TableLayout.cornerWidth(available: $0.size.width) } action: { padWidth = $0 }
             // No corner deck or discard pile (T12): the deck sits beside the dealer's tile instead.
             // The finished hand's card takes over the table; what is underneath fades back and leaves the
             // accessibility tree, so VoiceOver meets the card and nothing behind it.
-            .accessibilityHidden(hand.phase == .finished)
-            .overlay { if hand.phase == .finished, !holdsResult { finishedCard.padding(.top, topRowBottom) } }
+            .accessibilityHidden(showsResult)
+            .overlay { if showsResult, !holdsResult { finishedCard.padding(.top, topRowBottom) } }
             // The one-time demo of the two taps says what each pulse means, in the middle of the table (N61).
             .overlay {
                 if let demo = model.tallyDemo {
@@ -187,8 +246,25 @@ struct TableSurface: View {
     /// The surface's own space, for the top row's lower edge.
     nonisolated static let space = "surface"
 
-    /// Everything but the scorecard fades back under the hand-end card, so the new total stays readable (N66).
-    private var dim: Double { hand.phase == .finished ? 0.12 : 1 }
+    /// The table fades back under the hand-end card, which carries both new totals.
+    /// Whether your own cards have all landed; the auction takes no taps while they are still being dealt and hidden.
+    private var handLanded: Bool { Self.handLanded(model.humanCards, motion: motion, handNumber: model.match.handNumber) }
+
+    nonisolated static func handLanded(_ cards: [Card], motion: TableMotion?, handNumber: Int) -> Bool {
+        guard let motion else { return true }
+        return cards.allSatisfy { motion.isInHand($0, handNumber: handNumber) }
+    }
+
+    private var dim: Double { showsResult ? 0.12 : 1 }
+
+    /// The score pad lies in the bottom-left corner (D100).
+    private var padOnTable: Bool { Scorecard.liesOnTable(phase: hand.phase, reviewing: reopenedTrick != nil) }
+
+    /// The place of the seat to act, where the field's lamp sits; nil once the hand or the match is over.
+    private var lampPlace: Int? {
+        guard model.match.winner == nil, hand.phase != .finished, let seat = hand.nextSeat else { return nil }
+        return model.place(of: seat)
+    }
 
     /// The box of the seat at `place` round the table (N55), its call arriving from `from`.
     private func bidBox(at place: Int, from: CGSize) -> some View {
@@ -206,46 +282,64 @@ struct TableSurface: View {
 
     // MARK: Pile
 
-    @ViewBuilder private func centre(reach: CGSize) -> some View {
+    @ViewBuilder private var centre: some View {
         let pile = pile
-        ZStack {
-            // Reserve the pile's footprint so the layout does not jump between phases.
-            Color.clear.frame(width: TableLayout.pileReservation,
-                              height: Theme.Card.pileWidth * Theme.Card.ratio + Theme.Table.partnerNudge + Theme.Table.ownNudge + 8)
-            ForEach(pile.plays, id: \.card) { play in
-                Button { model.explain(play, inLastTrick: pile.isLast) } label: {
-                    CardView(card: play.card, width: Theme.Card.pileWidth, style: .pile)
-                        .overlay(RoundedRectangle(cornerRadius: Theme.Card.radius(width: Theme.Card.pileWidth), style: .continuous)
-                            .stroke(.gold, lineWidth: pile.winner == play.seat ? 3 : 0))
+        PileScale { scale in
+            ZStack {
+                // Reserve the pile's footprint so the layout does not jump between phases. Its height follows the cards'
+                // own scale, so the field between the seats always holds the whole trick (D97).
+                Color.clear.frame(width: TableLayout.pileReservation, height: TableLayout.pileHeight * scale)
+                ForEach(Array(pile.plays.enumerated()), id: \.element.card) { position, play in
+                    pileCard(play, position: position, winner: pile.winner, isLast: pile.isLast, trick: pile.trick, scale: scale)
                 }
-                .buttonStyle(.plain)
-                .allowsHitTesting(coaching)
-                .accessibilityLabel(model.spokenDescription(of: play, winner: pile.winner))
-                .accessibilityHint(coaching ? "Explains why this card was played" : "")
-                .rotationEffect(.degrees(toss(for: play).rotation))
-                .offset(Self.pileOffset(for: model.place(of: play.seat)) + toss(for: play).offset)
-                .matchedGeometryEffect(id: play.card, in: namespace)
-                .transition(transition(for: play, winner: pile.winner, reach: reach))
-                .zIndex(Double(pile.plays.firstIndex(where: { $0.card == play.card }) ?? 0))
             }
+            .onGeometryChange(for: CGPoint.self) { proxy in
+                let frame = proxy.frame(in: .named(TableLayout.space))
+                return CGPoint(x: frame.midX, y: frame.midY)
+            } action: { onPileCentre($0, scale) }
         }
         .accessibilitySortPriority(5)
         .dynamicTypeSize(...Theme.Card.maximumTypeSize)
     }
 
-    /// The card's own turn and drift on the pile, fixed for as long as this trick lies there.
-    private func toss(for play: Play) -> CardToss.Pose {
-        CardToss.pose(for: play.card, hand: model.match.handNumber, trick: hand.completedTricks.count)
+    /// One card on the field. A play still in the air is drawn by the flight layer and appears here the moment it
+    /// lands (D97); the winner of a finished trick is ringed in gold.
+    private func pileCard(_ play: Play, position: Int, winner: Int?, isLast: Bool, trick: Int, scale: Double) -> some View {
+        let toss = toss(for: play, trick: trick)
+        let landed = motion?.hasLanded(playIndex: trick * 4 + position) ?? true
+        let offset = Self.pileOffset(for: model.place(of: play.seat), scale: scale) + toss.offset
+        let radius = Theme.Card.radius(width: Theme.Card.pileWidth)
+        return Button { model.explain(play, inLastTrick: isLast) } label: {
+            CardView(card: play.card, width: Theme.Card.pileWidth, style: .pile)
+                .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(.gold, lineWidth: winner == play.seat ? 3 : 0))
+        }
+        .buttonStyle(.plain)
+        .allowsHitTesting(coaching)
+        .accessibilityLabel(model.spokenDescription(of: play, winner: winner))
+        .accessibilityHint(coaching ? "Explains why this card was played" : "")
+        .rotationEffect(.degrees(toss.rotation))
+        .offset(offset)
+        .opacity(landed ? 1 : 0)
+        .transition(reduceMotion ? .opacity : .identity)
+        .zIndex(Double(position))
+    }
+
+    /// The card's own turn and drift on the pile, fixed for as long as this trick lies there: keyed to the trick's own
+    /// number, so a trick does not shift when it completes.
+    private func toss(for play: Play, trick: Int) -> CardToss.Pose {
+        CardToss.pose(for: play.card, hand: model.match.handNumber, trick: trick)
     }
 
     /// Where each card rests on the pile: nudged toward the place (0 bottom, 1 left, 2 across, 3 right) of the
-    /// seat that played it.
-    static func pileOffset(for place: Int) -> CGSize {
+    /// seat that played it. `scale` is the cards' own growth with the reader's text size: the top and bottom nudges
+    /// grow with it, so cards drawn larger still clear one another; the side ones keep the room the row gives them.
+    nonisolated static func pileOffset(for place: Int, scale: Double = 1) -> CGSize {
         switch place {
         case 1: CGSize(width: -Theme.Table.sideNudge, height: 0)
-        case 2: CGSize(width: 0, height: -Theme.Table.partnerNudge)
+        case 2: CGSize(width: 0, height: -Theme.Table.partnerNudge * scale)
         case 3: CGSize(width: Theme.Table.sideNudge, height: 0)
-        default: CGSize(width: 0, height: Theme.Table.ownNudge)
+        default: CGSize(width: 0, height: Theme.Table.ownNudge * scale)
         }
     }
 
@@ -257,19 +351,6 @@ struct TableSurface: View {
         case 3: CGSize(width: 1, height: 0)
         default: CGSize(width: 0, height: 1)
         }
-    }
-
-    /// Another seat's card arrives from its place; a finished trick leaves toward the winner's place.
-    /// The phone holder's own card is moved by `matchedGeometryEffect` from the hand instead.
-    private func transition(for play: Play, winner: Int?, reach: CGSize) -> AnyTransition {
-        if reduceMotion { return .opacity }
-        let from = Self.direction(for: model.place(of: play.seat))
-        let to = Self.direction(for: model.place(of: winner ?? play.seat))
-        let insertion: AnyTransition = model.place(of: play.seat) == 0 ? .identity
-            : .offset(x: from.width * reach.width, y: from.height * reach.height).combined(with: .opacity)
-        let removal: AnyTransition = .offset(x: to.width * reach.width, y: to.height * reach.height)
-            .combined(with: .scale(scale: 0.5)).combined(with: .opacity)
-        return .asymmetric(insertion: insertion, removal: removal)
     }
 
     // MARK: Status, hints, explanations
@@ -314,12 +395,11 @@ struct TableSurface: View {
                     .accessibilityFocused(statusFocus)
                 Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
             } else {
-                // Left: your own box in the auction, its call rising from the bid row (N55); in play, reopen the
-                // last trick when the pile is clear. Right: the hint on your turn.
+                // Left: your own box in the auction, its call rising from the bid row (N55). Right: the hint on your
+                // turn; in play, reopen the last trick when the pile is clear, on the right since the score pad lies on
+                // the left (D100).
                 if hand.phase == .bidding {
                     bidBox(at: 0, from: CGSize(width: 0, height: Theme.Table.auctionButtonHeight + Theme.Table.bidBoxHeight))
-                } else if pile.plays.isEmpty, hand.completedTricks.last != nil, hand.phase == .playing {
-                    smallButton("rectangle.stack", label: "Show the last hand", action: onReopenTrick)
                 } else {
                     Spacer().frame(width: Theme.Table.statusButtonHitSize, height: Theme.Table.statusButtonHitSize)
                 }
@@ -327,9 +407,13 @@ struct TableSurface: View {
                 statusText.font(model.isHumanTurn ? .title2.weight(.bold) : .title3.weight(.medium))
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                     .lineLimit(1).minimumScaleFactor(0.7)
+                    // The table no longer prints who is deciding or what was thrown (D98); VoiceOver still hears it here.
+                    .accessibilityLabel(Self.spokenStatus(prompt: promptWords, actor: actorWords, notice: model.notice ?? model.boldNote))
                     .accessibilityFocused(statusFocus)
                 if model.isHumanTurn, hand.phase != .finished, coaching {
                     smallButton("lightbulb", label: "Hint") { model.showHint() }
+                } else if pile.plays.isEmpty, hand.completedTricks.last != nil, hand.phase == .playing {
+                    smallButton("rectangle.stack", label: "Show the last hand", action: onReopenTrick)
                 } else if hand.phase == .bidding {
                     Spacer().frame(width: Theme.Table.bidBoxWidth, height: Theme.Table.bidBoxHeight)
                 } else {
@@ -352,27 +436,40 @@ struct TableSurface: View {
         .accessibilityLabel(label)
     }
 
+    /// The line by the hand speaks only to you (D98): your prompt in gold when it is your move, and nothing otherwise.
+    /// Who is bidding, choosing or playing shows on the table itself, by the halo and the lamp.
     private var statusText: Text {
-        if let winner = model.match.winner {
-            return Text(model.winnerHeadline(winner))
-        }
-        let actor = hand.nextSeat.map { model.seatNames[$0] } ?? ""
+        guard let prompt = promptWords else { return Text(" ") }
+        return Text(prompt).foregroundStyle(.gold)
+    }
+
+    /// Your prompt, when the next move is yours.
+    private var promptWords: String? {
+        guard model.match.winner == nil, model.isHumanTurn else { return nil }
         switch hand.phase {
-        case .bidding:
-            let bid = hand.auction.isNineAndOut ? "9 and out" : hand.auction.highestBid.map(String.init) ?? "none"
-            // On your bid the auction chips carry the high bid (B04), so the line only says whose turn it is.
-            return model.isHumanTurn ? Text("Your bid").foregroundStyle(.gold)
-                : Text("\(actor) is bidding · high bid \(bid)")
-        case .choosingTrump:
-            return model.isHumanTurn ? Text("Choose trump").foregroundStyle(.gold) : Text("\(actor) is choosing trump")
-        case .playing:
-            // No follow-suit line (T06), and no "is thinking": the dots above that seat's tile say it (T04).
-            return model.isHumanTurn ? Text("Your turn").foregroundStyle(.gold) : Text(" ")
-        case .finished:
-            return Text("Hand complete")
+        case .bidding: return "Your bid"
+        case .choosingTrump: return "Choose trump"
+        case .playing: return "Your turn"
+        case .finished: return nil
         }
     }
 
+    /// What the table no longer prints but VoiceOver still reads from the status line (D98).
+    private var actorWords: String? {
+        if let winner = model.match.winner { return model.winnerHeadline(winner) }
+        let actor = hand.nextSeat.map { model.seatNames[$0] } ?? ""
+        switch hand.phase {
+        case .bidding: return "\(actor) is bidding"
+        case .choosingTrump: return "\(actor) is choosing trump"
+        case .playing: return nil
+        case .finished: return "Hand complete"
+        }
+    }
+
+    /// The status line's VoiceOver words: your prompt, or who is deciding, then any table notice such as the discards.
+    nonisolated static func spokenStatus(prompt: String?, actor: String?, notice: String?) -> String {
+        [prompt ?? actor, notice].compactMap { $0 }.joined(separator: ". ")
+    }
     /// One line under the status: a refusal, else a hint reason or explanation, else the notice (no undo
     /// toast on the play surface, T07), else the note that a team down 10 is bidding bolder (D71), else your standing call in the auction, else a
     /// placeholder in play. Reserves no space in the auction while the controls need it.
@@ -380,7 +477,14 @@ struct TableSurface: View {
         ZStack {
             if let refusal = model.refusal {
                 // A refused tap answers first: it is the freshest thing the player did.
+                // It may take two lines; it grows upward from the status line rather than being cut off (D97).
                 Text(refusal).font(.body.weight(.medium)).multilineTextAlignment(.center).foregroundStyle(.ivory)
+                    .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 8)
+            } else if let selected, model.isHumanTurn, hand.phase == .playing {
+                // The first tap picked a card (D97): say how to play it, by name.
+                Text(Self.selectedCaption(selected)).font(.body.weight(.semibold)).multilineTextAlignment(.center)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 8)
             } else if let hint = model.hint {
                 // One complete recommendation on one line; the reason waits behind Why?, so a long hint
@@ -403,15 +507,8 @@ struct TableSurface: View {
                     .font(.body.weight(.medium)).multilineTextAlignment(.center)
                     .foregroundStyle(.ivory)
                     .padding(.horizontal, 8)
-            } else if let notice = model.notice {
-                // Large and full ivory (D94): no small light captions on the table.
-                Text(notice).font(.body.weight(.medium)).multilineTextAlignment(.center).padding(.horizontal, 8)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-            } else if let note = model.boldNote {
-                Text(note).font(.body.weight(.medium)).multilineTextAlignment(.center).padding(.horizontal, 8)
-                    .transition(.opacity)
-            } else if hand.phase == .bidding, !model.isHumanTurn, let seat = model.viewerSeat, let call = model.latestCall(for: seat) {
-                Text("You: \(call)").font(.body.weight(.medium))
+            // The discard counts, the "bidding bolder" note and your standing call are no longer printed (D98): the
+            // discards are spoken through the status line, and your call is chalked by your own seat.
             } else if !inAuction {
                 Text(pile.plays.isEmpty || !coaching ? " " : (reopenedTrick != nil ? "Tap a card to see why it was played" : "Tap a card on the table to see why it was played"))
                     .font(.body.weight(.medium)).foregroundStyle(.ivory)
@@ -419,12 +516,19 @@ struct TableSurface: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: Self.commentaryMinHeight(inAuction: inAuction, humanTurn: model.isHumanTurn), alignment: .top)
+        // A soft shadow under the words, so the field's edge never runs through them where they rise over it (D97).
+        .shadow(color: .black.opacity(0.55), radius: 2, y: 1)
         .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: toast)
         .sheet(isPresented: $showHintDetail) {
             if let hint = model.hint {
                 HintDetailView(parts: Self.hintParts(hint.reason))
             }
         }
+    }
+
+    /// What the table says while a card waits for its second tap (D97).
+    nonisolated static func selectedCaption(_ card: Card) -> String {
+        "Tap the \(card.label)\(card.suit.glyph) again to play it, or drag it up"
     }
 
     /// Advice reads "Play the six of clubs: partner's queen holds the trick, so…". The part before the
@@ -450,12 +554,12 @@ struct TableSurface: View {
         HouseRules.bidRange.map { BidPill(bid: $0, enabled: allows($0)) }
     }
 
-    enum AuctionRow: Hashable { case numbers, nineAndOut, pass }
+    enum AuctionRow: Hashable { case numbers, pass, passWithNineAndOut }
 
-    /// The auction's rows, top to bottom: the numbers, 9 and out on its own line under them when it may be bid
-    /// (so it covers no number), then Pass.
+    /// The auction's rows, top to bottom: the numbers, then Pass; when 9 and out may be bid its pill sits at the right
+    /// end of the Pass row, under the 9, covering no number (D85), so the auction fits above the hand (D97).
     nonisolated static func auctionRows(nineAndOut: Bool) -> [AuctionRow] {
-        nineAndOut ? [.numbers, .nineAndOut, .pass] : [.numbers, .pass]
+        nineAndOut ? [.numbers, .passWithNineAndOut] : [.numbers, .pass]
     }
 
     /// The auction's controls (B05, N55): numbers in one row when targets fit, otherwise two rows, the lowest you may bid edged in light brown,
@@ -466,7 +570,10 @@ struct TableSurface: View {
         let lowest = row.first(where: \.enabled)?.bid
         return VStack(spacing: Theme.Table.auctionButtonSpacing) {
             if let context = model.auctionContext {
-                Text(context).font(.body.weight(.medium)).multilineTextAlignment(.center).padding(.bottom, 2)
+                // A size down from body, never under 15 pt, two lines at most (D97): the dealer's note is the auction's
+                // only sentence, and the room it takes is room Pass needs.
+                Text(context).font(.footnote.weight(.semibold)).multilineTextAlignment(.center)
+                    .lineLimit(2).minimumScaleFactor(0.9).fixedSize(horizontal: false, vertical: true)
             }
             ForEach(Self.auctionRows(nineAndOut: model.allows(.nineAndOut)), id: \.self) { line in
                 switch line {
@@ -477,28 +584,35 @@ struct TableSurface: View {
                             bidChoices(row, lowest: lowest)
                         }
                         .frame(minWidth: 8 * 44 + 7 * Theme.Table.auctionButtonSpacing)
+                        // Two rows sit a little shorter, so the auction still fits above the hand (D97).
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 44), spacing: Theme.Table.auctionButtonSpacing), count: 4), spacing: Theme.Table.auctionButtonSpacing) {
-                            bidChoices(row, lowest: lowest)
+                            bidChoices(row, lowest: lowest, height: Theme.Table.auctionButtonCompactHeight)
                         }
                     }
                     .dynamicTypeSize(...Theme.Card.maximumTypeSize)
-                case .nineAndOut:
-                    // Flush with the row's end, under the 9 it belongs to.
-                    HStack { Spacer(minLength: 0); nineAndOutButton }
                 case .pass:
-                    actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
-                                 font: .body.weight(.semibold), labelColor: .ivory)
+                    passButton
+                case .passWithNineAndOut:
+                    HStack(spacing: Theme.Table.auctionButtonSpacing) {
+                        passButton
+                        nineAndOutButton.frame(minHeight: Theme.Table.auctionButtonCompactHeight)
+                    }
                 }
             }
         }
         .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: row)
     }
 
+    private var passButton: some View {
+        actionButton("Pass", action: .bid(nil), fill: Theme.Wood.header,
+                     font: .body.weight(.semibold), labelColor: .ivory, height: Theme.Table.auctionButtonCompactHeight)
+    }
+
     /// Shared controls keep bid order, validation and the lowest-bid outline identical in both layouts.
-    private func bidChoices(_ row: [BidPill], lowest: Int?) -> some View {
+    private func bidChoices(_ row: [BidPill], lowest: Int?, height: Double = Theme.Table.auctionButtonHeight) -> some View {
         ForEach(row, id: \.bid) { pill in
             actionButton(String(pill.bid), action: .bid(pill.bid), fill: .ivory,
-                         font: .title2.weight(.bold), labelColor: .suitRed)
+                         font: .title2.weight(.bold), labelColor: .suitRed, height: height)
                 .frame(minWidth: 44)
                 .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
                     .stroke(Theme.Wood.light, lineWidth: pill.bid == lowest ? 3 : 0))
@@ -553,11 +667,12 @@ struct TableSurface: View {
 
     /// Pills fill their column so neighbours almost touch: solid, tall, with a large label.
     private func actionButton(_ label: String, action: PlayerAction, fill: Color = Theme.Wood.inlay,
-                              font: Font = .title3.weight(.semibold), labelColor: Color = .ivory) -> some View {
+                              font: Font = .title3.weight(.semibold), labelColor: Color = .ivory,
+                              height: Double = Theme.Table.auctionButtonHeight) -> some View {
         // One dry run per pill: the reason, when there is one, is also why the pill is greyed.
         let reason = model.validationMessage(for: action)
         return Button { model.send(action) } label: { Text(label).font(font) }
-            .buttonStyle(PillButtonStyle(fill: fill, labelColor: labelColor))
+            .buttonStyle(PillButtonStyle(fill: fill, labelColor: labelColor, height: height))
             .disabled(reason != nil)
             // A greyed pill still says why it is greyed to assistive technology.
             .accessibilityHint(reason ?? "")
@@ -566,16 +681,19 @@ struct TableSurface: View {
     // MARK: Hand end
 
     private var finishedCard: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 12) {
-                if let winner = model.match.winner { matchOver(winner) }
-                HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
-                if let line = model.handEndLine { handEndWords(line) }
-                dealButton
+        VStack(spacing: 0) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 8) {
+                    if let winner = model.match.winner { matchOver(winner) }
+                    HandSummaryView(match: model.match, names: model.seatNames, outcome: model.lastHandOutcome, review: model.handReview(), difficulty: model.settings.difficulty, describe: model.describe, coaching: coaching)
+                    if let line = model.handEndLine { handEndWords(line) }
+                }
+                .padding(.horizontal, 12).padding(.vertical, 8)
             }
-            .padding(12)
+            .scrollBounceBehavior(.basedOnSize)
+            // R21: the next phase stays reachable while the result's optional detail scrolls.
+            dealButton.padding(.horizontal, 12).padding(.bottom, 12)
         }
-        .scrollBounceBehavior(.basedOnSize)
         .background(.ivory, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.Wood.header.opacity(0.45), lineWidth: 1.5))
         .padding(.vertical, 8).padding(.horizontal, Theme.Table.overlayInset)
@@ -606,7 +724,7 @@ struct TableSurface: View {
 
     /// The card shown once a team reaches 25 or a 9-and-out resolves.
     private func matchOver(_ winner: Int) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 3) {
             Text(model.mode == .solo && winner == 0 ? "YOU WIN THE MATCH" : "\(model.teamNames(winner)) WIN")
                 .font(.system(.subheadline, design: .monospaced).weight(.bold)).tracking(2)
             Text("\(model.match.scores[0]) – \(model.match.scores[1]) after \(model.match.history.count) hands").font(.title3.weight(.semibold))
@@ -616,6 +734,14 @@ struct TableSurface: View {
             }
         }.foregroundStyle(.black)
     }
+}
+
+/// Reads how much cards on the field are scaled by the reader's text size, under the cards' own cap, and hands it to
+/// its content (D97).
+private struct PileScale<Content: View>: View {
+    @ScaledMetric(relativeTo: .title2) private var scale = 1.0
+    @ViewBuilder let content: (Double) -> Content
+    var body: some View { content(scale) }
 }
 
 /// One opponent: a face with its name carved into the wood under it, and the dealer button. A gold ring marks the seat whose
@@ -632,6 +758,10 @@ struct SeatView: View {
     var onDeck: (CGPoint) -> Void = { _ in }
     /// The name tag was tapped: rename this seat (D93).
     var onRename: (Int) -> Void = { _ in }
+    /// Where the face sits in the table's space, so a card can fly from it and a trick can fly to it (D97).
+    var onAnchor: (CGPoint) -> Void = { _ in }
+    /// Goes up each time a trick this seat took arrives at its face, which nods once (D97).
+    var bump = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The halo's breathing, driven by a repeating animation while this seat is deciding.
     @State private var pulsing = false
@@ -653,7 +783,13 @@ struct SeatView: View {
     /// breathes; that halo is the table's only turn indicator.
     var body: some View {
         VStack(spacing: 2) {
-            PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true)
+            // The rim says the side: your team's light, the opponents' oxblood (D97).
+            PortraitView(portrait: portrait, size: Theme.Table.portraitSize, expression: expression, popsOut: true,
+                         rim: Self.rim(seat: seat, ourTeam: model.ourTeam), rimWidth: Theme.Team.rimWidth)
+                .onGeometryChange(for: CGPoint.self) { proxy in
+                    let frame = proxy.frame(in: .named(TableLayout.space))
+                    return CGPoint(x: frame.midX, y: frame.midY)
+                } action: { onAnchor($0) }
                 // Big public moments show larger on the face, until the next lead (N36).
                 .scaleEffect(bigMomentScale, anchor: .bottom)
                 .animation(reduceMotion ? Theme.Motion.reduced : Theme.Motion.overlay, value: SeatMood.isBigMoment(for: seat, in: model.match))
@@ -680,6 +816,15 @@ struct SeatView: View {
                         .scaleEffect(bigMomentScale, anchor: .bottom)
                 }
                 .scaleEffect(pulsing ? Theme.Table.activePulseScale : 1)
+                // A trick taken lands in the face, which nods (D97); Reduce Motion keeps it still.
+                .keyframeAnimator(initialValue: 1.0, trigger: bump) { view, scale in
+                    view.scaleEffect(scale)
+                } keyframes: { _ in
+                    KeyframeTrack(\.self) {
+                        SpringKeyframe(reduceMotion ? 1 : 1.12, duration: 0.14, spring: .snappy)
+                        SpringKeyframe(1, duration: 0.32, spring: .bouncy)
+                    }
+                }
                 .onChange(of: active, initial: true) { _, isActive in
                     if isActive, !reduceMotion {
                         withAnimation(Theme.Motion.pulse) { pulsing = true }
@@ -725,6 +870,11 @@ struct SeatView: View {
     /// Room the tile keeps on each side.
     nonisolated static let tilePadding = 4.0
 
+    /// The portrait's rim (D97): light for the phone holder's team, oxblood for the other.
+    nonisolated static func rim(seat: Int, ourTeam: Int) -> Color {
+        seat % 2 == ourTeam ? Theme.Team.ourRim : Theme.Team.theirRim
+    }
+
     /// Where this seat's dealer button rests when it deals (D94).
     private var placement: DealerMark.Placement { DealerMark.placement(forPlace: model.place(of: seat)) }
 
@@ -743,7 +893,8 @@ struct SeatView: View {
     /// dealer's mark when this seat deals (N65). The stack of backs that sat beside it is gone (D93).
     private var badges: some View {
         HStack(spacing: 6) {
-            if deals { DealerMark(onPlaced: onDeck) }
+            // Deck and button side by side (D97), so the dealer's tile is barely taller and the auction still fits.
+            if deals { DealerMark(onPlaced: onDeck, sideways: true) }
         }
         .frame(height: deals ? nil : backWidth * Theme.Card.ratio + 2)
     }
@@ -851,12 +1002,13 @@ extension Color {
 struct PillButtonStyle: ButtonStyle {
     var fill: Color
     var labelColor: Color = .ivory
+    var height = Theme.Table.auctionButtonHeight
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(labelColor)
-            .frame(maxWidth: .infinity, minHeight: Theme.Table.auctionButtonHeight)
+            .frame(maxWidth: .infinity, minHeight: height)
             .background(fill, in: RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Theme.Table.auctionButtonRadius, style: .continuous)
                 .stroke(.ivory.opacity(0.18), lineWidth: 1))
@@ -931,4 +1083,3 @@ struct HintDetailView: View {
         .presentationDragIndicator(.visible)
     }
 }
-

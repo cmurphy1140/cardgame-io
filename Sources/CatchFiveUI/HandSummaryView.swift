@@ -65,7 +65,7 @@ struct HandSummaryView: View {
                     }.padding(.top, 4)
                 }.tint(Theme.Wood.dark)
             }
-            .padding(16)
+            .padding(.horizontal, 16).padding(.vertical, 4)
             .foregroundStyle(.black)
             .onAppear { if ScreenshotStage.name == "review" { reviewOpen = true } }
         }

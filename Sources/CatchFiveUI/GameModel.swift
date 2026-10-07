@@ -441,6 +441,9 @@ public final class GameModel: ObservableObject {
         refusal = validationMessage(for: action)
     }
 
+    /// The player picked a card after a refusal (D97): the refusal is no longer the newest thing on the table.
+    public func clearRefusal() { refusal = nil }
+
     /// The suit you are obliged to follow right now: the suit led, while it is your turn to play and you
     /// still hold it. Nil when you lead, when you cannot follow, or when it is not your turn.
     public var suitToFollow: Suit? {

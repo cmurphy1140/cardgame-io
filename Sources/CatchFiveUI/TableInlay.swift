@@ -97,28 +97,75 @@ struct DealerButton: View {
 /// showing along the side and foot, slightly turned, with its shadow on the wood.
 struct RulesBook: View {
     static let cover = Color(red: 0.42, green: 0.10, blue: 0.14)
+    /// The ribbon marker hanging from the pages: cream, since gold keeps its table meanings (D33).
+    static let ribbon = Color(red: 0.93, green: 0.86, blue: 0.70)
+    /// How often a soft sheen crosses the cover, so the book reads as something to pick up without calling out (D98).
+    nonisolated static let sheenEvery = 9.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var sheen = -0.4
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            // The page block, peeking out right and below the cover.
+            // The page block, peeking out right and below the cover, with its ribbon hanging out of the foot.
             RoundedRectangle(cornerRadius: 3).fill(Color(red: 0.93, green: 0.90, blue: 0.82))
+                .overlay(alignment: .bottomTrailing) {
+                    Capsule().fill(Self.ribbon).frame(width: 7, height: 16).offset(x: -22, y: 10)
+                        .shadow(color: .black.opacity(0.35), radius: 1, y: 1)
+                }
                 .offset(x: 3, y: 3)
             RoundedRectangle(cornerRadius: 3)
                 .fill(LinearGradient(colors: [Self.cover, Self.cover.opacity(0.85)], startPoint: .top, endPoint: .bottom))
                 .overlay(alignment: .leading) {
                     // The spine: a darker band down the left.
-                    Rectangle().fill(.black.opacity(0.25)).frame(width: 7)
+                    Rectangle().fill(.black.opacity(0.25)).frame(width: 9)
                 }
+                // A blind-tooled border inset from the edge, as on a cloth-bound book.
+                .overlay(RoundedRectangle(cornerRadius: 2).inset(by: 5).stroke(.black.opacity(0.28), lineWidth: 1).padding(.leading, 9))
+                .overlay {
+                    // Light catching the cloth now and then.
+                    LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .white.opacity(0.28), location: 0.5),
+                                           .init(color: .clear, location: 1)], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 44)
+                        .rotationEffect(.degrees(18))
+                        .offset(x: sheen * Theme.Table.rulesBookWidth)
+                        .blendMode(.plusLighter)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 3))
             Text(TableTopRow.rules.title)
-                .font(.system(.headline, design: .serif).weight(.bold))
+                .font(.system(.title, design: .serif).weight(.bold))
                 .foregroundStyle(Color(red: 0.95, green: 0.90, blue: 0.78))
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.leading, 7)
+                .padding(.leading, 9)
         }
-        .frame(width: Theme.Table.rulesBookWidth, height: Theme.Table.topRowHeight - 6)
+        // Taller than the top row (D100); the row holds it at the row's height, so it overhangs a little above and below.
+        .frame(width: Theme.Table.rulesBookWidth, height: Theme.Table.rulesBookHeight)
         .rotationEffect(.degrees(-4))
         .shadow(color: .black.opacity(0.5), radius: 3, x: 2, y: 3)
+        .task {
+            guard !reduceMotion else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(Self.sheenEvery))
+                guard !Task.isCancelled else { return }
+                sheen = -0.4
+                withAnimation(.easeInOut(duration: 1.1)) { sheen = 0.9 }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// The book answers a press by lifting a little off the table and settling back (D98).
+struct BookPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 1.06 : 1)
+            .offset(y: configuration.isPressed && !reduceMotion ? -2 : 0)
+            .opacity(configuration.isPressed && reduceMotion ? 0.8 : 1)
+            .animation(reduceMotion ? nil : Theme.Motion.press, value: configuration.isPressed)
+            .frame(minWidth: Theme.Table.topRowHeight, minHeight: Theme.Table.topRowHeight)
+            .contentShape(Rectangle())
     }
 }
 

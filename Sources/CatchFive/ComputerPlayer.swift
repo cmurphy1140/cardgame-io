@@ -106,9 +106,25 @@ public enum ComputerPlayer {
     /// The action a computer of the given difficulty takes from `view`'s seat.
     public static func decide(_ view: PlayerView, difficulty: Difficulty) -> PlayerAction? {
         switch difficulty {
-        case .easy: EasyPlayer.decide(view)
+        // Easy stays frozen (D17, D26), so its answer to a standing 9 and out is given here: it passes (D102).
+        case .easy: facesNineAndOut(view) && view.nextSeat == view.seat ? .bid(nil) : EasyPlayer.decide(view)
         case .standard: decide(view)
         }
+    }
+
+    /// True while a 9 and out stands in `view`'s auction. Then the only legal answers are a pass or, for the
+    /// dealer whose team is at zero or above, a matching 9 and out; a plain 9 is refused (D102).
+    public static func facesNineAndOut(_ view: PlayerView) -> Bool {
+        view.phase == .bidding && view.calls.contains { $0.bid == .nineAndOut }
+    }
+
+    /// Whether a Standard dealer takes over a 9 and out by matching it (D102). Only asked when matching is legal:
+    /// this seat deals, its team is at zero or above, and the 9 and out is the other team's. Matching makes the
+    /// dealer's team bid all nine points; collecting fewer loses the match.
+    /// `worth` is the hand's estimate in its best suit and `confidence` the most it would bid on a normal auction (2...9).
+    static func matchesNineAndOut(_ view: PlayerView, worth: Double, confidence: Int) -> Bool {
+        // Standard passes a standing 9 and out for now, like Easy (D102).
+        false
     }
 
     /// How far a team must trail before its computers bid bolder: Connor's table, September 27, 2026 (D71).
@@ -219,6 +235,13 @@ public enum ComputerPlayer {
         // A team down 10 or more bids one step bolder (D71): the most it will go rises by one, never past 9.
         let level = max(Int(worth.rounded(.down)), floor ?? 0)
         let confidence = min(level + (isTrailingBadly(view) ? 1 : 0), 9)
+        // A standing 9 and out leaves two answers: pass, or match it as dealer at zero or above (D102).
+        if facesNineAndOut(view) {
+            if isDealer, view.scores[view.seat % 2] >= 0, matchesNineAndOut(view, worth: worth, confidence: confidence) {
+                return Advice(action: .nineAndOut, reason: "Match the 9 and out: as dealer you take it over, and \(hand). Your team must now take all nine points.")
+            }
+            return Advice(action: .bid(nil), reason: "Pass: a 9 and out stands, and \(hand), not enough to promise all nine points.")
+        }
         // Bid the table's number for the shape, not the cheapest raise that clears the auction: ace
         // and king is a three bid even when two would win it, because the smallest legal raise hands
         // the hand back to anyone willing to say one more.

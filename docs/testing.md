@@ -51,15 +51,19 @@ flowchart BT
     L1 --> L2 --> L3 --> L4 --> L5 --> L5b --> L5c --> L6 --> L7
 ```
 
-Total on 2026-09-29: 235 automated tests (90 engine, 145 view model), under 10 s. The per-layer counts above are older and not recounted.
+Total on 2026-10-07: 263 automated tests (93 engine, 170 view model), under 10 s. The per-layer counts above are older and not recounted.
+
+`NineAndOutAnswerTests` (3 tests, D102) holds the closeout audit's blocker shut: a computer dealer, Easy or Standard, answers a standing 9 and out with a pass or a legal match, never a plain 9 the engine refuses.
 
 The D71 measurement plays a 40-match sample by default. The full 2400 mirrored matches whose numbers D71 records take about 18 s more:
 
 ```bash
 CATCH5_FULL_BENCHMARK=1 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter boldWhenTrailing
-``` Every layer above the first uses the real code beneath it; nothing is mocked. If `trickWinner` broke, the failure would show up in one small trick test *and* in the 208-hand simulation, and the small one tells you exactly what changed.
+```
 
-The cast, login and menu are covered at the model layer: `Settings` migration and round trip, `matchInProgress`, `signIn` and `seatSummary`; the screens themselves are checked by the simulator screenshot pass.
+Every layer above the first uses the real code beneath it; nothing is mocked. If `trickWinner` broke, the failure would show up in one small trick test *and* in the 208-hand simulation, and the small one tells you exactly what changed.
+
+The cast, login and menu are covered at the model layer: `Settings` migration and round trip (`aSeatNamesListOfTheWrongLengthFallsBackToTheDefaultsWithoutTrapping` decodes a short, long or empty `seatNames` list to the defaults), `matchInProgress`, `signIn` and `seatSummary`; the screens themselves are checked by the simulator screenshot pass.
 
 ## Two kinds of test, deliberately
 

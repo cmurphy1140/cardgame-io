@@ -68,16 +68,157 @@ public enum ExplainerLibrary {
 
     /// About 200 words a minute, never under one minute.
     static func readingMinutes(_ document: MarkdownDocument) -> Int {
-        let words = document.blocks.reduce(0) { count, block in
-            switch block {
-            case let .paragraph(text): count + text.split(separator: " ").count
-            case let .bullets(items), let .numbered(items): count + items.reduce(0) { $0 + $1.split(separator: " ").count }
-            case let .table(_, rows): count + rows.reduce(0) { $0 + $1.joined(separator: " ").split(separator: " ").count }
-            case let .code(_, text): count + text.split(separator: " ").count / 2
-            default: count
+        readingMinutes(words: document.blocks.reduce(0) { $0 + $1.words })
+    }
+
+    static func readingMinutes(words: Int) -> Int {
+        max(1, Int((Double(words) / 200).rounded()))
+    }
+
+    /// One short page of a chapter: a `##` section, or one part of a long one.
+    struct Page: Equatable, Hashable, Identifiable {
+        let file: String
+        /// The section's heading text, or "Overview" for what sits above the first section.
+        let title: String
+        let part: Int
+        let parts: Int
+        /// The section's blocks for this part, without its `##` heading.
+        let blocks: [MarkdownDocument.Block]
+        /// Position in the chapter's page list, from 0.
+        let number: Int
+        var id: String { "\(file)#\(number)" }
+        var words: Int { blocks.reduce(0) { $0 + $1.words } }
+        var minutes: Int { ExplainerLibrary.readingMinutes(words: words) }
+        var hasDiagram: Bool { blocks.contains { if case .diagram = $0 { true } else { false } } }
+    }
+
+    /// One card in a chapter's list: a section, opening on its first page; Next walks through the rest of its parts.
+    /// A split section gets one card, not one per part, since its parts are cut by length and have no names of their own.
+    struct Card: Equatable, Identifiable {
+        let first: Page
+        let parts: Int
+        let words: Int
+        let hasDiagram: Bool
+        var id: String { first.id }
+        var minutes: Int { ExplainerLibrary.readingMinutes(words: words) }
+    }
+
+    /// The chapter's cards: each run of a section's parts folded into one.
+    static func cards(for pages: [Page]) -> [Card] {
+        var cards: [Card] = []
+        for page in pages {
+            if page.part > 1, let last = cards.last, last.first.title == page.title {
+                cards[cards.count - 1] = Card(first: last.first, parts: last.parts + 1, words: last.words + page.words,
+                                              hasDiagram: last.hasDiagram || page.hasDiagram)
+            } else {
+                cards.append(Card(first: page, parts: 1, words: page.words, hasDiagram: page.hasDiagram))
             }
         }
-        return max(1, Int((Double(words) / 200).rounded()))
+        return cards
+    }
+
+    /// About a minute and a half of reading; a longer section is split into parts.
+    static let pageWords = 300
+
+    /// Chapters whose sections read newest first: the decision log appends at the bottom.
+    static let newestFirst: Set<String> = ["decisions"]
+
+    /// The chapter as short pages: an Overview of what precedes the first `##`, then one page per
+    /// `##` section (reversed for `newestFirst` files). A section over `pageWords` is split at its
+    /// `###` headings, then at block boundaries, and a long table by rows, each part repeating the
+    /// header. A block that cannot be cut stays whole on its own page.
+    static func pages(of document: MarkdownDocument, file: String) -> [Page] {
+        var overview: [MarkdownDocument.Block] = []
+        var sections: [(title: String, blocks: [MarkdownDocument.Block])] = []
+        var titled = false
+        for block in document.blocks {
+            if case let .heading(2, text) = block {
+                sections.append((text, []))
+            } else if sections.isEmpty {
+                if case .heading(1, _) = block, !titled { titled = true } else { overview.append(block) }
+            } else {
+                sections[sections.count - 1].blocks.append(block)
+            }
+        }
+        if newestFirst.contains(file) { sections.reverse() }
+        if !overview.isEmpty { sections.insert(("Overview", overview), at: 0) }
+
+        var pages: [Page] = []
+        for section in sections {
+            let parts = split(section.blocks)
+            for (offset, blocks) in parts.enumerated() {
+                pages.append(Page(file: file, title: section.title, part: offset + 1, parts: parts.count, blocks: blocks, number: pages.count))
+            }
+        }
+        return pages
+    }
+
+    /// A section's blocks in parts of at most `pageWords`: its `###` subsections grouped while they
+    /// fit, and any group still too long cut between blocks.
+    static func split(_ blocks: [MarkdownDocument.Block]) -> [[MarkdownDocument.Block]] {
+        let words = { (blocks: [MarkdownDocument.Block]) in blocks.reduce(0) { $0 + $1.words } }
+        guard words(blocks) > pageWords else { return [blocks] }
+        var subsections: [[MarkdownDocument.Block]] = [[]]
+        for block in blocks {
+            if case .heading(3, _) = block, !subsections[subsections.count - 1].isEmpty { subsections.append([]) }
+            subsections[subsections.count - 1].append(block)
+        }
+        var groups: [[MarkdownDocument.Block]] = []
+        for subsection in subsections where !subsection.isEmpty {
+            if let last = groups.last, words(last) + words(subsection) <= pageWords {
+                groups[groups.count - 1] += subsection
+            } else {
+                groups.append(subsection)
+            }
+        }
+        return groups.flatMap { words($0) > pageWords ? splitBetweenBlocks($0) : [$0] }
+    }
+
+    /// Cuts between blocks, never leaving a heading at the foot of a part; a long table is cut by rows.
+    private static func splitBetweenBlocks(_ blocks: [MarkdownDocument.Block]) -> [[MarkdownDocument.Block]] {
+        var parts: [[MarkdownDocument.Block]] = []
+        var current: [MarkdownDocument.Block] = []
+        var currentWords = 0
+        func close() {
+            // Headings at the end move on with the text they introduce.
+            var carried: [MarkdownDocument.Block] = []
+            while case .heading? = current.last { carried.insert(current.removeLast(), at: 0) }
+            if !current.isEmpty { parts.append(current) }
+            current = carried
+            currentWords = 0
+        }
+        for block in blocks {
+            var pieces = [block]
+            if block.words > pageWords, case let .table(header, rows) = block {
+                pieces = tableParts(header: header, rows: rows)
+            }
+            for (offset, piece) in pieces.enumerated() {
+                if currentWords > 0, currentWords + piece.words > pageWords { close() }
+                current.append(piece)
+                currentWords += piece.words
+                // Every table part but the last fills a page of its own.
+                if offset < pieces.count - 1 { close() }
+            }
+        }
+        if !current.isEmpty { parts.append(current) }
+        return parts
+    }
+
+    /// A table's rows in runs of at most `pageWords`, each run under the same header.
+    private static func tableParts(header: [String], rows: [[String]]) -> [MarkdownDocument.Block] {
+        var runs: [[[String]]] = []
+        var words = 0
+        for row in rows {
+            let rowWords = MarkdownDocument.Block.table(header: header, rows: [row]).words
+            if let last = runs.last, !last.isEmpty, words + rowWords <= pageWords {
+                runs[runs.count - 1].append(row)
+                words += rowWords
+            } else {
+                runs.append([row])
+                words = rowWords
+            }
+        }
+        return runs.map { .table(header: header, rows: $0) }
     }
 }
 
@@ -173,71 +314,188 @@ struct ExplainerView: View {
     }
 }
 
-/// One chapter, rendered block by block, with a section list at the top and neighbours at the bottom.
+/// One chapter as a list of short pages; tapping a card opens that page on top.
 struct DocumentReaderView: View {
     let chapter: ExplainerLibrary.Chapter
     let chapters: [ExplainerLibrary.Chapter]
     /// A link to another doc, or the Previous and Next buttons, opens that chapter in place.
     let openChapter: (ExplainerLibrary.Chapter) -> Void
     @State private var document: MarkdownDocument?
+    @State private var pages: [ExplainerLibrary.Page] = []
+    @State private var reading: ExplainerLibrary.Page?
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                if let document {
-                    VStack(alignment: .leading, spacing: 14) {
-                        sectionList(document, proxy: proxy)
-                        ForEach(Array(document.blocks.enumerated()), id: \.offset) { index, block in
-                            blockView(block).id(index)
-                        }
-                        neighbours
+        ScrollView {
+            if let document {
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        MarkdownText(document.title).font(.system(.title2, design: .serif).weight(.semibold))
+                            .accessibilityAddTraits(.isHeader)
+                        Text(chapter.summary).font(.footnote).opacity(0.8).fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(16).frame(maxWidth: 640).frame(maxWidth: .infinity)
-                } else {
-                    Text("This chapter is not in this build.").foregroundStyle(.secondary).padding()
+                    VStack(spacing: 10) {
+                        ForEach(ExplainerLibrary.cards(for: pages)) { card in
+                            Button { reading = card.first } label: { pageCard(card) }.buttonStyle(.plain)
+                        }
+                    }
+                    neighbours
                 }
+                .padding(16).frame(maxWidth: 640).frame(maxWidth: .infinity)
+            } else {
+                Text("This chapter is not in this build.").foregroundStyle(.secondary).padding()
             }
         }
         .foregroundStyle(.ivory)
         .background(WoodGrainView().ignoresSafeArea())
         .navigationTitle(document?.title ?? "")
-        .environment(\.openURL, OpenURLAction { url in
-            // A relative link to a sibling doc opens that chapter; anything else goes to the system.
-            let target = url.lastPathComponent.replacingOccurrences(of: ".md", with: "")
-            if url.scheme == nil || url.isFileURL, let chapter = chapters.first(where: { $0.file == target }) {
-                openChapter(chapter)
-                return .handled
-            }
-            return .systemAction
-        })
-        .task(id: chapter.file) { document = ExplainerLibrary.document(for: chapter.file) }
-    }
-
-    @ViewBuilder private func sectionList(_ document: MarkdownDocument, proxy: ScrollViewProxy) -> some View {
-        let sections = document.sections.filter { $0.level == 2 }
-        if sections.count > 1 {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("IN THIS CHAPTER").font(.system(.caption2, design: .monospaced).weight(.medium)).tracking(1).opacity(0.6)
-                ForEach(sections, id: \.text) { section in
-                    Button {
-                        if let index = document.blocks.firstIndex(of: .heading(level: 2, text: section.text)) {
-                            withAnimation { proxy.scrollTo(index, anchor: .top) }
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Rectangle().fill(Color.suitRed.opacity(0.6)).frame(width: 2, height: 14)
-                            MarkdownText(section.text).font(.footnote).multilineTextAlignment(.leading)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(14)
-            .background(Theme.Wood.inlay.opacity(0.7), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .environment(\.openURL, chapterLinks)
+        .navigationDestination(item: $reading) { page in
+            PageReaderView(pages: pages, start: page.number, next: nextChapter, close: { reading = nil }, open: open)
+                .environment(\.openURL, chapterLinks)
+        }
+        .task(id: chapter.file) {
+            reading = nil
+            document = ExplainerLibrary.document(for: chapter.file)
+            pages = document.map { ExplainerLibrary.pages(of: $0, file: chapter.file) } ?? []
         }
     }
 
-    @ViewBuilder private func blockView(_ block: MarkdownDocument.Block) -> some View {
+    /// Leaves any open page, then shows the other chapter's page list.
+    private func open(_ other: ExplainerLibrary.Chapter) {
+        reading = nil
+        openChapter(other)
+    }
+
+    /// A relative link to a sibling doc opens that chapter; anything else goes to the system.
+    private var chapterLinks: OpenURLAction {
+        OpenURLAction { url in
+            let target = url.lastPathComponent.replacingOccurrences(of: ".md", with: "")
+            if url.scheme == nil || url.isFileURL, let chapter = chapters.first(where: { $0.file == target }) {
+                open(chapter)
+                return .handled
+            }
+            return .systemAction
+        }
+    }
+
+    private var nextChapter: ExplainerLibrary.Chapter? {
+        chapters.firstIndex(of: chapter).flatMap { $0 + 1 < chapters.count ? chapters[$0 + 1] : nil }
+    }
+
+    private func pageCard(_ card: ExplainerLibrary.Card) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                MarkdownText(card.first.title).font(.headline).multilineTextAlignment(.leading)
+                HStack(spacing: 6) {
+                    Text(card.parts > 1 ? "\(card.parts) parts · \(card.minutes) min" : "\(card.minutes) min")
+                    if card.hasDiagram {
+                        Image(systemName: "point.3.connected.trianglepath.dotted").accessibilityLabel("with a diagram")
+                    }
+                }
+                .font(.caption2.monospaced()).opacity(0.55)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.footnote).opacity(0.4)
+        }
+        .padding(14)
+        .background(Theme.Wood.inlay.opacity(0.85), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(.ivory.opacity(0.12)))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var neighbours: some View {
+        let position = chapters.firstIndex(of: chapter)
+        let previous = position.flatMap { $0 > 0 ? chapters[$0 - 1] : nil }
+        let next = position.flatMap { $0 + 1 < chapters.count ? chapters[$0 + 1] : nil }
+        return HStack {
+            if let previous {
+                Button { open(previous) } label: { Label("Previous", systemImage: "chevron.left") }
+                    .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
+            }
+            Spacer()
+            if let next {
+                Button { open(next) } label: { Label("Next: \(ExplainerLibrary.document(for: next.file)?.title ?? next.file)", systemImage: "chevron.right") }
+                    .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory).lineLimit(1)
+            }
+        }
+        .padding(.top, 20)
+    }
+}
+
+
+/// One page of a chapter. Previous and Next swap the page in place; before the first page lies the
+/// page list, after the last the next chapter.
+struct PageReaderView: View {
+    let pages: [ExplainerLibrary.Page]
+    let next: ExplainerLibrary.Chapter?
+    let close: () -> Void
+    let open: (ExplainerLibrary.Chapter) -> Void
+    @State private var number: Int
+
+    init(pages: [ExplainerLibrary.Page], start: Int, next: ExplainerLibrary.Chapter?, close: @escaping () -> Void,
+         open: @escaping (ExplainerLibrary.Chapter) -> Void) {
+        self.pages = pages
+        self.next = next
+        self.close = close
+        self.open = open
+        _number = State(initialValue: start)
+    }
+
+    var body: some View {
+        ScrollView {
+            if pages.indices.contains(number) {
+                let page = pages[number]
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        MarkdownText(page.title).font(.system(.title2, design: .serif).weight(.semibold))
+                            .accessibilityAddTraits(.isHeader)
+                        if page.parts > 1 {
+                            Text("Part \(page.part) of \(page.parts)").font(.footnote).opacity(0.7)
+                        }
+                    }
+                    ForEach(Array(page.blocks.enumerated()), id: \.offset) { _, block in
+                        BlockView(file: page.file, block: block)
+                    }
+                    turns
+                }
+                .padding(16).frame(maxWidth: 640).frame(maxWidth: .infinity)
+            }
+        }
+        // A fresh scroll view for each page, so a turned page opens at its top: scrolling the old one to the top in
+        // the same update as the turn reached the outgoing page, and the new one kept its offset.
+        .id(number)
+        .foregroundStyle(.ivory)
+        .background(WoodGrainView().ignoresSafeArea())
+        .navigationTitle(ExplainerLibrary.document(for: pages.first?.file ?? "")?.title ?? "")
+    }
+
+    private var turns: some View {
+        HStack {
+            Button {
+                if number > 0 { number -= 1 } else { close() }
+            } label: { Label("Previous", systemImage: "chevron.left") }
+                .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
+                .accessibilityHint(number > 0 ? "The page before" : "Back to the list of pages")
+            Spacer()
+            if number + 1 < pages.count {
+                Button { number += 1 } label: { Label("Next", systemImage: "chevron.right") }
+                    .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory)
+            } else if let next {
+                Button { open(next) } label: { Label("Next: \(ExplainerLibrary.document(for: next.file)?.title ?? next.file)", systemImage: "chevron.right") }
+                    .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory).lineLimit(1)
+            }
+        }
+        .padding(.top, 20)
+    }
+
+}
+
+/// One Markdown block drawn natively; diagrams load from the chapter's rendered PNGs.
+struct BlockView: View {
+    let file: String
+    let block: MarkdownDocument.Block
+
+    var body: some View {
         switch block {
         case let .heading(level, text):
             if level == 1 {
@@ -306,26 +564,8 @@ struct DocumentReaderView: View {
             .accessibilityLabel("\(language.isEmpty ? "Code" : language) block")
             .accessibilityValue(text)
         case let .diagram(index):
-            DiagramView(file: chapter.file, index: index)
+            DiagramView(file: file, index: index)
         }
-    }
-
-    private var neighbours: some View {
-        let position = chapters.firstIndex(of: chapter)
-        let previous = position.flatMap { $0 > 0 ? chapters[$0 - 1] : nil }
-        let next = position.flatMap { $0 + 1 < chapters.count ? chapters[$0 + 1] : nil }
-        return HStack {
-            if let previous {
-                Button { openChapter(previous) } label: { Label("Previous", systemImage: "chevron.left") }
-                    .buttonStyle(.borderedProminent).tint(Theme.Wood.dark).foregroundStyle(.ivory)
-            }
-            Spacer()
-            if let next {
-                Button { openChapter(next) } label: { Label("Next: \(ExplainerLibrary.document(for: next.file)?.title ?? next.file)", systemImage: "chevron.right") }
-                    .buttonStyle(.borderedProminent).tint(Color.suitRed).foregroundStyle(.ivory).lineLimit(1)
-            }
-        }
-        .padding(.top, 20)
     }
 }
 

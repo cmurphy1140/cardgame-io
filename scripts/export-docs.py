@@ -50,6 +50,8 @@ FENCE = re.compile(r'^[^\S\n]*[`:]{3}(?:mermaid)([^\S\n]*\r?\n([\s\S]*?))[`:]{3}
 TABLE_LINK = re.compile(r'\[[^\]]*\]\(([\w-]+)\.md\)')
 PAGE_LINK = re.compile(r'\]\(([\w-]+)\.md(?:#[^)]*)?\)')
 H1 = re.compile(r'^#\s+(.+?)\s*$', re.M)
+# Pinned: 12.0.0 dropped -w, which keeps every diagram 1200 wide at scale 2.
+MERMAID_CLI = '@mermaid-js/mermaid-cli@11.17.0'
 
 
 def table_links(text):
@@ -153,7 +155,7 @@ def render_page(page, docs, build, diagrams):
     """Render the page's Mermaid fences to PNGs; return the rewritten Markdown and the PNG paths."""
     source = docs / f'{page}.md'
     rewritten = build / f'{page}.md'
-    run(['npx', '--yes', '-p', '@mermaid-js/mermaid-cli', 'mmdc', '-q',
+    run(['npx', '--yes', '-p', MERMAID_CLI, 'mmdc', '-q',
          '-i', str(source), '-o', str(rewritten), '-a', str(diagrams),
          '-e', 'png', '-s', '2', '-w', '1200', '-b', 'white', '-t', 'neutral'])
     pngs = [diagrams / f'{page}-{n}.png' for n in range(1, count_fences(source.read_text()) + 1)]
@@ -206,27 +208,35 @@ def write_readme(out, pages, diagrams):
 
 def export_app(docs, pages):
     """Fill App/Explainer with the bundle the in-app reader uses: docs/<page>.md (verbatim) and
-    diagrams/<page>-<n>.png, one per Mermaid fence. Anything else in the folder is removed."""
+    diagrams/<page>-<n>.png, one per Mermaid fence. Everything is rendered into a staging folder
+    first; App/Explainer is replaced only after every page rendered and the PNG count matched, so
+    a failed run leaves it as it was. Anything else in the folder is removed."""
     explainer = root / 'App' / 'Explainer'
-    for stale in explainer.glob('*.dc.html'):
-        stale.unlink()
-    app_docs, app_diagrams = explainer / 'docs', explainer / 'diagrams'
-    for folder in (app_docs, app_diagrams):
-        shutil.rmtree(folder, ignore_errors=True)
+    staging = root / 'work' / 'docs-export' / 'app-staging'
+    shutil.rmtree(staging, ignore_errors=True)
+    staged_docs, staged_diagrams, build = staging / 'docs', staging / 'diagrams', staging / 'build'
+    for folder in (staged_docs, staged_diagrams, build):
         folder.mkdir(parents=True)
-    build = root / 'work' / 'docs-export' / 'app-build'
-    shutil.rmtree(build, ignore_errors=True)
-    build.mkdir(parents=True)
-    total = 0
+    expected = 0
     for page in pages:
         source = docs / f'{page}.md'
-        (app_docs / f'{page}.md').write_text(source.read_text())
+        (staged_docs / f'{page}.md').write_text(source.read_text())
+        expected += count_fences(source.read_text())
         if count_fences(source.read_text()):
             _, pngs = render_page(page, docs, build, build)
             for png in pngs:
-                shutil.copy(png, app_diagrams / png.name)
-            total += len(pngs)
-    print(f'App/Explainer: {plural(len(pages), "chapter")}, {plural(total, "diagram")}')
+                shutil.copy(png, staged_diagrams / png.name)
+    total = len(list(staged_diagrams.glob('*.png')))
+    if total != expected:
+        sys.exit(f'self-check failed: expected {expected} PNGs from mermaid fences, found {total}; '
+                 'App/Explainer left unchanged')
+    for stale in explainer.glob('*.dc.html'):
+        stale.unlink()
+    for name in ('docs', 'diagrams'):
+        shutil.rmtree(explainer / name, ignore_errors=True)
+        shutil.move(str(staging / name), str(explainer / name))
+    print(f'App/Explainer: {plural(len(pages), "chapter")}, {plural(total, "diagram")}, '
+          f'self-check passed ({total} PNGs for {expected} fences)')
 
 
 def main():

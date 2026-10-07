@@ -10,7 +10,7 @@ struct RiffleShuffle: View {
     static let cardsPerHalf = 3
 
     /// A hand that has just been dealt: the auction is open and nobody has called yet.
-    static func startsHand(_ hand: Hand) -> Bool { hand.phase == .bidding && hand.auction.calls.isEmpty }
+    nonisolated static func startsHand(_ hand: Hand) -> Bool { hand.phase == .bidding && hand.auction.calls.isEmpty }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// 0 gathered, 1 split apart, 2 riffled back together.

@@ -3,23 +3,30 @@ import SwiftUI
 /// Design tokens for the table. The numbers and their reasons are in docs/redesign-plan.md.
 public enum Theme {
     public enum Card {
-        /// Height over width: the 2:3 of today's cards, inside the 1:1.3–1:1.7 band real cards use.
-        public static let ratio = 1.5
+        /// Height over width: a poker card's 2.5 × 3.5 in (D97), inside the 1:1.3–1:1.7 band real cards use.
+        public static let ratio = 1.4
         /// Real cards round 3–4 mm on a 63 mm width, about six percent.
         public static func radius(width: Double) -> Double { width * 0.06 }
-        public static let handWidth = 58.0
-        public static let handWidthWide = 62.0
+        /// Hand cards a little larger than the pile's neighbours once were, so the hand reads as the thing you hold (D97).
+        public static let handWidth = 64.0
+        public static let handWidthWide = 70.0
         public static let pileWidth = 66.0
         public static let backWidth = 40.0
         public static let tutorialWidth = 48.0
         /// Spacing between fanned hand cards; negative so they overlap.
-        public static let handOverlap = -8.0
+        public static let handOverlap = -12.0
         /// Every overlapped card must still expose this much to a thumb.
         public static let minimumTouchStrip = 44.0
         public static let fanRotationDegrees = 8.0
         public static let fanDrop = 6.0
-        public static let liftPlayable = 6.0
+        /// A legal card on your turn stands up out of the hand; an illegal one sinks a little into it (D97).
+        public static let liftPlayable = 10.0
+        public static let sinkDimmed = 4.0
         public static let liftPressed = 6.0
+        /// The card you have picked rises clear of the fan, waiting for the second tap (D97).
+        public static let liftSelected = 30.0
+        /// Dragging a card up this far plays it; any less and it springs back into the hand.
+        public static let dragToPlay = 70.0
         public static let pressedScale = 1.04
         public static let dimmedOpacity = 0.55
         /// An unavailable card stays solid: a dark veil over the face and most of its colour drained, so it
@@ -75,8 +82,10 @@ public enum Theme {
         /// How far a played card sits from the pile's centre toward its seat: far enough that no two cards
         /// touch, even after their toss (T10). Side cards clear each other; top and bottom clear the sides.
         public static let sideNudge = Card.pileWidth / 2 + 13
-        public static let partnerNudge = Card.pileWidth * Card.ratio + 18
-        public static let ownNudge = Card.pileWidth * Card.ratio + 18
+        /// Top and bottom sit just over a card's height out, so the trick fits the field (D97); the pile scales these
+        /// with the cards themselves, which grow with the reader's text size.
+        public static let partnerNudge = Card.pileWidth * Card.ratio + 12
+        public static let ownNudge = Card.pileWidth * Card.ratio + 12
         /// The pile's reserved footprint around a card, so the table does not jump between tricks.
         public static let pileMarginX = 64.0
         public static let pileMarginY = 48.0
@@ -90,7 +99,7 @@ public enum Theme {
         /// Room kept above a table face's disc, as a fraction of its size, for the head that pops out (N49).
         public static let portraitHeadroom = 0.24
         /// While bidding the side seats rise this far toward the partner's row, so the bigger faces still leave the
-        /// bid pills and Pass above the hand (N48); no further, since the scorecard holds the top-right corner (N66).
+        /// bid pills and Pass above the hand (N48); no further, so they stay clear of the partner's row.
         public static let biddingSideRise = 36.0
         /// The tutorial's lesson tiles keep the smaller face so three of them still share a row.
         public static let tutorialPortraitSize = 36.0
@@ -150,12 +159,18 @@ public enum Theme {
         public static let scorecardLines = 3
         /// Bid, pass and suit pills: full column width, solid, well above the 44 pt minimum.
         public static let auctionButtonHeight = 64.0
+        /// Bid pills when they wrap to two rows, and Pass, sit this tall instead, so the whole auction fits above the
+        /// hand on an iPhone 16 (D97); still well above the 44 pt minimum.
+        public static let auctionButtonCompactHeight = 54.0
         public static let auctionButtonSpacing = 6.0
         public static let auctionButtonRadius = 14.0
         /// The slim row across the top (D93): Home on the left, Rules on the right, each a full thumb tall; the Rules
         /// book is this wide (D94).
         public static let topRowHeight = 44.0
-        public static let rulesBookWidth = 92.0
+        /// The book grew in D98 and again in D100, once the score pad left the row: it reads as something to pick up. It is
+        /// taller than the row and overhangs it a little above and below, so the table keeps its height.
+        public static let rulesBookWidth = 156.0
+        public static let rulesBookHeight = 50.0
         /// The header band's bottom edge is a frown: the corners hang this much lower than the middle.
         public static let headerDip = 18.0
         /// The table's top corners either side of the partner (D65): the contract plaque on the left, the
@@ -192,9 +207,37 @@ public enum Theme {
         public static let bidderRingDash: [CGFloat] = [5, 3]
         /// The player's out-of-trump mark: an ivory disc on the portrait's lower-left, the suit crossed out.
         public static let outOfTrumpBadgeSize = 26.0
-        /// The trump watermark behind the play area: very large and only just visible.
-        public static let watermarkSize = 300.0
-        public static let watermarkOpacity = 0.06
+    }
+
+    /// The playing field (D97): a walnut panel inlaid in the oak where the trick lands, framed by a maple stringing
+    /// line and recessed under its top edge. Cream cards sit on it at well over 7:1.
+    public enum Field {
+        public static let walnut = Color(red: 0.25, green: 0.155, blue: 0.09)
+        public static let walnutLight = Color(red: 0.33, green: 0.21, blue: 0.12)
+        public static let walnutDark = Color(red: 0.15, green: 0.09, blue: 0.05)
+        /// The stringing: a strip of maple set into the walnut just inside its edge, with a dark seam either side.
+        public static let maple = Color(red: 0.86, green: 0.74, blue: 0.53)
+        public static let stringingInset = 7.0
+        public static let stringingWidth = 1.6
+        public static let cornerRadius = 26.0
+        /// How far the field reaches under each side seat's tile (just to the rim of its portrait, clear of its carved
+        /// name), and the air above and below it.
+        public static let sideTuck = 2.0
+        public static let verticalGap = 6.0
+        /// Trump inlaid at the field's centre once it is named: maple for black suits, a red wood for red ones.
+        public static let inlayRed = Color(red: 0.74, green: 0.27, blue: 0.18)
+        public static let inlayOpacity = 0.68
+        public static let inlayMaximum = 116.0
+        /// The pool of lamplight that sits in front of the seat to act.
+        public static let lamp = Color(red: 1.0, green: 0.88, blue: 0.62)
+        public static let lampOpacity = 0.26
+    }
+
+    /// Which side a seat is on, worn as the rim of its portrait (D97): your team's light, the opponents' oxblood.
+    public enum Team {
+        public static let ourRim = Color(red: 0.95, green: 0.90, blue: 0.78)
+        public static let theirRim = Color(red: 0.50, green: 0.09, blue: 0.11)
+        public static let rimWidth = 3.5
     }
 
     public enum Motion {
@@ -222,6 +265,20 @@ public enum Theme {
         public static let dealerDrawHold: Duration = .seconds(4)
         /// The one beat before a computer plays or a finished hand is collected, so each can be read (T11). Tune here.
         public static let botBeat: Duration = .seconds(2)
+
+        /// Flights (D97). A played card travels from the player to its spot on the field.
+        public static let playSeconds = 0.42
+        /// A finished trick gathers onto the winning card, then is pulled to the winner and fades into their seat.
+        public static let gatherSeconds = 0.26
+        public static let takeSeconds = 0.44
+        /// Total time from the start of a trick's collection to the moment it has gone.
+        public static var collectSeconds: Double { gatherSeconds + takeSeconds }
+        /// The deal at the start of a hand: two rounds of three to each seat, a packet every `dealPacketGap`, each card
+        /// `dealCardSeconds` in the air, starting once the riffle has finished.
+        public static let dealStart = 0.5
+        public static let dealPacketGap = 0.16
+        public static let dealCardGap = 0.035
+        public static let dealCardSeconds = 0.42
     }
 
     /// Colours for drawn faces, chosen to sit with felt and ivory. No gold here (D33).

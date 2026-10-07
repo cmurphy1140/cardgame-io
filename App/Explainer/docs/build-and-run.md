@@ -129,7 +129,7 @@ Run it from the repo root as `python3 scripts/export-docs.py`. With no arguments
 | `diagrams/<page>-<n>.png` | One PNG per Mermaid block, numbered in page order |
 | `_build/` | Intermediates: the rewritten Markdown and the HTML that Chrome printed |
 
-The script is stdlib Python that shells out to three tools already on this Mac, the same approach as `build-simulator.py`. mermaid-cli, run through `npx`, renders each diagram to PNG and rewrites the fence to an image link. marked, also through `npx`, turns the Markdown into HTML. Headless Chrome prints the HTML to PDF; the script finds it from the `CHROME` environment variable first, then puppeteer's cache, then `/Applications`. The first run may download marked. The script fails loudly if a tool is missing or if the PNG count differs from the number of Mermaid fences in the source pages.
+The script is stdlib Python that shells out to three tools already on this Mac, the same approach as `build-simulator.py`. mermaid-cli, run through `npx` and pinned to 11.17.0 (12.0 dropped the `-w` width option the script uses), renders each diagram to PNG and rewrites the fence to an image link. With `--app` it renders into a staging folder and swaps it into `App/Explainer` only once every page has rendered and the PNG count matches, so a failed run leaves the bundled pages as they were. marked, also through `npx`, turns the Markdown into HTML. Headless Chrome prints the HTML to PDF; the script finds it from the `CHROME` environment variable first, then puppeteer's cache, then `/Applications`. The first run may download marked. The script fails loudly if a tool is missing or if the PNG count differs from the number of Mermaid fences in the source pages.
 
 To get the pages into Claude Design:
 
