@@ -48,15 +48,16 @@ import Testing
     #expect(throws: RuleError.invalidSeat) { try Auction(dealer: 4) }
 }
 
-@Test func nineAndOutOvercallsNineAndDealerCanMatch() throws {
+@Test func nineAndOutOvercallsNineAndDealerCannotMatch() throws {
     var auction = try Auction(dealer: 3)
     try auction.act(seat: 0, bid: 9)
     try auction.act(seat: 1, bid: 9, nineAndOut: true)
     #expect(throws: RuleError.invalidBid) { try auction.act(seat: 2, bid: 9, nineAndOut: true) }
     try auction.act(seat: 2, bid: nil)
     #expect(throws: RuleError.invalidBid) { try auction.act(seat: 3, bid: 9) }
-    try auction.act(seat: 3, bid: 9, nineAndOut: true)
-    #expect(auction.winner == 3)
+    #expect(throws: RuleError.invalidBid) { try auction.act(seat: 3, bid: 9, nineAndOut: true) }
+    try auction.act(seat: 3, bid: nil)
+    #expect(auction.winner == 1)
     #expect(auction.isNineAndOut)
 }
 

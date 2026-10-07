@@ -773,6 +773,19 @@ import Testing
     #expect(model.auctionContext == nil)
 }
 
+@MainActor @Test func aDealerFacingNineAndOutIsToldToPassAndCannotMatch() throws {
+    let deck = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
+    var match = try Match(deck: deck, dealer: 0)
+    try match.apply(.nineAndOut, seat: 1)
+    try match.apply(.bid(nil), seat: 2)
+    try match.apply(.bid(nil), seat: 3)
+    let model = GameModel(match: match)
+    #expect(model.isHumanTurn)
+    #expect(model.auctionContext == "A 9 and out stands, and the dealer may not match it: pass.")
+    #expect(!model.allows(.nineAndOut))
+    #expect(model.allows(.bid(nil)))
+}
+
 @Test func handOutcomeLeadsWithTheContractAndTheArithmetic() {
     let names = ["Connor", "Hazel", "Otto", "Rue"]
     // Made: you bid 4 and took 6, so 2 becomes 8; the defenders took 3, so 5 becomes 8.

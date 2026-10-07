@@ -44,7 +44,7 @@ A fixed deck makes a failure repeatable. Small rule tests explain exactly which 
 
 ## Where the rest lives
 
-The SwiftUI table in `Sources/CatchFiveUI` (view model tested in `Tests/CatchFiveUITests`) plays full matches with automatic saving; [types-and-functions.md](types-and-functions.md) lists every type it adds. 9-and-out is wired through Match: it outranks a normal 9 and the dealer may match it to take the bid.
+The SwiftUI table in `Sources/CatchFiveUI` (view model tested in `Tests/CatchFiveUITests`) plays full matches with automatic saving; [types-and-functions.md](types-and-functions.md) lists every type it adds. 9-and-out is wired through Match: it outranks a normal 9, and nobody, the dealer included, may match or overcall it (D103).
 
 
 ## Following Functions Without Xcode
