@@ -14,7 +14,7 @@ public struct AuctionCall: Equatable, Sendable {
     }
 }
 
-/// One bidding round; nine and out outranks normal nine and dealer may match.
+/// One bidding round; nine and out outranks normal nine, and the dealer may match ordinary bids only.
 public struct Auction: Sendable {
     public private(set) var isNineAndOut = false
     /// Every accepted call in seat order; rejected calls are not recorded.
@@ -34,7 +34,8 @@ public struct Auction: Sendable {
         guard let nextSeat else { throw RuleError.auctionComplete }
         guard seat == nextSeat else { throw RuleError.outOfTurn }
         if nineAndOut {
-            guard bid == HouseRules.bidRange.upperBound, !isNineAndOut || seat == dealer else { throw RuleError.invalidBid }
+            if isNineAndOut { throw RuleError.invalidBid }
+            guard bid == HouseRules.bidRange.upperBound else { throw RuleError.invalidBid }
             highestBid = 9
             winner = seat
             isNineAndOut = true

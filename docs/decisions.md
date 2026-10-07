@@ -841,8 +841,16 @@ These are floors, not ceilings: bidding higher to keep the auction away from the
 
 ## D102. A computer answers a standing 9 and out with a pass or a match, never a plain 9 (2026-10-07)
 
-**Implemented on `fix/closeout-polish`:** the closeout audit's blocker. A computer dealer with a big hand answered a 9 and out with a plain 9; the engine refused it, and the game asked the same seat again forever. While a 9 and out stands (`ComputerPlayer.facesNineAndOut`), the only legal answers are a pass or, for the dealer whose team is at zero or above, a matching 9 and out. Easy stays frozen (D17, D26), so its answer is given in `ComputerPlayer.decide(_:difficulty:)`: it passes. Standard asks `matchesNineAndOut` when matching is legal; for now that returns false, so Standard passes a standing 9 and out too.
+**Implemented on `fix/closeout-polish`:** the closeout audit's blocker. A computer dealer with a big hand answered a 9 and out with a plain 9; the engine refused it, and the game asked the same seat again forever. While a 9 and out stands (`ComputerPlayer.facesNineAndOut`), the only legal answers are a pass or, for the dealer whose team is at zero or above, a matching 9 and out. Easy stays frozen (D17, D26), so its answer is given in `ComputerPlayer.decide(_:difficulty:)`: it passes. Standard asked a matching hook when matching was legal; it returned false, so Standard passed a standing 9 and out too (the hook is removed in D103).
 
 **Over:** Teaching Standard when to match (a threshold on its hand estimate), which closes with the dev phase still open; editing `EasyPlayer`, which D17 and D26 freeze.
 
 **Why:** a hand that can never end is the one bug a player cannot get around. `aComputerDealerAnswersANineAndOutWithALegalCall`, `aStandingNineAndOutIsOnlyEverPassedOrMatched` and `easyPassesAStandingNineAndOut` hold it.
+
+## D103. Nobody, the dealer included, may match a 9 and out (2026-10-07)
+
+**Chosen:** a house-rule correction from Connor. A 9 and out outranks a normal 9, and once one stands nobody may match or overcall it, the dealer included; its bidder keeps the bid. This replaces the dealer-match line confirmed on 2026-09-04 (D10). `Auction.act(seat:bid:nineAndOut:)` refuses any 9 and out while `isNineAndOut` is set. The dealer still matches ordinary bids. The Standard dealer's matching hook and branch in `ComputerPlayer` are removed, so every computer passes a standing 9 and out (D102's only legal answer now). The rules document, `RulesText`, the human dealer's auction line (`GameModel.auctionContext`) and the docs say the same.
+
+**Over:** keeping the dealer's right to take over a 9 and out (D10), which is not how the family plays.
+
+**Why:** the rules must match the table the game is written for. `nineAndOutOvercallsNineAndDealerCannotMatch`, `aStandingNineAndOutIsOnlyEverPassed` and `aDealerFacingNineAndOutIsToldToPassAndCannotMatch` hold it.

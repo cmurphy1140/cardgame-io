@@ -464,7 +464,7 @@ public final class GameModel: ObservableObject {
     public var auctionContext: String? {
         let auction = match.hand.auction
         guard match.hand.phase == .bidding, isHumanTurn, auction.dealer == viewerSeat else { return nil }
-        if auction.isNineAndOut { return "As dealer you may match 9 and out; matching makes you the bidder." }
+        if auction.isNineAndOut { return "A 9 and out stands, and the dealer may not match it: pass." }
         if let high = auction.highestBid { return "As dealer you may match the high bid of \(high)." }
         return "Everyone passed, so as dealer you must bid at least 2."
     }

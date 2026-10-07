@@ -38,9 +38,9 @@ func aComputerDealerAnswersANineAndOutWithALegalCall(_ difficulty: Difficulty) t
     #expect(match.hand.phase != .bidding)
 }
 
-/// Every hand, level, behind or below zero: the only answers are a pass, or a match the rules allow.
+/// Every hand, level, behind or below zero: the only answer is a pass, since nobody may match a 9 and out (D103).
 @Test(arguments: Difficulty.allCases)
-func aStandingNineAndOutIsOnlyEverPassedOrMatched(_ difficulty: Difficulty) throws {
+func aStandingNineAndOutIsOnlyEverPassed(_ difficulty: Difficulty) throws {
     let all = Suit.allCases.flatMap { suit in Rank.allCases.map { Card(suit, $0) } }
     var random = RepeatableRandom(state: 102)
     var hands = [huge]
@@ -48,10 +48,8 @@ func aStandingNineAndOutIsOnlyEverPassedOrMatched(_ difficulty: Difficulty) thro
     for cards in hands {
         for scores in [[0, 0], [20, 5], [0, 12], [10, -4]] {
             let action = ComputerPlayer.decide(facingNineAndOut(cards, scores: scores), difficulty: difficulty)
-            switch action {
-            case .bid(nil): break
-            case .nineAndOut: #expect(scores[1] >= 0, "matched a 9 and out below zero")
-            default: Issue.record("\(difficulty) answered a 9 and out with \(String(describing: action))")
+            if action != .bid(nil) {
+                Issue.record("\(difficulty) answered a 9 and out with \(String(describing: action))")
             }
         }
     }

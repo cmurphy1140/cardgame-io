@@ -35,7 +35,7 @@ public enum RulesText {
         ]),
         Section(title: "9 and out", paragraphs: [
             "A special 9 and out bid is forbidden below zero. At zero or above, collecting all nine points wins the match; collecting fewer loses the match regardless of normal scores.",
-            "A 9 and out declaration outranks a normal 9. The dealer may match a 9 and out declaration, and matching overrides it: the dealer becomes the bidder (confirmed 2026-09-04).",
+            "A 9 and out declaration outranks a normal 9. Nobody, the dealer included, may match or overcall a 9 and out declaration: it stands, and its bidder keeps the bid (house rule, confirmed 2026-10-07).",
         ]),
     ]
 
